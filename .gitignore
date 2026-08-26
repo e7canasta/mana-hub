@@ -1,0 +1,65 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# mana-hub — .gitignore
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Gradle ──
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+!**/src/integrationTest/**/build/
+
+# ── Kotlin / Java ──
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+out/
+
+# ── IDE ──
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.code-workspace
+.settings/
+.project
+.classpath
+.factorypath
+*.swp
+*.swo
+*~
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Logs ──
+*.log
+logs/
+
+# ── Coverage ──
+coverage/
+jacoco/
+htmlcov/
+*.exec
+
+# ── Environment / Secrets ──
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.yml
+secrets.yaml
+application-local.yml
+application-local.properties
+
+# ── Database (local copies) ──
+*.db
+*.sqlite
+*.sqlite3
