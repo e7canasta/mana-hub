@@ -1,25 +1,30 @@
 package com.hub.observation.application.service
 
 import com.hub.observation.application.dto.IngestEventRequest
+import com.hub.observation.application.dto.IngestSceneEventRequest
 import com.hub.observation.application.dto.IngestSummaryRequest
 import com.hub.observation.application.dto.BathroomSummaryData
 import com.hub.observation.application.dto.MobilitySummaryData
 import com.hub.observation.application.dto.SleepSummaryData
 import com.hub.observation.domain.model.*
 import com.hub.observation.domain.repository.CurrentBedStateRepository
+import com.hub.observation.domain.repository.SceneEventRepository
 import com.hub.observation.domain.repository.SensorEventRepository
 import com.hub.observation.domain.repository.SummaryRepository
 import com.hub.shared.domain.BedId
+import com.hub.shared.domain.Identifier
 import com.hub.shared.domain.ResidentId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.util.UUID
 
 @Service
 class EventIngestionService(
     private val sensorEventRepository: SensorEventRepository,
     private val bedStateRepository: CurrentBedStateRepository,
-    private val summaryRepository: SummaryRepository
+    private val summaryRepository: SummaryRepository,
+    private val sceneEventRepository: SceneEventRepository
 ) {
 
     @Transactional
@@ -98,5 +103,22 @@ class EventIngestionService(
             confidence = request.confidence
         )
         summaryRepository.saveBathroom(summary)
+    }
+
+    @Transactional
+    fun ingestSceneEvent(request: IngestSceneEventRequest) {
+        val event = SceneEvent(
+            id = Identifier(UUID.randomUUID().toString()),
+            eventId = request.eventId ?: request.sourceEventId ?: UUID.randomUUID().toString(),
+            bedId = BedId(request.bedId),
+            residentId = request.residentId?.let { ResidentId(it) },
+            eventType = request.eventType,
+            fromState = request.fromState,
+            toState = request.toState,
+            triggerType = request.triggerType,
+            timestamp = request.timestamp ?: request.occurredAt ?: Instant.now(),
+            payloadJson = request.payloadJson
+        )
+        sceneEventRepository.save(event)
     }
 }

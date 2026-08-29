@@ -48,4 +48,10 @@ class EventIngestionController(
         observationApplicationService.ingestNotification(request)
         return ResponseEntity.status(HttpStatus.CREATED).build()
     }
+
+    @PostMapping("/scene-events")
+    fun ingestSceneEvent(@RequestBody request: IngestSceneEventRequest): ResponseEntity<Void> {
+        eventIngestionService.ingestSceneEvent(request)
+        return ResponseEntity.status(HttpStatus.CREATED).build()
+    }
 }

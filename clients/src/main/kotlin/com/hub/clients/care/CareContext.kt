@@ -84,6 +84,34 @@ class CareScope internal constructor(private val http: HttpApi) {
 
     fun wingShiftNotes(wingId: String, shiftDate: String): List<ShiftNoteResponse> =
         http.get("/api/v1/wings/$wingId/shift-notes?shiftDate=$shiftDate", Array<ShiftNoteResponse>::class.java).toList()
+
+    // ══════════════════════════════════════════════════════════════
+    //  CARE SUMMARY — daily aggregation (V7)
+    // ══════════════════════════════════════════════════════════════
+
+    fun ingestCareSummary(
+        sourceRecordId: String,
+        residentId: String,
+        observedOn: java.time.LocalDate,
+        totalMinutes: Int,
+        proactiveMinutes: Int = 0,
+        roundsCount: Int = 0,
+        notesCount: Int = 0
+    ): CareSummaryResponse =
+        http.post(
+            "/internal/v1/care-summaries",
+            IngestCareSummaryRequest(sourceRecordId, residentId, observedOn, totalMinutes, proactiveMinutes, roundsCount, notesCount),
+            CareSummaryResponse::class.java
+        )
+
+    fun careSummaries(residentId: String, from: java.time.LocalDate, to: java.time.LocalDate): CareSummaryListResponse =
+        http.get("/api/v1/residents/$residentId/care?from=$from&to=$to", CareSummaryListResponse::class.java)
+
+    fun careSummary(residentId: String): CareSummaryListResponse {
+        val to = java.time.LocalDate.now()
+        val from = to.minusDays(13)
+        return careSummaries(residentId, from, to)
+    }
 }
 
 class Round internal constructor(

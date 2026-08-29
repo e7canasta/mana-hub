@@ -140,3 +140,33 @@ data class ShiftNoteResponse(
     @JsonProperty("timestamp") val timestamp: Instant,
     @JsonProperty("createdAt") val createdAt: Instant
 )
+
+ // ══════════════════════════════════════════════════════════════
+ //  CARE SUMMARY — daily aggregation (V7)
+ // ══════════════════════════════════════════════════════════════
+
+data class IngestCareSummaryRequest(
+    @JsonProperty("sourceRecordId") val sourceRecordId: String,
+    @JsonProperty("residentId") val residentId: String,
+    @JsonProperty("observedOn") val observedOn: java.time.LocalDate,
+    @JsonProperty("totalMinutes") val totalMinutes: Int,
+    @JsonProperty("proactiveMinutes") val proactiveMinutes: Int = 0,
+    @JsonProperty("roundsCount") val roundsCount: Int = 0,
+    @JsonProperty("notesCount") val notesCount: Int = 0
+)
+
+data class CareSummaryResponse(
+    @JsonProperty("residentId") val residentId: String,
+    @JsonProperty("observedOn") val observedOn: java.time.LocalDate,
+    @JsonProperty("totalMinutes") val totalMinutes: Int,
+    @JsonProperty("proactiveMinutes") val proactiveMinutes: Int,
+    @JsonProperty("roundsCount") val roundsCount: Int,
+    @JsonProperty("notesCount") val notesCount: Int
+)
+
+data class CareSummaryListResponse(
+    @JsonProperty("residentId") val residentId: String,
+    @JsonProperty("from") val from: java.time.LocalDate,
+    @JsonProperty("to") val to: java.time.LocalDate,
+    val summaries: List<CareSummaryResponse>
+)

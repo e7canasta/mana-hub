@@ -4,6 +4,8 @@ import com.hub.observation.application.dto.*
 import com.hub.observation.application.service.BedStateService
 import com.hub.observation.application.service.ObservationApplicationService
 import com.hub.observation.application.service.SummaryQueryService
+import com.hub.observation.domain.repository.SceneEventRepository
+import com.hub.shared.domain.ResidentId
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
@@ -13,7 +15,8 @@ import java.time.LocalDate
 class ObservationController(
     private val observationApplicationService: ObservationApplicationService,
     private val summaryQueryService: SummaryQueryService,
-    private val bedStateService: BedStateService
+    private val bedStateService: BedStateService,
+    private val sceneEventRepository: SceneEventRepository
 ) {
 
     @GetMapping("/wings/{wingId}/board")
@@ -100,6 +103,24 @@ class ObservationController(
     @GetMapping("/residents/{residentId}/events")
     fun getEvents(@PathVariable residentId: String): ResponseEntity<Any> {
         return ResponseEntity.ok(mapOf("residentId" to residentId))
+    }
+
+    @GetMapping("/residents/{residentId}/scene-events")
+    fun getSceneEvents(@PathVariable residentId: String): ResponseEntity<List<SceneEventResponse>> {
+        val events = sceneEventRepository.findByResidentId(ResidentId(residentId))
+        return ResponseEntity.ok(events.map {
+            SceneEventResponse(
+                id = it.id.value,
+                eventId = it.eventId,
+                bedId = it.bedId.value,
+                residentId = it.residentId?.value,
+                eventType = it.eventType,
+                fromState = it.fromState,
+                toState = it.toState,
+                triggerType = it.triggerType,
+                timestamp = it.timestamp
+            )
+        })
     }
 
     @GetMapping("/residents/{residentId}/notifications")

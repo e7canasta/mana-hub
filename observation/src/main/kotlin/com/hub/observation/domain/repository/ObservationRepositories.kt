@@ -37,3 +37,9 @@ interface NotificationEventRepository {
     fun findStaffPresenceEvents(bedId: BedId, since: Instant): List<NotificationEvent>
     fun save(event: NotificationEvent): NotificationEvent
 }
+
+interface SceneEventRepository {
+    fun findByResidentId(residentId: ResidentId): List<SceneEvent>
+    fun findByBedId(bedId: BedId): List<SceneEvent>
+    fun save(event: SceneEvent): SceneEvent
+}

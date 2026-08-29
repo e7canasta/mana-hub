@@ -3,6 +3,7 @@ package com.hub.observation.infrastructure.persistence
 import com.hub.observation.domain.model.*
 import com.hub.observation.domain.repository.CurrentBedStateRepository
 import com.hub.observation.domain.repository.NotificationEventRepository
+import com.hub.observation.domain.repository.SceneEventRepository
 import com.hub.observation.domain.repository.SensorEventRepository
 import com.hub.observation.domain.repository.SummaryRepository
 import com.hub.shared.domain.ResidentId
@@ -140,6 +141,28 @@ interface BathroomSummaryEntityRepository : JpaRepository<BathroomSummaryEntity,
 }
 
 @Entity
+@Table(name = "scene_events")
+class SceneEventEntity(
+    @Id var id: String = "",
+    @Column(name = "event_id") var eventId: String = "",
+    @Column(name = "bed_id") var bedId: String = "",
+    @Column(name = "resident_id") var residentId: String? = null,
+    @Column(name = "event_type") var eventType: String = "",
+    @Column(name = "from_state") var fromState: String? = null,
+    @Column(name = "to_state") var toState: String? = null,
+    @Column(name = "trigger_type") var triggerType: String? = null,
+    @Column(name = "timestamp") var timestamp: Instant = Instant.now(),
+    @Column(name = "payload_json") var payloadJson: String = "{}",
+    @Column(name = "received_at") var receivedAt: Instant = Instant.now()
+)
+
+@Repository
+interface SceneEventEntityRepository : JpaRepository<SceneEventEntity, String> {
+    fun findByResidentId(residentId: String): List<SceneEventEntity>
+    fun findByBedId(bedId: String): List<SceneEventEntity>
+}
+
+@Entity
 @Table(name = "notification_events")
 class NotificationEventEntity(
     @Id var id: String = "",
@@ -259,6 +282,25 @@ class SummaryRepositoryAdapter(
         id.value, sourceRecordId, residentId.value, observedOn, visitCount,
         nightVisitCount, assistedCount, totalMinutes, source, modelVersion,
         confidence, Instant.now(), Instant.now()
+    )
+}
+
+@Repository
+class SceneEventRepositoryAdapter(private val jpa: SceneEventEntityRepository) : SceneEventRepository {
+    override fun findByResidentId(residentId: ResidentId): List<SceneEvent> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
+    override fun findByBedId(bedId: BedId): List<SceneEvent> = jpa.findByBedId(bedId.value).map { it.toDomain() }
+    override fun save(event: SceneEvent): SceneEvent = jpa.save(event.toEntity()).toDomain()
+
+    private fun SceneEventEntity.toDomain() = SceneEvent(
+        id = Identifier(id), eventId = eventId, bedId = BedId(bedId),
+        residentId = residentId?.let { ResidentId(it) }, eventType = eventType,
+        fromState = fromState, toState = toState, triggerType = triggerType,
+        timestamp = timestamp, payloadJson = payloadJson
+    )
+    private fun SceneEvent.toEntity() = SceneEventEntity(
+        id = id.value, eventId = eventId, bedId = bedId.value, residentId = residentId?.value,
+        eventType = eventType, fromState = fromState, toState = toState, triggerType = triggerType,
+        timestamp = timestamp, payloadJson = payloadJson, receivedAt = Instant.now()
     )
 }
 

@@ -1,5 +1,7 @@
 # mana-hub: Data Model (Mermaid)
 
+> ⚠️ **Deprecated 2026-08-29:** Usa `data-model.md` como fuente de verdad (PostgreSQL 17, 44 tablas, Flyway V1-V10). Este Mermaid está desactualizado (SQLite, 34 tablas, incluye `resident_attributes` fantasma). Se mantiene por referencia histórica hasta regenerar con `data-model.md`.
+
 ## Vista General del Modelo
 
 ```mermaid

@@ -1,5 +1,7 @@
 # mana-hub: Business Glossary + Domain Model
 
+> ⚠️ **Nota 2026-08-29:** Este documento contiene entidades fantasma (`AlarmPreset`, `Threshold`, `resident_attributes` 1.1) que no existen en DDL real. Ver `data-model.md` (44 tablas PostgreSQL) y `docs/big-picture/domain-model.md` (entidades reales) como fuentes de verdad. Pendiente de resincronización completa — ver `docs/README.md`.
+
 ## North Star del Proyecto
 
 > "El lenguaje unívoco es la columna vertebral del Domain-Driven Design.

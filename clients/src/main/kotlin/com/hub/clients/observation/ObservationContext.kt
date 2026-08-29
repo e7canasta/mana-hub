@@ -57,11 +57,9 @@ class ObservationScope internal constructor(private val http: HttpApi) {
 
     // ══════════════════════════════════════════════════════════════
     //  SCENE CHANGE — Confirmed state transition after hysteresis
-    //  Vocabulary: docs/vocabulario-unificado.md §3.2
-    //
-    //  NOTE: Server does not have scene-change endpoints yet.
-    //  This method prepares the contract. When the endpoint is
-    //  implemented, it will connect automatically.
+    //  Vocabulary: docs/vocabulario-unificado.md §3.2 — Implemented 2026-08-29
+    //  Server: POST /internal/v1/scene-events → scene_events
+    //          GET  /api/v1/residents/{id}/scene-events
     // ══════════════════════════════════════════════════════════════
 
     /**

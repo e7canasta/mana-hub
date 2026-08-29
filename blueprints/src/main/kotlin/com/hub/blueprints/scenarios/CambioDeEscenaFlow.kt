@@ -11,19 +11,18 @@ import java.time.LocalDate
  * BLUEPRINT: Scene Change Flow
  * Context Group: Clinical Monitoring
  *
- * Chain: PERCEPTION → SCENE CHANGE → (may generate EPISODE)
+ * Chain: PERCEPCIÓN → CAMBIO DE ESCENA → (puede generar EPISODIO)
  *
  * Flow:
- *   1. Camera detects perception (raw sensor)
- *   2. Scene engine applies hysteresis and confirms
- *   3. Scene change is registered (confirmed transition)
- *   4. Resident scene-change history is queried
+ *   1. Cámara detecta percepción (sensor crudo)
+ *   2. Motor de escena aplica hysteresis y confirma
+ *   3. Cambio de escena registrado (transición confirmada)
+ *   4. Historia de cambios consultada
  *
- * NOTE: The /internal/v1/scene-events endpoint does not exist yet.
- * This blueprint validates the DSL CONTRACT. When the endpoint is
- * implemented, it will work end-to-end without blueprint changes.
+ * Implemented 2026-08-29: POST /internal/v1/scene-events + GET /api/v1/residents/{id}/scene-events
  *
  * Validates:
+ *   Observation: registerPerception()
  *   Observation: registerSceneChange()
  *   Observation: sceneChanges()
  */
@@ -100,11 +99,9 @@ object CambioDeEscenaFlow {
         // ── 5. Query scene-change history ──
         separator()
         step(5, "Query Scene Change History")
-        info("NOTE: This endpoint does not exist on the server yet")
-        info("DSL contract is ready for when it is implemented")
-        // val changes = hub.observation.sceneChanges(maria.id)
-        // data("  Changes registered", changes.size)
-        ok("DSL contract validated")
+        val changes = hub.observation.sceneChanges(maria.id)
+        data("  Changes registered", changes.size)
+        ok("Scene changes persisted: ${changes.size} events")
 
         // ── Summary ──
         summary("SCENE CHANGE FLOW COMPLETE", mapOf(

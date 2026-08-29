@@ -7,12 +7,11 @@ import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
 
 @RestController
-@RequestMapping("/api/v1")
 class CareSummaryController(
     private val careSummaryApplicationService: CareSummaryApplicationService
 ) {
 
-    @GetMapping("/residents/{residentId}/care")
+    @GetMapping("/api/v1/residents/{residentId}/care")
     fun getCareSummary(
         @PathVariable residentId: String,
         @RequestParam from: LocalDate? = null,
@@ -23,10 +22,16 @@ class CareSummaryController(
         return ResponseEntity.ok(careSummaryApplicationService.getCareSummaryRange(residentId, fromDate, toDate))
     }
 
-    @PostMapping("/internal/care-summaries")
+    @PostMapping("/internal/v1/care-summaries")
     fun ingestCareSummary(
         @RequestBody request: IngestCareSummaryRequest
     ): ResponseEntity<CareSummaryResponse> {
         return ResponseEntity.ok(careSummaryApplicationService.ingestCareSummary(request))
     }
+
+    // Legacy alias — maintains backward compatibility for any client still using the old path
+    @PostMapping("/api/v1/internal/care-summaries")
+    fun ingestCareSummaryLegacy(
+        @RequestBody request: IngestCareSummaryRequest
+    ): ResponseEntity<CareSummaryResponse> = ingestCareSummary(request)
 }

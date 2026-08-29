@@ -135,3 +135,29 @@ data class NotificationResponse(
     val ruleId: String?,
     val riskLevel: String?
 )
+
+data class IngestSceneEventRequest(
+    val sourceEventId: String? = null,
+    val eventId: String? = null,
+    val bedId: String,
+    val residentId: String? = null,
+    val eventType: String,
+    val fromState: String? = null,
+    val toState: String? = null,
+    val triggerType: String? = null,
+    val timestamp: Instant? = null,
+    val occurredAt: Instant? = null,
+    val payloadJson: String = "{}"
+)
+
+data class SceneEventResponse(
+    val id: String,
+    val eventId: String,
+    val bedId: String,
+    val residentId: String?,
+    val eventType: String,
+    val fromState: String?,
+    val toState: String?,
+    val triggerType: String?,
+    val timestamp: Instant
+)

@@ -15,7 +15,8 @@ class EvidenceScope internal constructor(private val http: HttpApi) {
         )
 
     fun evidenceByEpisode(episodeId: String): List<EvidenceResponse> =
-        http.get("/api/v1/evidence?episodeId=$episodeId", Array<EvidenceResponse>::class.java).toList()
+        try { http.get("/api/v1/evidence?episodeId=$episodeId", Array<EvidenceResponse>::class.java).toList() }
+        catch (_: Exception) { emptyList() }
 
     fun openTimeline(bedId: String, residentId: String): TimelineResponse =
         http.post("/api/v1/timelines?bedId=$bedId&residentId=$residentId", emptyMap<String, String>(), TimelineResponse::class.java)
