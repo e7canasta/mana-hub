@@ -108,8 +108,15 @@ data class CareDayProjection(
 
 data class FallsTabProjection(
     val residentId: String,
-    val streakDays: Int,
-    val previousStreakDays: Int,
+    /**
+     * Dias sin caidas, o null si no hay con que afirmarlo.
+     *
+     * Era Int, y por eso el calculo tenia que inventar un numero cuando el
+     * residente no tenia ninguna caida registrada: devolvia los dias desde
+     * 1970 (20694). Un tipo que no puede decir "no se" obliga a mentir.
+     */
+    val streakDays: Int?,
+    val previousStreakDays: Int?,
     val fallsLast12Months: Int,
     val lastFallAt: Instant?,
     val lastFallInjury: String?,

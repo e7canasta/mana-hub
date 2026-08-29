@@ -5,7 +5,10 @@ import com.hub.surveillance.domain.repository.EpisodeRepository
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
 import jakarta.persistence.*
+import jakarta.persistence.criteria.Predicate
+import org.springframework.data.jpa.domain.Specification
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import java.time.Instant
@@ -35,25 +38,14 @@ class EpisodeEntity(
 )
 
 @Repository
-interface EpisodeEntityRepository : JpaRepository<EpisodeEntity, String> {
+interface EpisodeEntityRepository :
+    JpaRepository<EpisodeEntity, String>,
+    JpaSpecificationExecutor<EpisodeEntity> {
     fun findByResidentId(residentId: String): List<EpisodeEntity>
     @Query("SELECT e FROM EpisodeEntity e WHERE e.status = 'pending'")
     fun findPending(): List<EpisodeEntity>
     @Query("SELECT e FROM EpisodeEntity e WHERE e.residentId = :residentId AND e.status IN ('pending','acknowledged') ORDER BY e.occurredAt DESC LIMIT 1")
     fun findOpenByResidentId(residentId: String): EpisodeEntity?
-    @Query("""
-        SELECT e FROM EpisodeEntity e
-        WHERE (:residentId IS NULL OR e.residentId = :residentId)
-          AND (:status IS NULL OR e.status = :status)
-          AND (:fromDate IS NULL OR e.occurredAt >= :fromDate)
-          AND (:toDate IS NULL OR e.occurredAt <= :toDate)
-    """)
-    fun findFiltered(
-        residentId: String?,
-        status: String?,
-        fromDate: Instant?,
-        toDate: Instant?
-    ): List<EpisodeEntity>
 }
 
 @Repository
@@ -62,8 +54,32 @@ class EpisodeRepositoryAdapter(private val jpa: EpisodeEntityRepository) : Episo
     override fun findByResidentId(residentId: ResidentId): List<Episode> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
     override fun findPending(): List<Episode> = jpa.findPending().map { it.toDomain() }
     override fun findOpenByResidentId(residentId: ResidentId): Episode? = jpa.findOpenByResidentId(residentId.value)?.toDomain()
-    override fun findFiltered(residentId: ResidentId?, status: String?, from: java.time.Instant?, to: java.time.Instant?): List<Episode> =
-        jpa.findFiltered(residentId?.value, status, from, to).map { it.toDomain() }
+    /*
+     * Los filtros ausentes no entran a la consulta, en vez de entrar como un
+     * parametro nulo.
+     *
+     * Antes era una @Query con el patron (:param IS NULL OR col = :param). Ese
+     * patron se lee bien y no funciona contra PostgreSQL: el SQL que genera
+     * Hibernate es `where (? is null or e.status = ?)`, y Postgres no puede
+     * inferir el tipo de un parametro que solo se compara con IS NULL. Falla al
+     * preparar la sentencia -"could not determine data type of parameter $5"-,
+     * asi que fallaba siempre, con o sin filtros, y con un 500 sin mensaje.
+     *
+     * Con Specification cada filtro presente agrega su predicado y los ausentes
+     * no existen: no hay parametro que tipar. Es ademas lo que hace que la
+     * consulta pueda usar los indices.
+     */
+    override fun findFiltered(residentId: ResidentId?, status: String?, from: java.time.Instant?, to: java.time.Instant?): List<Episode> {
+        val spec = Specification<EpisodeEntity> { root, _, cb ->
+            val predicates = mutableListOf<Predicate>()
+            residentId?.let { predicates += cb.equal(root.get<String>("residentId"), it.value) }
+            status?.let { predicates += cb.equal(root.get<String>("status"), it) }
+            from?.let { predicates += cb.greaterThanOrEqualTo(root.get("occurredAt"), it) }
+            to?.let { predicates += cb.lessThanOrEqualTo(root.get("occurredAt"), it) }
+            if (predicates.isEmpty()) cb.conjunction() else cb.and(*predicates.toTypedArray())
+        }
+        return jpa.findAll(spec).map { it.toDomain() }
+    }
     override fun save(episode: Episode): Episode {
         val existing = jpa.findById(episode.id.value).orElse(null)
         val entity = episode.toEntity()

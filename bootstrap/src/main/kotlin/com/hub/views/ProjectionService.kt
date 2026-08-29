@@ -9,6 +9,10 @@ import com.hub.history.domain.repository.HistoryEpisodeReviewRepository
 import com.hub.care.domain.repository.CareSummaryRepository
 import com.hub.policy.domain.repository.AlarmProfileRepository
 import com.hub.policy.domain.repository.AlarmProfileOverrideRepository
+import com.hub.residence.domain.repository.BedRepository
+import com.hub.residence.domain.repository.RoomRepository
+import com.hub.residence.domain.repository.WingRepository
+import com.hub.shared.domain.BedId
 import com.hub.shared.domain.ResidentId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -28,22 +32,60 @@ class ProjectionService(
     private val careSummaryRepository: CareSummaryRepository,
     private val alarmProfileRepository: AlarmProfileRepository,
     private val alarmOverrideRepository: AlarmProfileOverrideRepository,
+    private val bedRepository: BedRepository,
+    private val roomRepository: RoomRepository,
+    private val wingRepository: WingRepository,
 ) {
+
+    /**
+     * Resuelve cama -> habitacion -> ala.
+     *
+     * El panel muestra "Hab. 301 - Cama A" en cada fila del piso: sin esto la
+     * lista es cuatro nombres sin lugar, y en una residencia el lugar es medio
+     * dato. Antes devolvia RailLocation(null, null, null), o sea un objeto
+     * vacio que el cliente no puede distinguir de "todavia no tiene cama".
+     *
+     * El cache es por llamada: el rail pide la ubicacion de cada residente y
+     * varios comparten habitacion y ala, asi que sin memoizar son tres queries
+     * por fila para leer los mismos dos registros.
+     */
+    private class LocationResolver(
+        private val bedRepository: BedRepository,
+        private val roomRepository: RoomRepository,
+        private val wingRepository: WingRepository,
+    ) {
+        private val rooms = mutableMapOf<String, com.hub.residence.domain.model.Room?>()
+        private val wings = mutableMapOf<String, com.hub.residence.domain.model.Wing?>()
+
+        fun resolve(bedId: BedId): RailLocation? {
+            val bed = bedRepository.findById(bedId) ?: return null
+            val room = rooms.getOrPut(bed.roomId.value) { roomRepository.findById(bed.roomId) }
+            val wing = room?.let { r ->
+                wings.getOrPut(r.wingId.value) { wingRepository.findById(r.wingId) }
+            }
+            return RailLocation(
+                wingName = wing?.name,
+                roomNumber = room?.number,
+                bedLabel = bed.label,
+            )
+        }
+    }
+
+    private fun locations() = LocationResolver(bedRepository, roomRepository, wingRepository)
 
     // ──────────────────────────────────────────────────────── resident-rail
 
     @Transactional(readOnly = true)
     fun getResidentRail(): List<ResidentRailItem> {
         val residents = residentRepository.findAll()
+        val resolver = locations()
         return residents.map { resident ->
             val assignment = bedAssignmentRepository.findOpenByResidentId(resident.id)
             val bedState = assignment?.let { bedStateRepository.findByBedId(it.bedId) }
             ResidentRailItem(
                 id = resident.id.value,
                 fullName = resident.fullName,
-                location = assignment?.let {
-                    RailLocation(wingName = null, roomNumber = null, bedLabel = null)
-                },
+                location = assignment?.let { resolver.resolve(it.bedId) },
                 currentState = bedState?.let {
                     RailState(
                         state = it.state,
@@ -67,9 +109,7 @@ class ProjectionService(
             fullName = resident.fullName,
             birthDate = resident.birthDate,
             admissionDate = resident.admissionDate,
-            location = assignment?.let {
-                RailLocation(wingName = null, roomNumber = null, bedLabel = null)
-            },
+            location = assignment?.let { locations().resolve(it.bedId) },
             currentState = bedState?.let {
                 RailState(state = it.state, staffPresent = null, stateSince = it.stateSince)
             },
@@ -188,21 +228,37 @@ class ProjectionService(
 
         val lastFall = falls.firstOrNull()
         val lastFallAt = lastFall?.occurredAt
-        val streakDays = if (lastFallAt != null) {
+
+        /*
+         * "34 dias sin caidas" es una afirmacion, y el panel la muestra grande.
+         * Solo se puede hacer si hay desde cuando contar.
+         *
+         * Con una caida registrada, se cuenta desde esa. Sin ninguna, se cuenta
+         * desde el primer episodio observado de esa persona: es la fecha desde
+         * la que el sistema efectivamente la esta mirando, y por lo tanto el
+         * unico piso defendible. Sin ningun episodio no hay observacion y la
+         * respuesta es null, no un numero.
+         *
+         * Antes devolvia now.toEpochDay() -los dias desde 1970-, o sea 20694
+         * dias sin caidas para alguien que ingreso el mes pasado.
+         */
+        val firstObservedAt = episodes.minByOrNull { it.occurredAt }?.occurredAt
+        val streakFrom = lastFallAt ?: firstObservedAt
+        val streakDays = streakFrom?.let {
             java.time.temporal.ChronoUnit.DAYS.between(
-                lastFallAt.atZone(ZoneOffset.UTC).toLocalDate(), now
+                it.atZone(ZoneOffset.UTC).toLocalDate(), now
             ).toInt().coerceAtLeast(0)
-        } else {
-            now.toEpochDay().toInt()
         }
 
         val previousFall = falls.drop(1).firstOrNull()
+        /* Null y no 0: "no hubo una caida anterior" y "la anterior fue el mismo
+         * dia" son cosas distintas, y con 0 se leen igual. */
         val previousStreakDays = if (previousFall != null && lastFallAt != null) {
             java.time.temporal.ChronoUnit.DAYS.between(
                 previousFall.occurredAt.atZone(ZoneOffset.UTC).toLocalDate(),
                 lastFallAt.atZone(ZoneOffset.UTC).toLocalDate()
             ).toInt().coerceAtLeast(0)
-        } else 0
+        } else null
 
         return FallsTabProjection(
             residentId = residentId,

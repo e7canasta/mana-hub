@@ -27,6 +27,13 @@ class HistoryEpisodeController(
         return ResponseEntity.ok(historyEpisodeApplicationService.getResidentHistoryEpisodes(residentId))
     }
 
+    @GetMapping("/history-episodes/{episodeId}")
+    fun getHistoryEpisode(@PathVariable episodeId: String): ResponseEntity<HistoryEpisodeResponse> {
+        val episode = historyEpisodeApplicationService.getHistoryEpisode(episodeId)
+            ?: return ResponseEntity.notFound().build()
+        return ResponseEntity.ok(episode)
+    }
+
     @GetMapping("/history-episodes/{episodeId}/sequence")
     fun getHistoryEpisodeSequence(@PathVariable episodeId: String): ResponseEntity<List<HistoryEpisodeReviewResponse>> {
         return ResponseEntity.ok(historyEpisodeApplicationService.getHistoryEpisodeSequence(episodeId))

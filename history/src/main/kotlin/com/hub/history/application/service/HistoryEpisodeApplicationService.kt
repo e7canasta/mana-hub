@@ -38,6 +38,19 @@ class HistoryEpisodeApplicationService(
         return detectionRepository.findByResidentId(ResidentId(residentId)).map { toResponse(it) }
     }
 
+    /**
+     * Un episodio suelto por su id.
+     *
+     * Faltaba, y sin esto el panel no puede abrir un episodio desde el listado:
+     * la fila se clickea, la columna del acto pide el episodio por id y no hay
+     * a quien preguntarle. Traerlo filtrando la lista del residente tampoco
+     * sirve, porque desde el id no se sabe de que residente es.
+     */
+    @Transactional(readOnly = true)
+    fun getHistoryEpisode(episodeId: String): HistoryEpisodeResponse? {
+        return detectionRepository.findById(HistoryEpisodeId(episodeId))?.let { toResponse(it) }
+    }
+
     @Transactional(readOnly = true)
     fun getHistoryEpisodeSequence(episodeId: String): List<HistoryEpisodeReviewResponse> {
         return reviewRepository.findByEpisodeId(HistoryEpisodeId(episodeId)).map { toReviewResponse(it) }

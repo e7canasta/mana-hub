@@ -31,6 +31,13 @@ class AlarmPresetsController(
                 autopilot = command.autopilot,
                 mode = command.mode,
                 templateId = command.templateId,
+                /* El comando trae `overrides` como objeto y el servicio los
+                 * espera serializados. Antes este mapeo no existia: el campo se
+                 * recibia, se ignoraba, y la respuesta 200 con `overrides: {}`
+                 * hacia parecer que se habia guardado. */
+                overridesJson = command.overrides?.let {
+                    com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(it)
+                },
                 reason = command.reason,
                 updatedBy = command.updatedBy,
             ),
