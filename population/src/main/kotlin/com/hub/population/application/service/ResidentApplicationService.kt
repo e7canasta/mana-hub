@@ -47,7 +47,12 @@ class ResidentApplicationService(
 
     @Transactional(readOnly = true)
     fun listResidents(): List<ResidentResponse> {
-        return residentRepository.findAll().map { it.toResponse() }
+        val residents = residentRepository.findAll()
+        val openAssignments = assignmentRepository.findAllOpen().associateBy { it.residentId }
+        return residents.map { resident ->
+            val assignment = openAssignments[resident.id]
+            resident.toResponse(assignment)
+        }
     }
 
     @Transactional
