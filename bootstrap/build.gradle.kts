@@ -33,6 +33,7 @@ dependencies {
     implementation(libs.jackson.module.kotlin)
     implementation(libs.jackson.datatype.jsr310)
     implementation(libs.springdoc.openapi.starter.webmvc.ui)
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
 
     runtimeOnly(libs.postgresql)
 

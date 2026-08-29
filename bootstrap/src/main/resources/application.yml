@@ -45,6 +45,13 @@ nats:
   enabled: false
   url: nats://localhost:4222
 
+bridge:
+  url: http://localhost:8090
+  webhook:
+    url: http://localhost:8090/webhooks/policy-change
+  target:
+    url: http://localhost:8080
+
 logging:
   level:
     com.hub: INFO

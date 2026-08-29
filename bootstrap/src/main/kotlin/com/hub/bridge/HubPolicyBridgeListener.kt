@@ -34,10 +34,9 @@ class HubPolicyBridgeListener(
             }
             hubPolicyPublisher.publishChange(
                 version = version,
-                eventId = event.eventId,
-                occurredAt = event.occurredAt
+                fingerprint = event.eventId,
             )
-            log.info("Bridged AlarmProfileChanged {} → outbox {} for hive", event.residentId, event.eventId)
+            log.info("Bridged AlarmProfileChanged {} for hive", event.residentId)
         } catch (e: Exception) {
             log.error("Failed to bridge policy change for {}: {}", event.residentId, e.message)
         }
