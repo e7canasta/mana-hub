@@ -18,6 +18,7 @@ dependencies {
     implementation(project(":evidence"))
     implementation(project(":streams"))
     implementation(project(":observation"))
+    implementation(project(":hive-bridge"))
 
     implementation(platform("org.springframework.boot:spring-boot-dependencies:$springBootVersion"))
     implementation(libs.spring.boot.starter.web)

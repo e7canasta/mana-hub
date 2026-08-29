@@ -10,5 +10,6 @@ interface EpisodeRepository {
     fun findByResidentId(residentId: ResidentId): List<Episode>
     fun findPending(): List<Episode>
     fun findFiltered(residentId: ResidentId?, status: String?, from: Instant?, to: Instant?): List<Episode>
+    fun findOpenByResidentId(residentId: ResidentId): Episode?
     fun save(episode: Episode): Episode
 }

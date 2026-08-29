@@ -41,7 +41,12 @@ springdoc:
     tags-sorter: alpha
     operations-sorter: alpha
 
+nats:
+  enabled: false
+  url: nats://localhost:4222
+
 logging:
   level:
     com.hub: INFO
     org.flywaydb: INFO
+    com.manahive: INFO

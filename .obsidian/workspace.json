@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/big-picture/context-map.md",
+                "file": "docs/vocabulario-unificado.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "context-map"
+              "title": "vocabulario-unificado"
             }
           }
         ]
@@ -190,19 +190,29 @@
   },
   "active": "489807c8b11d03e7",
   "lastOpenFiles": [
-    "bootstrap/src/main/kotlin/com/hub/views/AlarmPresetsController.kt",
+    "hive-bridge/build/kotlin/compileKotlin/classpath-snapshot/shrunk-classpath-snapshot.bin",
+    "hive-bridge/build/kotlin/compileKotlin/cacheable/last-build.bin",
+    "hive-bridge/build/classes/kotlin/main/META-INF/com.hub_hive-bridge.kotlin_module",
+    "hive-bridge/build/classes/kotlin/main/META-INF",
+    "hive-bridge/build/classes/kotlin/main/com/manahive/contracts/policy/HubPolicyChange.class",
+    "hive-bridge/build/classes/kotlin/main/com/manahive/messaging/Subjects.class",
+    "hive-bridge/build/classes/kotlin/main/com/manahive/messaging/NatsTopology.class",
+    "hive-bridge/build/classes/kotlin/main/com/manahive/messaging/NatsObjectMapper.class",
+    "hive-bridge/build/classes/kotlin/main/com/manahive/messaging/NatsConfig.class",
+    "hive-bridge/build/classes/kotlin/main/com/manahive/messaging/NatsClientConfiguration.class",
+    "hive-bridge/build/classes/kotlin/main/com/manahive/messaging/BusEvents.class",
+    "docs/integracion-hive-hub.md",
+    "docs/user-stories-director-medico.md",
+    "docs/big-picture/context-map.md",
     "docs/big-picture/README.md",
     "docs/big-picture/architecture-overview.md",
     "docs/design-memory/domain-language.md",
     "docs/big-picture/domain-model.md",
     "docs/big-picture/data-flow.md",
-    "docs/big-picture/context-map.md",
     "docs/design-memory/decision-records/ADR-001-domain-events.md",
     "docs/roadmap/README.md",
     "docs/archive/README.md",
-    "bootstrap/build/kotlin/compileKotlin/cacheable/dirty-sources.txt",
     "docs/DESTILADO.md",
-    "bootstrap/src/main/kotlin/com/hub/views/AlarmProfileController.kt",
     "docs/archive/data-model-mermaid.md",
     "docs/roadmap/sprint-04-care.md",
     "docs/archive/roadmap/README.md",
@@ -212,19 +222,9 @@
     "docs/archive/roadmap/sprint-03-observation.md",
     "docs/archive/roadmap/sprint-02-monitoring.md",
     "docs/archive/roadmap/sprint-01-core.md",
-    "docs/archive/roadmap",
-    "docs/archive",
-    "bootstrap/build/classes/kotlin/main/com/hub/views/ProjectionService$getFallsTab$$inlined$sortedByDescending$1.class",
-    "bootstrap/build/classes/kotlin/main/com/hub/views/ProjectionController.class",
-    "bootstrap/build/classes/kotlin/main/META-INF/com.hub_bootstrap.kotlin_module",
-    "bootstrap/build/classes/kotlin/main/com/hub/views/ProjectionService.class",
-    "bootstrap/src/main/kotlin/com/hub/views/AlarmProjectionController.kt",
-    "bootstrap/src/main/kotlin/com/hub/views/EpisodeProjectionController.kt",
     "docs/roadmap/sprint-01-core.md",
     "docs/vocabulario-unificado.md",
-    "docs/user-stories-director-medico.md",
     "api.md",
-    "AGENTS.md",
-    "docs/roadmap/sprint-02-monitoring.md"
+    "AGENTS.md"
   ]
 }

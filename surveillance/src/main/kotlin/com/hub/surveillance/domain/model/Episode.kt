@@ -63,6 +63,19 @@ class Episode private constructor(
         )
     }
 
+    /** Ventana: si llega señal más severa dentro del mismo episodio abierto, eleva severidad */
+    fun elevateSeverity(newSeverity: EpisodeSeverity, newDetail: String?): Episode {
+        if (!newSeverity.isMoreSevereThan(this.severity)) return this
+        return reconstitute(
+            id = id, residentId = residentId, bedId = bedId, evidenceKind = evidenceKind,
+            evidenceRef = evidenceRef, ruleId = ruleId, severity = newSeverity, status = status,
+            statusActorId = statusActorId, statusAt = statusAt,
+            title = title, detail = newDetail ?: detail, occurredAt = occurredAt,
+            escalationLevel = escalationLevel, escalatedAt = escalatedAt,
+            escalatedTo = escalatedTo, version = version + 1
+        )
+    }
+
     companion object {
         fun create(
             residentId: ResidentId, bedId: BedId?, severity: EpisodeSeverity, title: String?,

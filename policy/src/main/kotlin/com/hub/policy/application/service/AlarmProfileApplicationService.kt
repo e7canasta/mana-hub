@@ -4,15 +4,30 @@ import com.hub.policy.application.dto.*
 import com.hub.policy.domain.model.*
 import com.hub.policy.domain.repository.AlarmProfileOverrideRepository
 import com.hub.policy.domain.repository.AlarmProfileRepository
+import com.hub.shared.domain.DomainEvent
+import com.hub.shared.domain.DomainEventPublisher
 import com.hub.shared.domain.ResidentId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
+import java.util.UUID
+
+data class AlarmProfileChangedEvent(
+    override val eventId: String = UUID.randomUUID().toString(),
+    override val occurredAt: Instant = Instant.now(),
+    override val eventType: String = "AlarmProfileChanged",
+    val residentId: String,
+    val versionId: String,
+    val riskLevel: String,
+    val templateId: String?
+) : DomainEvent
 
 @Service
 class AlarmProfileApplicationService(
     private val alarmProfileRepository: AlarmProfileRepository,
     private val alarmProfileOverrideRepository: AlarmProfileOverrideRepository,
-    private val auditService: com.hub.audit.domain.service.AuditService
+    private val auditService: com.hub.audit.domain.service.AuditService,
+    private val eventPublisher: DomainEventPublisher
 ) {
 
     @Transactional(readOnly = true)
@@ -89,6 +104,16 @@ class AlarmProfileApplicationService(
                 metadataJson = """{"reason":"${request.reason.replace("\"", "\\\"")}","riskLevel":"${riskLevel.name}"}"""
             )
         }
+
+        // Publish domain event for hub→hive bridge (outbox pattern)
+        eventPublisher.publish(
+            AlarmProfileChangedEvent(
+                residentId = residentId,
+                versionId = newProfile.id.value,
+                riskLevel = riskLevel.name,
+                templateId = templateId?.value
+            )
+        )
 
         return getResidentProfile(residentId)!!
     }
