@@ -1,0 +1,2 @@
+ALTER TABLE sleep_summaries ADD COLUMN IF NOT EXISTS started_at TIMESTAMP;
+ALTER TABLE sleep_summaries ADD COLUMN IF NOT EXISTS ended_at TIMESTAMP;

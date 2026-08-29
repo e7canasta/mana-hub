@@ -14,5 +14,6 @@ data class CurrentBedState(
     val stateSince: Instant,
     val updated: Instant,
     val source: String?,
-    val sourceEventId: String?
+    val sourceEventId: String?,
+    val staffPresent: Boolean? = null
 )

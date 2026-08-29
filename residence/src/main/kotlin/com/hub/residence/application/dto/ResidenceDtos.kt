@@ -1,5 +1,6 @@
 package com.hub.residence.application.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.hub.residence.domain.model.*
 
 data class CreateFacilityRequest(
@@ -16,7 +17,7 @@ data class FacilityResponse(
     val id: String,
     val name: String,
     val timezone: String,
-    val isRetired: Boolean
+    @JsonProperty("isRetired") val isRetired: Boolean
 )
 
 data class CreateWingRequest(
@@ -37,7 +38,7 @@ data class WingResponse(
     val name: String,
     val floor: String?,
     val sortOrder: Int,
-    val isRetired: Boolean
+    @JsonProperty("isRetired") val isRetired: Boolean
 )
 
 data class CreateRoomRequest(
@@ -58,7 +59,7 @@ data class RoomResponse(
     val number: String,
     val roomType: String?,
     val streamKey: String?,
-    val isRetired: Boolean
+    @JsonProperty("isRetired") val isRetired: Boolean
 )
 
 data class CreateBedRequest(
@@ -76,7 +77,7 @@ data class BedResponse(
     val roomId: String,
     val label: String,
     val monitorKey: String?,
-    val isRetired: Boolean
+    @JsonProperty("isRetired") val isRetired: Boolean
 )
 
 data class FacilityTreeResponse(

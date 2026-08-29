@@ -11,7 +11,7 @@ data class FacilityResponse(
     val id: String,
     val name: String,
     val timezone: String,
-    @JsonProperty("retired") val isRetired: Boolean = false
+    @JsonProperty("isRetired") val isRetired: Boolean = false
 )
 
 data class CreateWingRequest(
@@ -26,7 +26,7 @@ data class WingResponse(
     val name: String,
     val floor: String? = null,
     val sortOrder: Int = 0,
-    @JsonProperty("retired") val isRetired: Boolean = false
+    @JsonProperty("isRetired") val isRetired: Boolean = false
 )
 
 data class CreateRoomRequest(
@@ -41,7 +41,7 @@ data class RoomResponse(
     val number: String,
     val roomType: String? = null,
     val streamKey: String? = null,
-    @JsonProperty("retired") val isRetired: Boolean = false
+    @JsonProperty("isRetired") val isRetired: Boolean = false
 )
 
 data class CreateBedRequest(
@@ -54,7 +54,7 @@ data class BedResponse(
     @JsonProperty("roomId") val roomId: String,
     val label: String,
     val monitorKey: String? = null,
-    @JsonProperty("retired") val isRetired: Boolean = false
+    @JsonProperty("isRetired") val isRetired: Boolean = false
 )
 
 data class FacilityTreeResponse(

@@ -1,7 +1,9 @@
 package com.hub.observation.api.rest
 
 import com.hub.observation.application.dto.*
+import com.hub.observation.application.service.BedStateService
 import com.hub.observation.application.service.ObservationApplicationService
+import com.hub.observation.application.service.SummaryQueryService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
@@ -9,7 +11,9 @@ import java.time.LocalDate
 @RestController
 @RequestMapping("/api/v1")
 class ObservationController(
-    private val observationApplicationService: ObservationApplicationService
+    private val observationApplicationService: ObservationApplicationService,
+    private val summaryQueryService: SummaryQueryService,
+    private val bedStateService: BedStateService
 ) {
 
     @GetMapping("/wings/{wingId}/board")
@@ -30,15 +34,15 @@ class ObservationController(
         @RequestParam to: LocalDate? = null
     ): ResponseEntity<Any> {
         return if (from != null && to != null) {
-            ResponseEntity.ok(observationApplicationService.getSleepSummaryRange(residentId, from, to))
+            ResponseEntity.ok(summaryQueryService.getSleepSummaryRange(residentId, from, to))
         } else if (date != null) {
-            val summary = observationApplicationService.getSleepSummary(residentId, date)
+            val summary = summaryQueryService.getSleepSummary(residentId, date)
             if (summary != null) ResponseEntity.ok(summary)
             else ResponseEntity.ok(mapOf("residentId" to residentId, "summaries" to emptyList<Any>()))
         } else {
             val toDefault = LocalDate.now()
             val fromDefault = toDefault.minusDays(13)
-            ResponseEntity.ok(observationApplicationService.getSleepSummaryRange(residentId, fromDefault, toDefault))
+            ResponseEntity.ok(summaryQueryService.getSleepSummaryRange(residentId, fromDefault, toDefault))
         }
     }
 
@@ -50,15 +54,15 @@ class ObservationController(
         @RequestParam to: LocalDate? = null
     ): ResponseEntity<Any> {
         return if (from != null && to != null) {
-            ResponseEntity.ok(observationApplicationService.getMobilitySummaryRange(residentId, from, to))
+            ResponseEntity.ok(summaryQueryService.getMobilitySummaryRange(residentId, from, to))
         } else if (date != null) {
-            val summary = observationApplicationService.getMobilitySummary(residentId, date)
+            val summary = summaryQueryService.getMobilitySummary(residentId, date)
             if (summary != null) ResponseEntity.ok(summary)
             else ResponseEntity.ok(mapOf("residentId" to residentId, "summaries" to emptyList<Any>()))
         } else {
             val toDefault = LocalDate.now()
             val fromDefault = toDefault.minusDays(13)
-            ResponseEntity.ok(observationApplicationService.getMobilitySummaryRange(residentId, fromDefault, toDefault))
+            ResponseEntity.ok(summaryQueryService.getMobilitySummaryRange(residentId, fromDefault, toDefault))
         }
     }
 
@@ -70,21 +74,21 @@ class ObservationController(
         @RequestParam to: LocalDate? = null
     ): ResponseEntity<Any> {
         return if (from != null && to != null) {
-            ResponseEntity.ok(observationApplicationService.getBathroomSummaryRange(residentId, from, to))
+            ResponseEntity.ok(summaryQueryService.getBathroomSummaryRange(residentId, from, to))
         } else if (date != null) {
-            val summary = observationApplicationService.getBathroomSummary(residentId, date)
+            val summary = summaryQueryService.getBathroomSummary(residentId, date)
             if (summary != null) ResponseEntity.ok(summary)
             else ResponseEntity.ok(mapOf("residentId" to residentId, "summaries" to emptyList<Any>()))
         } else {
             val toDefault = LocalDate.now()
             val fromDefault = toDefault.minusDays(13)
-            ResponseEntity.ok(observationApplicationService.getBathroomSummaryRange(residentId, fromDefault, toDefault))
+            ResponseEntity.ok(summaryQueryService.getBathroomSummaryRange(residentId, fromDefault, toDefault))
         }
     }
 
     @GetMapping("/residents/{residentId}/current-state")
     fun getCurrentState(@PathVariable residentId: String): ResponseEntity<CurrentStateResponse> {
-        val state = observationApplicationService.getCurrentState(residentId)
+        val state = bedStateService.getCurrentState(residentId)
         return ResponseEntity.ok(state)
     }
 

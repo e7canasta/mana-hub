@@ -1,5 +1,6 @@
 package com.hub.identity.application.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.hub.identity.domain.model.Role
 import java.time.Instant
 
@@ -22,7 +23,7 @@ data class UserResponse(
     val displayName: String,
     val role: Role,
     val jobTitle: String?,
-    val isRetired: Boolean,
+    @JsonProperty("isRetired") val isRetired: Boolean,
     val createdAt: Instant?,
     val updatedAt: Instant?
 )

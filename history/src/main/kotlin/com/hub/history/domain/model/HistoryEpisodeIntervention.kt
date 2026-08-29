@@ -20,14 +20,17 @@ class HistoryEpisodeIntervention private constructor(
             performedAt: Instant,
             performedBy: StaffMemberId? = null,
             detail: String? = null
-        ): HistoryEpisodeIntervention = HistoryEpisodeIntervention(
-            id = InterventionId.random(),
-            episodeId = episodeId,
-            kind = kind,
-            performedAt = performedAt,
-            performedBy = performedBy,
-            detail = detail
-        )
+        ): HistoryEpisodeIntervention {
+            require(performedAt.isBefore(Instant.now().plusSeconds(3600))) { "performedAt cannot be in the far future" }
+            return HistoryEpisodeIntervention(
+                id = InterventionId.random(),
+                episodeId = episodeId,
+                kind = kind,
+                performedAt = performedAt,
+                performedBy = performedBy,
+                detail = detail
+            )
+        }
 
         fun reconstitute(
             id: InterventionId,

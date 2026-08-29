@@ -39,6 +39,19 @@ interface EpisodeEntityRepository : JpaRepository<EpisodeEntity, String> {
     fun findByResidentId(residentId: String): List<EpisodeEntity>
     @Query("SELECT e FROM EpisodeEntity e WHERE e.status = 'pending'")
     fun findPending(): List<EpisodeEntity>
+    @Query("""
+        SELECT e FROM EpisodeEntity e
+        WHERE (:residentId IS NULL OR e.residentId = :residentId)
+          AND (:status IS NULL OR e.status = :status)
+          AND (:fromDate IS NULL OR e.occurredAt >= :fromDate)
+          AND (:toDate IS NULL OR e.occurredAt <= :toDate)
+    """)
+    fun findFiltered(
+        residentId: String?,
+        status: String?,
+        fromDate: Instant?,
+        toDate: Instant?
+    ): List<EpisodeEntity>
 }
 
 @Repository
@@ -46,6 +59,8 @@ class EpisodeRepositoryAdapter(private val jpa: EpisodeEntityRepository) : Episo
     override fun findById(id: EpisodeId): Episode? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByResidentId(residentId: ResidentId): List<Episode> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
     override fun findPending(): List<Episode> = jpa.findPending().map { it.toDomain() }
+    override fun findFiltered(residentId: ResidentId?, status: String?, from: java.time.Instant?, to: java.time.Instant?): List<Episode> =
+        jpa.findFiltered(residentId?.value, status, from, to).map { it.toDomain() }
     override fun save(episode: Episode): Episode {
         val existing = jpa.findById(episode.id.value).orElse(null)
         val entity = episode.toEntity()

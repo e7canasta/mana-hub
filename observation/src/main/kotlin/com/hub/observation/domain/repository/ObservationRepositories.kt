@@ -16,6 +16,7 @@ interface CurrentBedStateRepository {
     fun findByBedId(bedId: BedId): CurrentBedState?
     fun findAll(): List<CurrentBedState>
     fun save(state: CurrentBedState): CurrentBedState
+    fun updateStaffPresent(bedId: BedId, present: Boolean)
 }
 
 interface SummaryRepository {
@@ -33,5 +34,6 @@ interface SummaryRepository {
 interface NotificationEventRepository {
     fun findByResidentId(residentId: ResidentId): List<NotificationEvent>
     fun findByBedId(bedId: BedId): List<NotificationEvent>
+    fun findStaffPresenceEvents(bedId: BedId, since: Instant): List<NotificationEvent>
     fun save(event: NotificationEvent): NotificationEvent
 }

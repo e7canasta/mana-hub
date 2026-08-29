@@ -7,6 +7,7 @@ import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 
 @Service
 class EpisodeApplicationService(
@@ -29,8 +30,20 @@ class EpisodeApplicationService(
     }
 
     @Transactional(readOnly = true)
-    fun listEpisodes(): List<EpisodeResponse> {
-        return episodeRepository.findPending().map { it.toResponse() }
+    fun listEpisodes(
+        residentId: String? = null,
+        status: String? = null,
+        from: String? = null,
+        to: String? = null
+    ): List<EpisodeResponse> {
+        val fromInstant = from?.let { Instant.parse(it) }
+        val toInstant = to?.let { Instant.parse(it) }
+        return episodeRepository.findFiltered(
+            residentId = residentId?.let { ResidentId(it) },
+            status = status,
+            from = fromInstant,
+            to = toInstant
+        ).map { it.toResponse() }
     }
 
     @Transactional(readOnly = true)

@@ -1,5 +1,6 @@
 package com.hub.surveillance.application.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.hub.surveillance.domain.model.EpisodeSeverity
 import java.time.Instant
 
@@ -24,7 +25,7 @@ data class EpisodeResponse(
     val detail: String?,
     val occurredAt: Instant,
     val escalationLevel: Int,
-    val isPending: Boolean
+    @JsonProperty("isPending") val isPending: Boolean
 )
 
 data class AcknowledgeEpisodeRequest(

@@ -30,14 +30,18 @@ class HistoryEpisode private constructor(
         fun create(
             sourceRecordId: String, residentId: ResidentId, bedId: BedId?, kind: EpisodeKind,
             severity: HistoryEpisodeSeverity, occurredAt: Instant, source: EventSource
-        ): HistoryEpisode = HistoryEpisode(
-            id = HistoryEpisodeId.random(), sourceRecordId = sourceRecordId, residentId = residentId,
-            bedId = bedId, sourceAlertId = null, kind = kind, severity = severity,
-            occurredAt = occurredAt, activity = null, injuryStatus = null,
-            selfRecovery = false, responseSeconds = null, narrative = null,
-            source = source, modelVersion = null, confidence = null,
-            provenanceJson = "{}", version = 0
-        )
+        ): HistoryEpisode {
+            require(sourceRecordId.isNotBlank()) { "sourceRecordId must not be blank" }
+            require(occurredAt.isBefore(Instant.now().plusSeconds(3600))) { "occurredAt cannot be in the far future" }
+            return HistoryEpisode(
+                id = HistoryEpisodeId.random(), sourceRecordId = sourceRecordId, residentId = residentId,
+                bedId = bedId, sourceAlertId = null, kind = kind, severity = severity,
+                occurredAt = occurredAt, activity = null, injuryStatus = null,
+                selfRecovery = false, responseSeconds = null, narrative = null,
+                source = source, modelVersion = null, confidence = null,
+                provenanceJson = "{}", version = 0
+            )
+        }
 
         fun reconstitute(data: HistoryEpisodeData): HistoryEpisode = HistoryEpisode(
             id = data.id, sourceRecordId = data.sourceRecordId, residentId = data.residentId,

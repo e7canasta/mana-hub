@@ -2,8 +2,6 @@ package com.hub.identity.domain.model
 
 import com.hub.shared.domain.AggregateRoot
 import com.hub.shared.domain.UserId
-import com.hub.identity.domain.event.UserCreated
-import com.hub.identity.domain.event.UserRetired
 import java.time.Instant
 
 class User private constructor(
@@ -22,7 +20,6 @@ class User private constructor(
 
     fun retire(actorId: UserId): User {
         require(!isRetired) { "User is already retired" }
-        registerEvent(UserRetired(id = id, actorId = actorId))
         return reconstitute(
             id = id, username = username, displayName = displayName, role = role,
             jobTitle = jobTitle, passwordHash = passwordHash,
@@ -57,9 +54,7 @@ class User private constructor(
                 retiredAt = null,
                 retiredBy = null,
                 version = 0
-            ).also {
-                it.registerEvent(UserCreated(userId = id, username = username))
-            }
+            )
         }
 
         fun reconstitute(

@@ -28,7 +28,7 @@ data class TimelineResponse(
     @JsonProperty("residentId") val residentId: String,
     @JsonProperty("windowStart") val windowStart: Instant,
     @JsonProperty("windowEnd") val windowEnd: Instant? = null,
-    @JsonProperty("open") val isOpen: Boolean
+    @JsonProperty("isOpen") val isOpen: Boolean
 )
 
 data class ClipWindowResponse(

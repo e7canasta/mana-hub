@@ -25,7 +25,7 @@ data class EpisodeResponse(
     val detail: String? = null,
     @JsonProperty("occurredAt") val occurredAt: Instant,
     @JsonProperty("escalationLevel") val escalationLevel: Int = 0,
-    @JsonProperty("pending") val isPending: Boolean = true
+    @JsonProperty("isPending") val isPending: Boolean = true
 )
 
 data class AcknowledgeEpisodeRequest(

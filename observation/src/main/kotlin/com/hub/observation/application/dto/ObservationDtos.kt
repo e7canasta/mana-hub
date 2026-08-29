@@ -2,6 +2,7 @@ package com.hub.observation.application.dto
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 data class IngestEventRequest(
     val sourceEventId: String,
@@ -32,7 +33,9 @@ data class SleepSummaryData(
     val awakeMinutes: Int = 0,
     val outOfBedMinutes: Int = 0,
     val bedExitCount: Int = 0,
-    val wakeCount: Int = 0
+    val wakeCount: Int = 0,
+    val startedAt: LocalDateTime? = null,
+    val endedAt: LocalDateTime? = null
 )
 
 data class MobilitySummaryData(
@@ -57,7 +60,8 @@ data class BedStateResponse(
     val roomState: String?,
     val state: String?,
     val sleeping: Boolean?,
-    val stateSince: Instant
+    val stateSince: Instant,
+    val staffPresent: Boolean? = null
 )
 
 data class SleepSummaryResponse(
@@ -68,7 +72,9 @@ data class SleepSummaryResponse(
     val awakeMinutes: Int,
     val outOfBedMinutes: Int,
     val bedExitCount: Int,
-    val wakeCount: Int
+    val wakeCount: Int,
+    val startedAt: LocalDateTime? = null,
+    val endedAt: LocalDateTime? = null
 )
 
 data class SleepSummaryListResponse(

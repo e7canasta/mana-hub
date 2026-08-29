@@ -115,8 +115,8 @@ class ResidentApplicationService(
         }
     }
 
-    private fun Resident.toResponse(): ResidentResponse {
-        val assignment = assignmentRepository.findOpenByResidentId(id)
+    private fun Resident.toResponse(prefetchedAssignment: BedAssignment? = null): ResidentResponse {
+        val assignment = prefetchedAssignment ?: assignmentRepository.findOpenByResidentId(id)
         val location = if (assignment != null) {
             val bed = bedRepository.findById(assignment.bedId)
             val room = bed?.let { roomRepository.findById(it.roomId) }

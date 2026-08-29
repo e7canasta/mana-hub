@@ -1,5 +1,6 @@
 package com.hub.evidence.application.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 
 data class CreateEvidenceRequest(
@@ -26,7 +27,7 @@ data class TimelineResponse(
     val residentId: String,
     val windowStart: Instant,
     val windowEnd: Instant?,
-    val isOpen: Boolean
+    @JsonProperty("isOpen") val isOpen: Boolean
 )
 
 data class ClipWindowResponse(

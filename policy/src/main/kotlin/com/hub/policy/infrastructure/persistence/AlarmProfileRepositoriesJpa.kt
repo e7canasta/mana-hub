@@ -20,7 +20,6 @@ class AlarmProfileVersionEntity(
     @Column(name = "autopilot") var autopilot: Boolean = false,
     @Column(name = "mode") var mode: String? = null,
     @Column(name = "template_id") var templateId: String? = null,
-    @Column(name = "overrides_json") var overridesJson: String = "{}",
     @Column(name = "catalog_version") var catalogVersion: String? = null,
     @Column(name = "updated_by") var updatedBy: String? = null,
     @Column(name = "created_at") var createdAt: Instant = Instant.now(),
@@ -48,12 +47,19 @@ class AlarmProfileRepositoryAdapter(private val jpa: AlarmProfileVersionEntityRe
     }
 
     private fun AlarmProfileVersionEntity.toDomain() = AlarmProfileVersion.reconstitute(
-        AlarmProfileId(id), ResidentId(residentId), validFrom, validTo, mobilityAid,
-        autopilot, mode, templateId, overridesJson, catalogVersion, updatedBy,
+        AlarmProfileId(id), ResidentId(residentId), validFrom, validTo,
+        mobilityAid?.let { MobilityAid.from(it) },
+        autopilot,
+        mode?.let { PolicyMode.from(it) },
+        templateId?.let { TemplateId.from(it) },
+        catalogVersion, updatedBy,
         RiskLevel.from(riskLevel), version
     )
     private fun AlarmProfileVersion.toEntity() = AlarmProfileVersionEntity(
-        id.value, residentId.value, validFrom, validTo, mobilityAid, autopilot, mode,
-        templateId, overridesJson, catalogVersion, updatedBy, Instant.now(), riskLevel.name.lowercase()
+        id.value, residentId.value, validFrom, validTo,
+        mobilityAid?.name?.lowercase(), autopilot,
+        mode?.name?.lowercase(),
+        templateId?.value,
+        catalogVersion, updatedBy, Instant.now(), riskLevel.name.lowercase()
     )
 }

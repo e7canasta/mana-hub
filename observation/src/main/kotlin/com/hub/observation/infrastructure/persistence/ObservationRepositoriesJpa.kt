@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Entity
 @Table(name = "sensor_events")
@@ -46,7 +47,8 @@ class CurrentBedStateEntity(
     @Column(name = "state_since") var stateSince: Instant = Instant.now(),
     @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
     @Column(name = "source") var source: String? = null,
-    @Column(name = "source_event_id") var sourceEventId: String? = null
+    @Column(name = "source_event_id") var sourceEventId: String? = null,
+    @Column(name = "staff_present") var staffPresent: Boolean? = null
 )
 
 @Entity
@@ -65,6 +67,8 @@ class SleepSummaryEntity(
     @Column(name = "source") var source: String? = null,
     @Column(name = "model_version") var modelVersion: String? = null,
     @Column(name = "confidence") var confidence: Double? = null,
+    @Column(name = "started_at") var startedAt: LocalDateTime? = null,
+    @Column(name = "ended_at") var endedAt: LocalDateTime? = null,
     @Column(name = "created_at") var createdAt: Instant = Instant.now(),
     @Column(name = "updated_at") var updatedAt: Instant = Instant.now()
 )
@@ -154,6 +158,7 @@ class NotificationEventEntity(
 interface NotificationEventEntityRepository : JpaRepository<NotificationEventEntity, String> {
     fun findByResidentId(residentId: String): List<NotificationEventEntity>
     fun findByBedId(bedId: String): List<NotificationEventEntity>
+    fun findByBedIdAndEventTypeInAndTimestampAfter(bedId: String, eventTypes: List<String>, since: Instant): List<NotificationEventEntity>
 }
 
 @Repository
@@ -177,14 +182,21 @@ class CurrentBedStateRepositoryAdapter(private val jpa: CurrentBedStateEntityRep
     override fun findByBedId(bedId: BedId): CurrentBedState? = jpa.findById(bedId.value).orElse(null)?.toDomain()
     override fun findAll(): List<CurrentBedState> = jpa.findAll().map { it.toDomain() }
     override fun save(state: CurrentBedState): CurrentBedState = jpa.save(state.toEntity()).toDomain()
+    override fun updateStaffPresent(bedId: BedId, present: Boolean) {
+        jpa.findById(bedId.value).ifPresent { entity ->
+            entity.staffPresent = present
+            entity.updatedAt = Instant.now()
+            jpa.save(entity)
+        }
+    }
 
     private fun CurrentBedStateEntity.toDomain() = CurrentBedState(
         BedId(bedId), residentId?.let { ResidentId(it) }, roomState, state, substate,
-        sleeping, stateSince, updatedAt, source, sourceEventId
+        sleeping, stateSince, updatedAt, source, sourceEventId, staffPresent
     )
     private fun CurrentBedState.toEntity() = CurrentBedStateEntity(
         bedId.value, residentId?.value, roomState, state, substate, sleeping,
-        stateSince, updated, source, sourceEventId
+        stateSince, updated, source, sourceEventId, staffPresent
     )
 }
 
@@ -219,12 +231,13 @@ class SummaryRepositoryAdapter(
     private fun SleepSummaryEntity.toDomain() = SleepSummary(
         Identifier(id), sourceRecordId, ResidentId(residentId), observedOn,
         calmMinutes, restlessMinutes, awakeMinutes, outOfBedMinutes,
-        bedExitCount, wakeCount, source, modelVersion, confidence
+        bedExitCount, wakeCount, source, modelVersion, confidence,
+        startedAt, endedAt
     )
     private fun SleepSummary.toEntity() = SleepSummaryEntity(
         id.value, sourceRecordId, residentId.value, observedOn, calmMinutes,
         restlessMinutes, awakeMinutes, outOfBedMinutes, bedExitCount, wakeCount,
-        source, modelVersion, confidence, Instant.now(), Instant.now()
+        source, modelVersion, confidence, startedAt, endedAt, Instant.now(), Instant.now()
     )
 
     private fun MobilitySummaryEntity.toDomain() = MobilitySummary(
@@ -253,6 +266,10 @@ class SummaryRepositoryAdapter(
 class NotificationEventRepositoryAdapter(private val jpa: NotificationEventEntityRepository) : NotificationEventRepository {
     override fun findByResidentId(residentId: ResidentId): List<NotificationEvent> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
     override fun findByBedId(bedId: BedId): List<NotificationEvent> = jpa.findByBedId(bedId.value).map { it.toDomain() }
+    override fun findStaffPresenceEvents(bedId: BedId, since: Instant): List<NotificationEvent> =
+        jpa.findByBedIdAndEventTypeInAndTimestampAfter(bedId.value, listOf("staff_entered", "staff_exited"), since)
+            .sortedBy { it.timestamp }
+            .map { it.toDomain() }
     override fun save(event: NotificationEvent): NotificationEvent = jpa.save(event.toEntity()).toDomain()
 
     private fun NotificationEventEntity.toDomain() = NotificationEvent(

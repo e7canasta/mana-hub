@@ -37,7 +37,8 @@ data class BedStateResponse(
     @JsonProperty("roomState") val roomState: String? = null,
     val state: String? = null,
     val sleeping: Boolean? = null,
-    @JsonProperty("stateSince") val stateSince: Instant
+    @JsonProperty("stateSince") val stateSince: Instant,
+    @JsonProperty("staffPresent") val staffPresent: Boolean? = null
 )
 
 data class SleepSummaryResponse(

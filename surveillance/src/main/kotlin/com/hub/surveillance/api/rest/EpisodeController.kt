@@ -19,8 +19,13 @@ class EpisodeController(
     }
 
     @GetMapping
-    fun listEpisodes(): ResponseEntity<List<EpisodeResponse>> {
-        return ResponseEntity.ok(episodeApplicationService.listEpisodes())
+    fun listEpisodes(
+        @RequestParam residentId: String? = null,
+        @RequestParam status: String? = null,
+        @RequestParam from: String? = null,
+        @RequestParam to: String? = null
+    ): ResponseEntity<List<EpisodeResponse>> {
+        return ResponseEntity.ok(episodeApplicationService.listEpisodes(residentId, status, from, to))
     }
 
     @GetMapping("/{episodeId}")

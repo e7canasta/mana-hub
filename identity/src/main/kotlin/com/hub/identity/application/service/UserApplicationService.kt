@@ -7,15 +7,13 @@ import com.hub.identity.domain.model.User
 import com.hub.shared.domain.UserId
 import com.hub.identity.domain.repository.UserRepository
 import com.hub.identity.domain.service.AuthenticationService
-import com.hub.shared.domain.DomainEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class UserApplicationService(
     private val userRepository: UserRepository,
-    private val authenticationService: AuthenticationService,
-    private val eventPublisher: DomainEventPublisher
+    private val authenticationService: AuthenticationService
 ) {
 
     @Transactional
@@ -34,7 +32,6 @@ class UserApplicationService(
         )
 
         val saved = userRepository.save(user)
-        eventPublisher.publishAll(saved.pullEvents())
         return saved.toResponse()
     }
 
@@ -71,7 +68,6 @@ class UserApplicationService(
 
         val retired = user.retire(actorId)
         val saved = userRepository.save(retired)
-        eventPublisher.publishAll(saved.pullEvents())
         return saved.toResponse()
     }
 

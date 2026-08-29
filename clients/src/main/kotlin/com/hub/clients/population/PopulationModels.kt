@@ -17,7 +17,7 @@ data class ResidentResponse(
     val birthDate: LocalDate? = null,
     val admissionDate: LocalDate,
     val status: ResidentStatus,
-    @JsonProperty("discharged") val isDischarged: Boolean = false,
+    @JsonProperty("isDischarged") val isDischarged: Boolean = false,
     val externalId: String? = null
 )
 
@@ -31,7 +31,7 @@ data class AssignmentResponse(
     @JsonProperty("bedId") val bedId: String,
     val startsAt: Instant,
     val endsAt: Instant? = null,
-    @JsonProperty("open") val isOpen: Boolean = false
+    @JsonProperty("isOpen") val isOpen: Boolean = false
 )
 
 data class DischargeRequest(

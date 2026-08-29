@@ -1,5 +1,6 @@
 package com.hub.population.application.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.hub.population.domain.model.ResidentStatus
 import java.time.Instant
 import java.time.LocalDate
@@ -31,7 +32,7 @@ data class ResidentResponse(
     val birthDate: LocalDate?,
     val admissionDate: LocalDate,
     val status: ResidentStatus,
-    val isDischarged: Boolean,
+    @JsonProperty("isDischarged") val isDischarged: Boolean,
     val location: ResidentLocation? = null
 )
 
@@ -45,7 +46,7 @@ data class AssignmentResponse(
     val bedId: String,
     val startsAt: Instant,
     val endsAt: Instant?,
-    val isOpen: Boolean
+    @JsonProperty("isOpen") val isOpen: Boolean
 )
 
 data class OpenAssignmentResponse(

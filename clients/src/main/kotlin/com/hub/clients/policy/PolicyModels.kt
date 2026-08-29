@@ -14,7 +14,7 @@ data class AlarmProfileResponse(
     @JsonProperty("templateId") val templateId: String? = null,
     @JsonProperty("overridesJson") val overridesJson: String = "{}",
     @JsonProperty("riskLevel") val riskLevel: RiskLevel = RiskLevel.MEDIUM,
-    @JsonProperty("current") val isCurrent: Boolean = true
+    @JsonProperty("isCurrent") val isCurrent: Boolean = true
 )
 
 data class UpdateAlarmProfileRequest(

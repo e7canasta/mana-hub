@@ -31,20 +31,26 @@ class CareSummary private constructor(
             source: String? = null,
             modelVersion: String? = null,
             confidence: Double? = null
-        ): CareSummary = CareSummary(
-            id = CareSummaryId.random(),
-            sourceRecordId = sourceRecordId,
-            residentId = residentId,
-            observedOn = observedOn,
-            totalMinutes = totalMinutes,
-            proactiveMinutes = proactiveMinutes,
-            roundsCount = roundsCount,
-            notesCount = notesCount,
-            source = source,
-            modelVersion = modelVersion,
-            confidence = confidence,
-            version = 0
-        )
+        ): CareSummary {
+            require(sourceRecordId.isNotBlank()) { "sourceRecordId must not be blank" }
+            require(totalMinutes >= 0) { "totalMinutes must not be negative" }
+            require(proactiveMinutes >= 0) { "proactiveMinutes must not be negative" }
+            require(proactiveMinutes <= totalMinutes) { "proactiveMinutes cannot exceed totalMinutes" }
+            return CareSummary(
+                id = CareSummaryId.random(),
+                sourceRecordId = sourceRecordId,
+                residentId = residentId,
+                observedOn = observedOn,
+                totalMinutes = totalMinutes,
+                proactiveMinutes = proactiveMinutes,
+                roundsCount = roundsCount,
+                notesCount = notesCount,
+                source = source,
+                modelVersion = modelVersion,
+                confidence = confidence,
+                version = 0
+            )
+        }
 
         fun reconstitute(
             id: CareSummaryId,

@@ -2,6 +2,7 @@ package com.hub.policy.application.service
 
 import com.hub.policy.application.dto.*
 import com.hub.policy.domain.model.*
+import com.hub.policy.domain.repository.AlarmProfileOverrideRepository
 import com.hub.policy.domain.repository.AlarmProfileRepository
 import com.hub.shared.domain.ResidentId
 import org.springframework.stereotype.Service
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class AlarmProfileApplicationService(
     private val alarmProfileRepository: AlarmProfileRepository,
+    private val alarmProfileOverrideRepository: AlarmProfileOverrideRepository,
     private val auditService: com.hub.audit.domain.service.AuditService
 ) {
 
@@ -22,6 +24,9 @@ class AlarmProfileApplicationService(
         val catalog = DagCatalogs.forLevel(watchLevel)
         val traits = resolveTraits(version)
 
+        val typedOverrides = alarmProfileOverrideRepository.findByProfileVersionId(version.id.value)
+        val overridesMap = typedOverridesToMap(typedOverrides)
+
         return AlarmProfileResponse(
             resident = AlarmProfileResidentDto(
                 id = residentId,
@@ -30,11 +35,11 @@ class AlarmProfileApplicationService(
             ),
             profile = AlarmProfileSettingsDto(
                 riskLevel = version.riskLevel.name.lowercase(),
-                mobilityAid = version.mobilityAid ?: "none",
+                mobilityAid = version.mobilityAid?.name?.lowercase() ?: "none",
                 autopilot = version.autopilot,
-                mode = version.mode ?: "preset",
-                templateId = version.templateId ?: watchLevel.name.lowercase(),
-                overrides = emptyMap(),
+                mode = version.mode?.name?.lowercase() ?: "preset",
+                templateId = version.templateId?.value ?: watchLevel.name.lowercase(),
+                overrides = overridesMap,
                 updatedAt = version.validFrom.toString(),
                 updatedBy = version.updatedBy,
                 updatedByName = null,
@@ -51,19 +56,29 @@ class AlarmProfileApplicationService(
         alarmProfileRepository.expireCurrentByResidentId(rid)
 
         val riskLevel = request.riskLevel?.let { RiskLevel.from(it) } ?: RiskLevel.MEDIUM
-        val templateId = request.templateId ?: resolveWatchLevel(riskLevel, null).name.lowercase()
+        val templateId = request.templateId?.let { TemplateId.from(it) }
+            ?: TemplateId.from(resolveWatchLevel(riskLevel, null).name.lowercase())
 
         val newProfile = AlarmProfileVersion.create(rid, request.updatedBy).update(
-            mobilityAid = request.mobilityAid,
+            mobilityAid = request.mobilityAid?.let { MobilityAid.from(it) },
             autopilot = request.autopilot,
-            mode = request.mode,
+            mode = request.mode?.let { PolicyMode.from(it) },
             templateId = templateId,
-            overridesJson = request.overridesJson,
             riskLevel = riskLevel,
             updatedBy = request.updatedBy,
         )
 
         alarmProfileRepository.save(newProfile)
+
+        if (request.overridesJson != null && request.overridesJson != "{}") {
+            val overridesFromRequest = parseOverridesJson(request.overridesJson)
+            if (overridesFromRequest.isNotEmpty()) {
+                val typedOverrides = overridesMapToTyped(overridesFromRequest)
+                if (typedOverrides.isNotEmpty()) {
+                    alarmProfileOverrideRepository.saveAll(typedOverrides, newProfile.id.value)
+                }
+            }
+        }
 
         if (request.reason != null) {
             auditService.recordAction(
@@ -83,15 +98,17 @@ class AlarmProfileApplicationService(
         return alarmProfileRepository.findByResidentId(ResidentId(residentId)).map { version ->
             val watchLevel = resolveWatchLevel(version.riskLevel, version.templateId)
             val catalog = DagCatalogs.forLevel(watchLevel)
+            val typedOverrides = alarmProfileOverrideRepository.findByProfileVersionId(version.id.value)
+            val overridesMap = typedOverridesToMap(typedOverrides)
             AlarmProfileResponse(
                 resident = AlarmProfileResidentDto(id = residentId, fullName = "", traits = emptyList()),
                 profile = AlarmProfileSettingsDto(
                     riskLevel = version.riskLevel.name.lowercase(),
-                    mobilityAid = version.mobilityAid ?: "none",
+                    mobilityAid = version.mobilityAid?.name?.lowercase() ?: "none",
                     autopilot = version.autopilot,
-                    mode = version.mode ?: "preset",
-                    templateId = version.templateId ?: watchLevel.name.lowercase(),
-                    overrides = emptyMap(),
+                    mode = version.mode?.name?.lowercase() ?: "preset",
+                    templateId = version.templateId?.value ?: watchLevel.name.lowercase(),
+                    overrides = overridesMap,
                     updatedAt = version.validFrom.toString(),
                     updatedBy = version.updatedBy,
                     updatedByName = null,
@@ -126,10 +143,10 @@ class AlarmProfileApplicationService(
 
     // ── Private helpers ──────────────────────────────────────────────
 
-    private fun resolveWatchLevel(riskLevel: RiskLevel, templateId: String?): WatchLevel {
+    private fun resolveWatchLevel(riskLevel: RiskLevel, templateId: TemplateId?): WatchLevel {
         return when {
             templateId != null -> try {
-                WatchLevel.from(templateId)
+                WatchLevel.from(templateId.value)
             } catch (_: Exception) {
                 when (riskLevel) {
                     RiskLevel.LOW -> WatchLevel.STANDARD
@@ -148,8 +165,8 @@ class AlarmProfileApplicationService(
     private fun resolveTraits(version: AlarmProfileVersion): List<String> {
         val traits = mutableListOf<String>()
         if (version.riskLevel == RiskLevel.HIGH) traits.add("fall_risk")
-        if (version.mobilityAid == "wheelchair") traits.add("wheelchair_user")
-        if (version.mobilityAid == "walker") traits.add("walker_user")
+        if (version.mobilityAid == MobilityAid.WHEELCHAIR) traits.add("wheelchair_user")
+        if (version.mobilityAid == MobilityAid.WALKER) traits.add("walker_user")
         if (version.autopilot) traits.add("autopilot")
         return traits
     }
@@ -177,9 +194,9 @@ class AlarmProfileApplicationService(
 
         return AlarmEffectiveDto(
             level = watchLevel.name.lowercase(),
-            mobilityAid = version.mobilityAid ?: "none",
-            mode = version.mode ?: "preset",
-            templateId = version.templateId ?: watchLevel.name.lowercase(),
+            mobilityAid = version.mobilityAid?.name?.lowercase() ?: "none",
+            mode = version.mode?.name?.lowercase() ?: "preset",
+            templateId = version.templateId?.value ?: watchLevel.name.lowercase(),
             rules = rules,
         )
     }
@@ -209,6 +226,95 @@ class AlarmProfileApplicationService(
             suggestedTemplate = recommendedLevel.name.lowercase(),
             computedAt = version.validFrom.toString(),
         )
+    }
+
+    private fun parseOverridesJson(json: String): Map<String, Any> {
+        if (json.isBlank() || json == "{}") return emptyMap()
+        return try {
+            val mapper = com.fasterxml.jackson.databind.ObjectMapper()
+            @Suppress("UNCHECKED_CAST")
+            mapper.readValue(json, Map::class.java) as Map<String, Any>
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
+    private fun typedOverridesToMap(overrides: List<PolicyOverride>): Map<String, Any> {
+        val result = mutableMapOf<String, Any>()
+        for (o in overrides) {
+            val entry = mutableMapOf<String, Any>()
+            when (o) {
+                is PolicyOverride.HysteresisOverride -> {
+                    entry["type"] = "hysteresis"
+                    entry["transitionKey"] = o.transitionKey
+                    entry["hysteresisSeconds"] = o.hysteresisSeconds
+                }
+                is PolicyOverride.DwellOverride -> {
+                    entry["type"] = "dwell"
+                    entry["stateKind"] = o.stateKind
+                    if (o.warningAfterMinutes != null) entry["warningAfterMinutes"] = o.warningAfterMinutes
+                    if (o.alertAfterMinutes != null) entry["alertAfterMinutes"] = o.alertAfterMinutes
+                }
+                is PolicyOverride.ComeBackOverride -> {
+                    entry["type"] = "comeback"
+                    entry["baselineState"] = o.baselineState
+                    if (o.warningAfterMinutes != null) entry["warningAfterMinutes"] = o.warningAfterMinutes
+                    if (o.alertAfterMinutes != null) entry["alertAfterMinutes"] = o.alertAfterMinutes
+                    if (o.severity != null) entry["severity"] = o.severity
+                    if (o.closureCondition != null) entry["closureCondition"] = o.closureCondition
+                }
+            }
+            result[o.ruleId] = entry
+        }
+        return result
+    }
+
+    private fun overridesMapToTyped(map: Map<String, Any>): List<PolicyOverride> {
+        val result = mutableListOf<PolicyOverride>()
+        for ((ruleId, raw) in map) {
+            if (raw !is Map<*, *>) continue
+            val id = com.hub.shared.domain.Identifier()
+            val explicitType = raw["type"] as? String
+            val inferredType = explicitType ?: inferOverrideType(raw)
+            when (inferredType) {
+                "hysteresis" -> result.add(
+                    PolicyOverride.HysteresisOverride(
+                        id = id,
+                        ruleId = ruleId,
+                        transitionKey = raw["transitionKey"] as? String ?: "",
+                        hysteresisSeconds = (raw["hysteresisSeconds"] as? Number)?.toInt() ?: 0,
+                    )
+                )
+                "dwell" -> result.add(
+                    PolicyOverride.DwellOverride(
+                        id = id,
+                        ruleId = ruleId,
+                        stateKind = raw["stateKind"] as? String ?: ruleId,
+                        warningAfterMinutes = (raw["warningAfterMinutes"] as? Number)?.toInt(),
+                        alertAfterMinutes = (raw["alertAfterMinutes"] as? Number)?.toInt(),
+                    )
+                )
+                "comeback" -> result.add(
+                    PolicyOverride.ComeBackOverride(
+                        id = id,
+                        ruleId = ruleId,
+                        baselineState = raw["baselineState"] as? String ?: ruleId,
+                        warningAfterMinutes = (raw["warningAfterMinutes"] as? Number)?.toInt(),
+                        alertAfterMinutes = (raw["alertAfterMinutes"] as? Number)?.toInt(),
+                        severity = raw["severity"] as? String,
+                        closureCondition = raw["closureCondition"] as? String,
+                    )
+                )
+            }
+        }
+        return result
+    }
+
+    private fun inferOverrideType(raw: Map<*, *>): String {
+        if (raw.containsKey("hysteresisSeconds") || raw.containsKey("transitionKey")) return "hysteresis"
+        if (raw.containsKey("baselineState") || raw.containsKey("severity") || raw.containsKey("closureCondition")) return "comeback"
+        if (raw.containsKey("warningAfterMinutes") || raw.containsKey("alertAfterMinutes")) return "dwell"
+        return "dwell"
     }
 
     private fun buildCatalogGroups(): List<AlarmGroupDto> = listOf(

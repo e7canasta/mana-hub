@@ -8,5 +8,6 @@ data class CurrentStateResponse(
     val roomState: String?,
     val state: String?,
     val sleeping: Boolean?,
-    val stateSince: Instant?
+    val stateSince: Instant?,
+    val staffPresent: Boolean? = null
 )

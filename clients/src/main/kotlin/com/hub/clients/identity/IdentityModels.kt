@@ -33,7 +33,7 @@ data class UserResponse(
     @JsonProperty("displayName") val displayName: String,
     val role: Role,
     val jobTitle: String? = null,
-    @JsonProperty("retired") val isRetired: Boolean = false
+    @JsonProperty("isRetired") val isRetired: Boolean = false
 )
 
 enum class Role { OWNER, SUPERVISOR, STAFF }

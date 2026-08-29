@@ -1,5 +1,7 @@
 package com.hub.streams.application.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
+
 data class CreateStreamRequest(
     val streamKey: String,
     val name: String? = null
@@ -19,7 +21,7 @@ data class StreamRegionResponse(
     val regionType: com.hub.streams.domain.model.RegionType,
     val points: String,
     val label: String?,
-    val isStatic: Boolean
+    @JsonProperty("isStatic") val isStatic: Boolean
 )
 
 data class ReplaceRegionsRequest(
