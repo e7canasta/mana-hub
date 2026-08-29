@@ -5,14 +5,14 @@ import com.hub.population.domain.model.ResidentId
 import com.hub.residence.domain.model.BedId
 import java.time.Instant
 
-class IncidentDetection private constructor(
-    override val id: IncidentId,
+class HistoryEpisode private constructor(
+    override val id: HistoryEpisodeId,
     val sourceRecordId: String,
     val residentId: ResidentId,
     val bedId: BedId?,
     val sourceAlertId: String?,
     val kind: String,
-    val severity: IncidentSeverity,
+    val severity: HistoryEpisodeSeverity,
     val occurredAt: Instant,
     val location: String?,
     val activity: String?,
@@ -26,14 +26,14 @@ class IncidentDetection private constructor(
     val confidence: Double?,
     val provenanceJson: String,
     override var version: Long
-) : AggregateRoot<IncidentId>() {
+) : AggregateRoot<HistoryEpisodeId>() {
 
     companion object {
         fun create(
             sourceRecordId: String, residentId: ResidentId, bedId: BedId?, kind: String,
-            severity: IncidentSeverity, occurredAt: Instant, source: String
-        ): IncidentDetection = IncidentDetection(
-            id = IncidentId.random(), sourceRecordId = sourceRecordId, residentId = residentId,
+            severity: HistoryEpisodeSeverity, occurredAt: Instant, source: String
+        ): HistoryEpisode = HistoryEpisode(
+            id = HistoryEpisodeId.random(), sourceRecordId = sourceRecordId, residentId = residentId,
             bedId = bedId, sourceAlertId = null, kind = kind, severity = severity,
             occurredAt = occurredAt, location = null, activity = null, injuryStatus = null,
             selfRecovery = false, responseSeconds = null, narrative = null,
@@ -42,12 +42,12 @@ class IncidentDetection private constructor(
         )
 
         fun reconstitute(
-            id: IncidentId, sourceRecordId: String, residentId: ResidentId, bedId: BedId?,
-            sourceAlertId: String?, kind: String, severity: IncidentSeverity, occurredAt: Instant,
+            id: HistoryEpisodeId, sourceRecordId: String, residentId: ResidentId, bedId: BedId?,
+            sourceAlertId: String?, kind: String, severity: HistoryEpisodeSeverity, occurredAt: Instant,
             location: String?, activity: String?, injuryStatus: String?, selfRecovery: Boolean,
             responseSeconds: Int?, narrative: String?, interventionsJson: String, source: String,
             modelVersion: String?, confidence: Double?, provenanceJson: String, version: Long
-        ): IncidentDetection = IncidentDetection(
+        ): HistoryEpisode = HistoryEpisode(
             id, sourceRecordId, residentId, bedId, sourceAlertId, kind, severity, occurredAt,
             location, activity, injuryStatus, selfRecovery, responseSeconds, narrative,
             interventionsJson, source, modelVersion, confidence, provenanceJson, version

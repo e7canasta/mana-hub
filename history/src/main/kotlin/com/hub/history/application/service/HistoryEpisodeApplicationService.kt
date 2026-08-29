@@ -2,22 +2,22 @@ package com.hub.history.application.service
 
 import com.hub.history.application.dto.*
 import com.hub.history.domain.model.*
-import com.hub.history.domain.repository.IncidentDetectionRepository
-import com.hub.history.domain.repository.IncidentReviewRepository
+import com.hub.history.domain.repository.HistoryEpisodeDetectionRepository
+import com.hub.history.domain.repository.HistoryEpisodeReviewRepository
 import com.hub.population.domain.model.ResidentId
 import com.hub.residence.domain.model.BedId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class IncidentApplicationService(
-    private val detectionRepository: IncidentDetectionRepository,
-    private val reviewRepository: IncidentReviewRepository
+class HistoryEpisodeApplicationService(
+    private val detectionRepository: HistoryEpisodeDetectionRepository,
+    private val reviewRepository: HistoryEpisodeReviewRepository
 ) {
 
     @Transactional
-    fun ingestIncident(request: IngestIncidentRequest): IncidentDetectionResponse {
-        val detection = IncidentDetection.create(
+    fun ingestHistoryEpisode(request: IngestHistoryEpisodeRequest): HistoryEpisodeResponse {
+        val detection = HistoryEpisode.create(
             sourceRecordId = request.sourceRecordId,
             residentId = ResidentId(request.residentId),
             bedId = request.bedId?.let { BedId(it) },
@@ -30,29 +30,35 @@ class IncidentApplicationService(
     }
 
     @Transactional(readOnly = true)
-    fun getResidentIncidents(residentId: String): List<IncidentDetectionResponse> {
+    fun getResidentHistoryEpisodes(residentId: String): List<HistoryEpisodeResponse> {
         return detectionRepository.findByResidentId(ResidentId(residentId)).map { it.toResponse() }
     }
 
     @Transactional(readOnly = true)
-    fun getIncidentSequence(incidentId: String): List<IncidentReviewResponse> {
-        return reviewRepository.findByIncidentId(IncidentId(incidentId)).map { it.toReviewResponse() }
+    fun getHistoryEpisodeSequence(episodeId: String): List<HistoryEpisodeReviewResponse> {
+        return reviewRepository.findByEpisodeId(HistoryEpisodeId(episodeId)).map { it.toReviewResponse() }
     }
 
     @Transactional
-    fun reviewIncident(incidentId: String, request: ReviewIncidentRequest): IncidentReviewResponse {
-        val review = IncidentReview.create(IncidentId(incidentId), request.actorId)
+    fun reviewHistoryEpisode(episodeId: String, request: ReviewHistoryEpisodeRequest): HistoryEpisodeReviewResponse {
+        val review = HistoryEpisodeReview.create(
+            episodeId = HistoryEpisodeId(episodeId),
+            actorId = request.actorId,
+            status = request.status,
+            detectionVerdict = request.detectionVerdict,
+            reviewNote = request.reviewNote,
+        )
         return reviewRepository.save(review).toReviewResponse()
     }
 
-    private fun IncidentDetection.toResponse() = IncidentDetectionResponse(
+    private fun HistoryEpisode.toResponse() = HistoryEpisodeResponse(
         id = id.value, sourceRecordId = sourceRecordId, residentId = residentId.value,
         bedId = bedId?.value, kind = kind, severity = severity, occurredAt = occurredAt,
         narrative = narrative, source = source
     )
 
-    private fun IncidentReview.toReviewResponse() = IncidentReviewResponse(
-        id = id.value, incidentId = incidentId.value, status = status,
+    private fun HistoryEpisodeReview.toReviewResponse() = HistoryEpisodeReviewResponse(
+        id = id.value, episodeId = episodeId.value, status = status,
         detectionVerdict = detectionVerdict, reviewNote = reviewNote,
         resolvedAt = resolvedAt, actorId = actorId
     )

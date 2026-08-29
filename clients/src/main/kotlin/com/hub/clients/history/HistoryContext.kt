@@ -6,16 +6,16 @@ import com.hub.clients.core.HttpApi
 @HistoryDsl
 class HistoryScope internal constructor(private val http: HttpApi) {
 
-    fun residentIncidents(residentId: String): List<IncidentDetectionResponse> =
-        http.get("/api/v1/residents/$residentId/incidents", Array<IncidentDetectionResponse>::class.java).toList()
+    fun residentHistoryEpisodes(residentId: String): List<HistoryEpisodeResponse> =
+        http.get("/api/v1/residents/$residentId/history-episodes", Array<HistoryEpisodeResponse>::class.java).toList()
 
-    fun incidentSequence(incidentId: String): List<IncidentReviewResponse> =
-        http.get("/api/v1/incidents/$incidentId/sequence", Array<IncidentReviewResponse>::class.java).toList()
+    fun historyEpisodeSequence(episodeId: String): List<HistoryEpisodeReviewResponse> =
+        http.get("/api/v1/history-episodes/$episodeId/sequence", Array<HistoryEpisodeReviewResponse>::class.java).toList()
 
-    fun reviewIncident(incidentId: String, status: String, actorId: String, verdict: String? = null, note: String? = null): IncidentReviewResponse =
+    fun reviewHistoryEpisode(episodeId: String, status: String, actorId: String, verdict: String? = null, note: String? = null): HistoryEpisodeReviewResponse =
         http.patch(
-            "/api/v1/incidents/$incidentId",
-            ReviewIncidentRequest(status, verdict, note, actorId),
-            IncidentReviewResponse::class.java
+            "/api/v1/history-episodes/$episodeId",
+            ReviewHistoryEpisodeRequest(status, verdict, note, actorId),
+            HistoryEpisodeReviewResponse::class.java
         )
 }

@@ -20,8 +20,11 @@ interface CurrentBedStateRepository {
 
 interface SummaryRepository {
     fun findSleepByResidentAndDate(residentId: ResidentId, date: LocalDate): SleepSummary?
+    fun findSleepByResidentAndRange(residentId: ResidentId, from: LocalDate, to: LocalDate): List<SleepSummary>
     fun findMobilityByResidentAndDate(residentId: ResidentId, date: LocalDate): MobilitySummary?
+    fun findMobilityByResidentAndRange(residentId: ResidentId, from: LocalDate, to: LocalDate): List<MobilitySummary>
     fun findBathroomByResidentAndDate(residentId: ResidentId, date: LocalDate): BathroomSummary?
+    fun findBathroomByResidentAndRange(residentId: ResidentId, from: LocalDate, to: LocalDate): List<BathroomSummary>
     fun saveSleep(summary: SleepSummary): SleepSummary
     fun saveMobility(summary: MobilitySummary): MobilitySummary
     fun saveBathroom(summary: BathroomSummary): BathroomSummary

@@ -1,8 +1,8 @@
 package com.hub.history.infrastructure.persistence
 
 import com.hub.history.domain.model.*
-import com.hub.history.domain.repository.IncidentDetectionRepository
-import com.hub.history.domain.repository.IncidentReviewRepository
+import com.hub.history.domain.repository.HistoryEpisodeDetectionRepository
+import com.hub.history.domain.repository.HistoryEpisodeReviewRepository
 import com.hub.population.domain.model.ResidentId
 import com.hub.residence.domain.model.BedId
 import jakarta.persistence.*
@@ -11,8 +11,8 @@ import org.springframework.stereotype.Repository
 import java.time.Instant
 
 @Entity
-@Table(name = "incident_detections")
-class IncidentDetectionEntity(
+@Table(name = "history_episode_detections")
+class HistoryEpisodeEntity(
     @Id var id: String = "",
     @Column(name = "source_record_id") var sourceRecordId: String = "",
     @Column(name = "resident_id") var residentId: String = "",
@@ -36,10 +36,10 @@ class IncidentDetectionEntity(
 )
 
 @Entity
-@Table(name = "incident_reviews")
-class IncidentReviewEntity(
+@Table(name = "history_episode_reviews")
+class HistoryEpisodeReviewEntity(
     @Id var id: String = "",
-    @Column(name = "incident_id") var incidentId: String = "",
+    @Column(name = "episode_id") var episodeId: String = "",
     @Column(name = "status") var status: String = "",
     @Column(name = "detection_verdict") var detectionVerdict: String? = null,
     @Column(name = "review_note") var reviewNote: String? = null,
@@ -50,30 +50,30 @@ class IncidentReviewEntity(
 )
 
 @Repository
-interface IncidentDetectionEntityRepository : JpaRepository<IncidentDetectionEntity, String> {
-    fun findBySourceRecordId(sourceRecordId: String): IncidentDetectionEntity?
-    fun findByResidentId(residentId: String): List<IncidentDetectionEntity>
+interface HistoryEpisodeEntityRepository : JpaRepository<HistoryEpisodeEntity, String> {
+    fun findBySourceRecordId(sourceRecordId: String): HistoryEpisodeEntity?
+    fun findByResidentId(residentId: String): List<HistoryEpisodeEntity>
 }
 
 @Repository
-interface IncidentReviewEntityRepository : JpaRepository<IncidentReviewEntity, String> {
-    fun findByIncidentId(incidentId: String): List<IncidentReviewEntity>
+interface HistoryEpisodeReviewEntityRepository : JpaRepository<HistoryEpisodeReviewEntity, String> {
+    fun findByEpisodeId(episodeId: String): List<HistoryEpisodeReviewEntity>
 }
 
 @Repository
-class IncidentDetectionRepositoryAdapter(private val jpa: IncidentDetectionEntityRepository) : IncidentDetectionRepository {
-    override fun findById(id: IncidentId): IncidentDetection? = jpa.findById(id.value).orElse(null)?.toDomain()
-    override fun findBySourceRecordId(sourceRecordId: String): IncidentDetection? = jpa.findBySourceRecordId(sourceRecordId)?.toDomain()
-    override fun findByResidentId(residentId: ResidentId): List<IncidentDetection> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
-    override fun save(detection: IncidentDetection): IncidentDetection = jpa.save(detection.toEntity()).toDomain()
+class HistoryEpisodeRepositoryAdapter(private val jpa: HistoryEpisodeEntityRepository) : HistoryEpisodeDetectionRepository {
+    override fun findById(id: HistoryEpisodeId): HistoryEpisode? = jpa.findById(id.value).orElse(null)?.toDomain()
+    override fun findBySourceRecordId(sourceRecordId: String): HistoryEpisode? = jpa.findBySourceRecordId(sourceRecordId)?.toDomain()
+    override fun findByResidentId(residentId: ResidentId): List<HistoryEpisode> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
+    override fun save(detection: HistoryEpisode): HistoryEpisode = jpa.save(detection.toEntity()).toDomain()
 
-    private fun IncidentDetectionEntity.toDomain() = IncidentDetection.reconstitute(
-        IncidentId(id), sourceRecordId, ResidentId(residentId), bedId?.let { BedId(it) },
-        sourceAlertId, kind, IncidentSeverity.from(severity), occurredAt, location, activity,
+    private fun HistoryEpisodeEntity.toDomain() = HistoryEpisode.reconstitute(
+        HistoryEpisodeId(id), sourceRecordId, ResidentId(residentId), bedId?.let { BedId(it) },
+        sourceAlertId, kind, HistoryEpisodeSeverity.from(severity), occurredAt, location, activity,
         injuryStatus, selfRecovery, responseSeconds, narrative, interventionsJson, source,
         modelVersion, confidence, provenanceJson, 0
     )
-    private fun IncidentDetection.toEntity() = IncidentDetectionEntity(
+    private fun HistoryEpisode.toEntity() = HistoryEpisodeEntity(
         id.value, sourceRecordId, residentId.value, bedId?.value, sourceAlertId, kind,
         severity.name.lowercase(), occurredAt, location, activity, injuryStatus, selfRecovery,
         responseSeconds, narrative, interventionsJson, source, modelVersion, confidence,
@@ -82,14 +82,14 @@ class IncidentDetectionRepositoryAdapter(private val jpa: IncidentDetectionEntit
 }
 
 @Repository
-class IncidentReviewRepositoryAdapter(private val jpa: IncidentReviewEntityRepository) : IncidentReviewRepository {
-    override fun findByIncidentId(incidentId: IncidentId): List<IncidentReview> = jpa.findByIncidentId(incidentId.value).map { it.toDomain() }
-    override fun save(review: IncidentReview): IncidentReview = jpa.save(review.toEntity()).toDomain()
+class HistoryEpisodeReviewRepositoryAdapter(private val jpa: HistoryEpisodeReviewEntityRepository) : HistoryEpisodeReviewRepository {
+    override fun findByEpisodeId(episodeId: HistoryEpisodeId): List<HistoryEpisodeReview> = jpa.findByEpisodeId(episodeId.value).map { it.toDomain() }
+    override fun save(review: HistoryEpisodeReview): HistoryEpisodeReview = jpa.save(review.toEntity()).toDomain()
 
-    private fun IncidentReviewEntity.toDomain() = IncidentReview.reconstitute(
-        IncidentId(id), IncidentId(incidentId), status, detectionVerdict, reviewNote, resolvedAt, actorId, version
+    private fun HistoryEpisodeReviewEntity.toDomain() = HistoryEpisodeReview.reconstitute(
+        HistoryEpisodeId(id), HistoryEpisodeId(episodeId), status, detectionVerdict, reviewNote, resolvedAt, actorId, version
     )
-    private fun IncidentReview.toEntity() = IncidentReviewEntity(
-        id.value, incidentId.value, status, detectionVerdict, reviewNote, resolvedAt, actorId, Instant.now()
+    private fun HistoryEpisodeReview.toEntity() = HistoryEpisodeReviewEntity(
+        id.value, episodeId.value, status, detectionVerdict, reviewNote, resolvedAt, actorId, Instant.now()
     )
 }

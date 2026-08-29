@@ -25,31 +25,61 @@ class ObservationController(
     @GetMapping("/residents/{residentId}/sleep")
     fun getSleepSummary(
         @PathVariable residentId: String,
-        @RequestParam(defaultValue = "#{T(java.time.LocalDate).now()}") date: LocalDate
-    ): ResponseEntity<SleepSummaryResponse> {
-        val summary = observationApplicationService.getSleepSummary(residentId, date)
-            ?: return ResponseEntity.notFound().build()
-        return ResponseEntity.ok(summary)
+        @RequestParam date: LocalDate? = null,
+        @RequestParam from: LocalDate? = null,
+        @RequestParam to: LocalDate? = null
+    ): ResponseEntity<Any> {
+        return if (from != null && to != null) {
+            ResponseEntity.ok(observationApplicationService.getSleepSummaryRange(residentId, from, to))
+        } else if (date != null) {
+            val summary = observationApplicationService.getSleepSummary(residentId, date)
+            if (summary != null) ResponseEntity.ok(summary)
+            else ResponseEntity.ok(mapOf("residentId" to residentId, "summaries" to emptyList<Any>()))
+        } else {
+            val toDefault = LocalDate.now()
+            val fromDefault = toDefault.minusDays(13)
+            ResponseEntity.ok(observationApplicationService.getSleepSummaryRange(residentId, fromDefault, toDefault))
+        }
     }
 
     @GetMapping("/residents/{residentId}/mobility")
     fun getMobilitySummary(
         @PathVariable residentId: String,
-        @RequestParam(defaultValue = "#{T(java.time.LocalDate).now()}") date: LocalDate
-    ): ResponseEntity<MobilitySummaryResponse> {
-        val summary = observationApplicationService.getMobilitySummary(residentId, date)
-            ?: return ResponseEntity.notFound().build()
-        return ResponseEntity.ok(summary)
+        @RequestParam date: LocalDate? = null,
+        @RequestParam from: LocalDate? = null,
+        @RequestParam to: LocalDate? = null
+    ): ResponseEntity<Any> {
+        return if (from != null && to != null) {
+            ResponseEntity.ok(observationApplicationService.getMobilitySummaryRange(residentId, from, to))
+        } else if (date != null) {
+            val summary = observationApplicationService.getMobilitySummary(residentId, date)
+            if (summary != null) ResponseEntity.ok(summary)
+            else ResponseEntity.ok(mapOf("residentId" to residentId, "summaries" to emptyList<Any>()))
+        } else {
+            val toDefault = LocalDate.now()
+            val fromDefault = toDefault.minusDays(13)
+            ResponseEntity.ok(observationApplicationService.getMobilitySummaryRange(residentId, fromDefault, toDefault))
+        }
     }
 
     @GetMapping("/residents/{residentId}/bathroom")
     fun getBathroomSummary(
         @PathVariable residentId: String,
-        @RequestParam(defaultValue = "#{T(java.time.LocalDate).now()}") date: LocalDate
-    ): ResponseEntity<BathroomSummaryResponse> {
-        val summary = observationApplicationService.getBathroomSummary(residentId, date)
-            ?: return ResponseEntity.notFound().build()
-        return ResponseEntity.ok(summary)
+        @RequestParam date: LocalDate? = null,
+        @RequestParam from: LocalDate? = null,
+        @RequestParam to: LocalDate? = null
+    ): ResponseEntity<Any> {
+        return if (from != null && to != null) {
+            ResponseEntity.ok(observationApplicationService.getBathroomSummaryRange(residentId, from, to))
+        } else if (date != null) {
+            val summary = observationApplicationService.getBathroomSummary(residentId, date)
+            if (summary != null) ResponseEntity.ok(summary)
+            else ResponseEntity.ok(mapOf("residentId" to residentId, "summaries" to emptyList<Any>()))
+        } else {
+            val toDefault = LocalDate.now()
+            val fromDefault = toDefault.minusDays(13)
+            ResponseEntity.ok(observationApplicationService.getBathroomSummaryRange(residentId, fromDefault, toDefault))
+        }
     }
 
     @GetMapping("/residents/{residentId}/current-state")

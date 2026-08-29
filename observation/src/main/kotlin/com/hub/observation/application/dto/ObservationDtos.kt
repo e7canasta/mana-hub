@@ -66,7 +66,16 @@ data class SleepSummaryResponse(
     val calmMinutes: Int,
     val restlessMinutes: Int,
     val awakeMinutes: Int,
-    val outOfBedMinutes: Int
+    val outOfBedMinutes: Int,
+    val bedExitCount: Int,
+    val wakeCount: Int
+)
+
+data class SleepSummaryListResponse(
+    val residentId: String,
+    val from: LocalDate,
+    val to: LocalDate,
+    val summaries: List<SleepSummaryResponse>
 )
 
 data class MobilitySummaryResponse(
@@ -74,7 +83,15 @@ data class MobilitySummaryResponse(
     val observedOn: LocalDate,
     val walkingMinutes: Int,
     val distanceMeters: Double,
-    val transferCount: Int
+    val transferCount: Int,
+    val outOfBedMinutes: Int
+)
+
+data class MobilitySummaryListResponse(
+    val residentId: String,
+    val from: LocalDate,
+    val to: LocalDate,
+    val summaries: List<MobilitySummaryResponse>
 )
 
 data class BathroomSummaryResponse(
@@ -82,6 +99,13 @@ data class BathroomSummaryResponse(
     val observedOn: LocalDate,
     val visitCount: Int,
     val nightVisitCount: Int
+)
+
+data class BathroomSummaryListResponse(
+    val residentId: String,
+    val from: LocalDate,
+    val to: LocalDate,
+    val summaries: List<BathroomSummaryResponse>
 )
 
 data class IngestNotificationRequest(

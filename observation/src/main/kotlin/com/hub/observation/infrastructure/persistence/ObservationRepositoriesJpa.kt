@@ -120,16 +120,19 @@ interface CurrentBedStateEntityRepository : JpaRepository<CurrentBedStateEntity,
 @Repository
 interface SleepSummaryEntityRepository : JpaRepository<SleepSummaryEntity, String> {
     fun findByResidentIdAndObservedOn(residentId: String, observedOn: LocalDate): SleepSummaryEntity?
+    fun findByResidentIdAndObservedOnBetween(residentId: String, from: LocalDate, to: LocalDate): List<SleepSummaryEntity>
 }
 
 @Repository
 interface MobilitySummaryEntityRepository : JpaRepository<MobilitySummaryEntity, String> {
     fun findByResidentIdAndObservedOn(residentId: String, observedOn: LocalDate): MobilitySummaryEntity?
+    fun findByResidentIdAndObservedOnBetween(residentId: String, from: LocalDate, to: LocalDate): List<MobilitySummaryEntity>
 }
 
 @Repository
 interface BathroomSummaryEntityRepository : JpaRepository<BathroomSummaryEntity, String> {
     fun findByResidentIdAndObservedOn(residentId: String, observedOn: LocalDate): BathroomSummaryEntity?
+    fun findByResidentIdAndObservedOnBetween(residentId: String, from: LocalDate, to: LocalDate): List<BathroomSummaryEntity>
 }
 
 @Entity
@@ -194,11 +197,20 @@ class SummaryRepositoryAdapter(
     override fun findSleepByResidentAndDate(residentId: ResidentId, date: LocalDate): SleepSummary? =
         sleepJpa.findByResidentIdAndObservedOn(residentId.value, date)?.toDomain()
 
+    override fun findSleepByResidentAndRange(residentId: ResidentId, from: LocalDate, to: LocalDate): List<SleepSummary> =
+        sleepJpa.findByResidentIdAndObservedOnBetween(residentId.value, from, to).map { it.toDomain() }
+
     override fun findMobilityByResidentAndDate(residentId: ResidentId, date: LocalDate): MobilitySummary? =
         mobilityJpa.findByResidentIdAndObservedOn(residentId.value, date)?.toDomain()
 
+    override fun findMobilityByResidentAndRange(residentId: ResidentId, from: LocalDate, to: LocalDate): List<MobilitySummary> =
+        mobilityJpa.findByResidentIdAndObservedOnBetween(residentId.value, from, to).map { it.toDomain() }
+
     override fun findBathroomByResidentAndDate(residentId: ResidentId, date: LocalDate): BathroomSummary? =
         bathroomJpa.findByResidentIdAndObservedOn(residentId.value, date)?.toDomain()
+
+    override fun findBathroomByResidentAndRange(residentId: ResidentId, from: LocalDate, to: LocalDate): List<BathroomSummary> =
+        bathroomJpa.findByResidentIdAndObservedOnBetween(residentId.value, from, to).map { it.toDomain() }
 
     override fun saveSleep(summary: SleepSummary): SleepSummary = sleepJpa.save(summary.toEntity()).toDomain()
     override fun saveMobility(summary: MobilitySummary): MobilitySummary = mobilityJpa.save(summary.toEntity()).toDomain()

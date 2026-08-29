@@ -3,21 +3,21 @@ package com.hub.clients.history
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 
-data class IncidentDetectionResponse(
+data class HistoryEpisodeResponse(
     val id: String,
     @JsonProperty("sourceRecordId") val sourceRecordId: String,
     @JsonProperty("residentId") val residentId: String,
     @JsonProperty("bedId") val bedId: String? = null,
     val kind: String,
-    val severity: IncidentSeverity,
+    val severity: HistoryEpisodeSeverity,
     @JsonProperty("occurredAt") val occurredAt: Instant,
     val narrative: String? = null,
     val source: String
 )
 
-data class IncidentReviewResponse(
+data class HistoryEpisodeReviewResponse(
     val id: String,
-    @JsonProperty("incidentId") val incidentId: String,
+    @JsonProperty("episodeId") val episodeId: String,
     val status: String,
     @JsonProperty("detectionVerdict") val detectionVerdict: String? = null,
     @JsonProperty("reviewNote") val reviewNote: String? = null,
@@ -25,11 +25,11 @@ data class IncidentReviewResponse(
     @JsonProperty("actorId") val actorId: String
 )
 
-data class ReviewIncidentRequest(
+data class ReviewHistoryEpisodeRequest(
     val status: String,
     @JsonProperty("detectionVerdict") val detectionVerdict: String? = null,
     @JsonProperty("reviewNote") val reviewNote: String? = null,
     @JsonProperty("actorId") val actorId: String
 )
 
-enum class IncidentSeverity { LOW, MEDIUM, HIGH, CRITICAL }
+enum class HistoryEpisodeSeverity { LOW, MEDIUM, HIGH, CRITICAL }

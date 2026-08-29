@@ -1,14 +1,14 @@
 package com.hub.history.application.dto
 
-import com.hub.history.domain.model.IncidentSeverity
+import com.hub.history.domain.model.HistoryEpisodeSeverity
 import java.time.Instant
 
-data class IngestIncidentRequest(
+data class IngestHistoryEpisodeRequest(
     val sourceRecordId: String,
     val residentId: String,
     val bedId: String? = null,
     val kind: String,
-    val severity: IncidentSeverity,
+    val severity: HistoryEpisodeSeverity,
     val occurredAt: Instant,
     val location: String? = null,
     val activity: String? = null,
@@ -16,21 +16,21 @@ data class IngestIncidentRequest(
     val source: String = "internal"
 )
 
-data class IncidentDetectionResponse(
+data class HistoryEpisodeResponse(
     val id: String,
     val sourceRecordId: String,
     val residentId: String,
     val bedId: String?,
     val kind: String,
-    val severity: IncidentSeverity,
+    val severity: HistoryEpisodeSeverity,
     val occurredAt: Instant,
     val narrative: String?,
     val source: String
 )
 
-data class IncidentReviewResponse(
+data class HistoryEpisodeReviewResponse(
     val id: String,
-    val incidentId: String,
+    val episodeId: String,
     val status: String,
     val detectionVerdict: String?,
     val reviewNote: String?,
@@ -38,7 +38,7 @@ data class IncidentReviewResponse(
     val actorId: String
 )
 
-data class ReviewIncidentRequest(
+data class ReviewHistoryEpisodeRequest(
     val status: String,
     val detectionVerdict: String? = null,
     val reviewNote: String? = null,
