@@ -2,7 +2,7 @@ package com.hub.policy.infrastructure.persistence
 
 import com.hub.policy.domain.model.*
 import com.hub.policy.domain.repository.AlarmProfileRepository
-import com.hub.population.domain.model.ResidentId
+import com.hub.shared.domain.ResidentId
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query

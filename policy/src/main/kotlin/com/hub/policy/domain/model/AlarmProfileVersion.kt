@@ -1,7 +1,7 @@
 package com.hub.policy.domain.model
 
 import com.hub.shared.domain.AggregateRoot
-import com.hub.population.domain.model.ResidentId
+import com.hub.shared.domain.ResidentId
 import java.time.Instant
 
 class AlarmProfileVersion private constructor(

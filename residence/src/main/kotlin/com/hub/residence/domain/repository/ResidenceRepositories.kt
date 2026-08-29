@@ -1,6 +1,8 @@
 package com.hub.residence.domain.repository
 
 import com.hub.residence.domain.model.*
+import com.hub.shared.domain.BedId
+import com.hub.shared.domain.FacilityId
 
 interface FacilityRepository {
     fun findById(id: FacilityId): Facility?

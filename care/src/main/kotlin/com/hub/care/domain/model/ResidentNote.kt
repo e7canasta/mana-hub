@@ -1,7 +1,7 @@
 package com.hub.care.domain.model
 
 import com.hub.shared.domain.Identifier
-import com.hub.population.domain.model.ResidentId
+import com.hub.shared.domain.ResidentId
 import java.time.Instant
 
 enum class ResidentNoteKind {

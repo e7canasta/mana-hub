@@ -2,6 +2,8 @@ package com.hub.residence.application.service
 
 import com.hub.residence.application.dto.*
 import com.hub.residence.domain.model.*
+import com.hub.shared.domain.BedId
+import com.hub.shared.domain.FacilityId
 import com.hub.residence.domain.repository.*
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service

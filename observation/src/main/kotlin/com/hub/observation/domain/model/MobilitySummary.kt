@@ -1,7 +1,7 @@
 package com.hub.observation.domain.model
 
 import com.hub.shared.domain.Identifier
-import com.hub.population.domain.model.ResidentId
+import com.hub.shared.domain.ResidentId
 import java.time.LocalDate
 
 data class MobilitySummary(

@@ -1,6 +1,7 @@
 package com.hub.identity.domain.model
 
 import com.hub.shared.domain.AggregateRoot
+import com.hub.shared.domain.UserId
 import com.hub.identity.domain.event.UserCreated
 import com.hub.identity.domain.event.UserRetired
 import java.time.Instant

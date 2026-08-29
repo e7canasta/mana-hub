@@ -1,6 +1,6 @@
 package com.hub.care.domain.model
 
-import com.hub.population.domain.model.ResidentId
+import com.hub.shared.domain.ResidentId
 import java.time.Instant
 import java.util.UUID
 

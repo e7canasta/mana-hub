@@ -5,8 +5,8 @@ import com.hub.observation.domain.repository.CurrentBedStateRepository
 import com.hub.observation.domain.repository.NotificationEventRepository
 import com.hub.observation.domain.repository.SensorEventRepository
 import com.hub.observation.domain.repository.SummaryRepository
-import com.hub.population.domain.model.ResidentId
-import com.hub.residence.domain.model.BedId
+import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.BedId
 import com.hub.shared.domain.Identifier
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository

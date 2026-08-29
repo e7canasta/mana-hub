@@ -2,9 +2,11 @@ package com.hub.history.infrastructure.persistence
 
 import com.hub.history.domain.model.*
 import com.hub.history.domain.repository.HistoryEpisodeDetectionRepository
+import com.hub.history.domain.repository.HistoryEpisodeInterventionRepository
 import com.hub.history.domain.repository.HistoryEpisodeReviewRepository
-import com.hub.population.domain.model.ResidentId
-import com.hub.residence.domain.model.BedId
+import com.hub.shared.domain.StaffMemberId
+import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.BedId
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
@@ -21,13 +23,11 @@ class HistoryEpisodeEntity(
     @Column(name = "kind") var kind: String = "",
     @Column(name = "severity") var severity: String = "",
     @Column(name = "occurred_at") var occurredAt: Instant = Instant.now(),
-    @Column(name = "location") var location: String? = null,
     @Column(name = "activity") var activity: String? = null,
     @Column(name = "injury_status") var injuryStatus: String? = null,
     @Column(name = "self_recovery") var selfRecovery: Boolean = false,
     @Column(name = "response_seconds") var responseSeconds: Int? = null,
     @Column(name = "narrative") var narrative: String? = null,
-    @Column(name = "interventions_json") var interventionsJson: String = "[]",
     @Column(name = "source") var source: String = "",
     @Column(name = "model_version") var modelVersion: String? = null,
     @Column(name = "confidence") var confidence: Double? = null,
@@ -53,6 +53,7 @@ class HistoryEpisodeReviewEntity(
 interface HistoryEpisodeEntityRepository : JpaRepository<HistoryEpisodeEntity, String> {
     fun findBySourceRecordId(sourceRecordId: String): HistoryEpisodeEntity?
     fun findByResidentId(residentId: String): List<HistoryEpisodeEntity>
+    fun findByResidentIdAndKind(residentId: String, kind: String): List<HistoryEpisodeEntity>
 }
 
 @Repository
@@ -65,18 +66,37 @@ class HistoryEpisodeRepositoryAdapter(private val jpa: HistoryEpisodeEntityRepos
     override fun findById(id: HistoryEpisodeId): HistoryEpisode? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findBySourceRecordId(sourceRecordId: String): HistoryEpisode? = jpa.findBySourceRecordId(sourceRecordId)?.toDomain()
     override fun findByResidentId(residentId: ResidentId): List<HistoryEpisode> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
+    override fun findByResidentIdAndKind(residentId: ResidentId, kind: EpisodeKind): List<HistoryEpisode> =
+        jpa.findByResidentIdAndKind(residentId.value, kind.name).map { it.toDomain() }
     override fun save(detection: HistoryEpisode): HistoryEpisode = jpa.save(detection.toEntity()).toDomain()
 
     private fun HistoryEpisodeEntity.toDomain() = HistoryEpisode.reconstitute(
-        HistoryEpisodeId(id), sourceRecordId, ResidentId(residentId), bedId?.let { BedId(it) },
-        sourceAlertId, kind, HistoryEpisodeSeverity.from(severity), occurredAt, location, activity,
-        injuryStatus, selfRecovery, responseSeconds, narrative, interventionsJson, source,
-        modelVersion, confidence, provenanceJson, 0
+        HistoryEpisodeData(
+            id = HistoryEpisodeId(id),
+            sourceRecordId = sourceRecordId,
+            residentId = ResidentId(residentId),
+            bedId = bedId?.let { BedId(it) },
+            sourceAlertId = sourceAlertId,
+            kind = EpisodeKind.from(kind),
+            severity = HistoryEpisodeSeverity.from(severity),
+            occurredAt = occurredAt,
+            activity = activity,
+            injuryStatus = injuryStatus,
+            selfRecovery = selfRecovery,
+            responseSeconds = responseSeconds,
+            narrative = narrative,
+            source = EventSource.from(source),
+            modelVersion = modelVersion,
+            confidence = confidence,
+            provenanceJson = provenanceJson,
+            version = 0
+        )
     )
+
     private fun HistoryEpisode.toEntity() = HistoryEpisodeEntity(
-        id.value, sourceRecordId, residentId.value, bedId?.value, sourceAlertId, kind,
-        severity.name.lowercase(), occurredAt, location, activity, injuryStatus, selfRecovery,
-        responseSeconds, narrative, interventionsJson, source, modelVersion, confidence,
+        id.value, sourceRecordId, residentId.value, bedId?.value, sourceAlertId,
+        kind.name, severity.name.lowercase(), occurredAt, activity, injuryStatus,
+        selfRecovery, responseSeconds, narrative, source.name, modelVersion, confidence,
         provenanceJson, Instant.now()
     )
 }
@@ -91,5 +111,59 @@ class HistoryEpisodeReviewRepositoryAdapter(private val jpa: HistoryEpisodeRevie
     )
     private fun HistoryEpisodeReview.toEntity() = HistoryEpisodeReviewEntity(
         id.value, episodeId.value, status, detectionVerdict, reviewNote, resolvedAt, actorId, Instant.now()
+    )
+}
+
+@Entity
+@Table(name = "history_episode_interventions")
+class HistoryEpisodeInterventionEntity(
+    @Id var id: String = "",
+    @Column(name = "episode_id") var episodeId: String = "",
+    @Column(name = "kind") var kind: String = "",
+    @Column(name = "performed_at") var performedAt: Instant = Instant.now(),
+    @Column(name = "performed_by") var performedBy: String? = null,
+    @Column(name = "detail") var detail: String? = null,
+    @Column(name = "created_at") var createdAt: Instant = Instant.now()
+)
+
+@Repository
+interface HistoryEpisodeInterventionEntityRepository : JpaRepository<HistoryEpisodeInterventionEntity, String> {
+    fun findByEpisodeId(episodeId: String): List<HistoryEpisodeInterventionEntity>
+    fun deleteByEpisodeId(episodeId: String)
+}
+
+@Repository
+class HistoryEpisodeInterventionRepositoryAdapter(
+    private val jpa: HistoryEpisodeInterventionEntityRepository
+) : HistoryEpisodeInterventionRepository {
+
+    override fun findByEpisodeId(episodeId: HistoryEpisodeId): List<HistoryEpisodeIntervention> =
+        jpa.findByEpisodeId(episodeId.value).map { it.toDomain() }
+
+    override fun save(intervention: HistoryEpisodeIntervention): HistoryEpisodeIntervention =
+        jpa.save(intervention.toEntity()).toDomain()
+
+    override fun saveAll(interventions: List<HistoryEpisodeIntervention>): List<HistoryEpisodeIntervention> =
+        jpa.saveAll(interventions.map { it.toEntity() }).map { it.toDomain() }
+
+    override fun deleteByEpisodeId(episodeId: HistoryEpisodeId) =
+        jpa.deleteByEpisodeId(episodeId.value)
+
+    private fun HistoryEpisodeInterventionEntity.toDomain() = HistoryEpisodeIntervention.reconstitute(
+        id = InterventionId(id),
+        episodeId = HistoryEpisodeId(episodeId),
+        kind = InterventionKind.from(kind),
+        performedAt = performedAt,
+        performedBy = performedBy?.let { StaffMemberId(it) },
+        detail = detail
+    )
+
+    private fun HistoryEpisodeIntervention.toEntity() = HistoryEpisodeInterventionEntity(
+        id = id.value,
+        episodeId = episodeId.value,
+        kind = kind.name,
+        performedAt = performedAt,
+        performedBy = performedBy?.value,
+        detail = detail
     )
 }

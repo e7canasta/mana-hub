@@ -2,7 +2,7 @@ package com.hub.policy.domain.repository
 
 import com.hub.policy.domain.model.AlarmProfileVersion
 import com.hub.policy.domain.model.AlarmProfileId
-import com.hub.population.domain.model.ResidentId
+import com.hub.shared.domain.ResidentId
 
 interface AlarmProfileRepository {
     fun findById(id: AlarmProfileId): AlarmProfileVersion?

@@ -1,7 +1,7 @@
 package com.hub.identity.domain.service
 
 import com.hub.identity.domain.model.User
-import com.hub.identity.domain.model.UserId
+import com.hub.shared.domain.UserId
 import com.hub.identity.domain.repository.UserRepository
 import org.springframework.stereotype.Service
 import java.security.MessageDigest

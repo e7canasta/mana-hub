@@ -83,8 +83,9 @@ class ObservationController(
     }
 
     @GetMapping("/residents/{residentId}/current-state")
-    fun getCurrentState(@PathVariable residentId: String): ResponseEntity<Any> {
-        return ResponseEntity.ok(mapOf("residentId" to residentId))
+    fun getCurrentState(@PathVariable residentId: String): ResponseEntity<CurrentStateResponse> {
+        val state = observationApplicationService.getCurrentState(residentId)
+        return ResponseEntity.ok(state)
     }
 
     @GetMapping("/residents/{residentId}/timeline")
@@ -115,5 +116,28 @@ class ObservationController(
     @GetMapping("/reports/summary")
     fun getReportsSummary(): ResponseEntity<Any> {
         return ResponseEntity.ok(mapOf("summary" to "ok"))
+    }
+
+    @GetMapping("/catalog/states")
+    fun getStateCatalog(): ResponseEntity<StateCatalogResponse> {
+        return ResponseEntity.ok(StateCatalogResponse(
+            states = listOf(
+                StateCatalogEntry("laying_in_bed", "Acostado en cama", "bed", "person_lying"),
+                StateCatalogEntry("sitting_in_bed", "Sentado en cama", "bed", "person_sitting"),
+                StateCatalogEntry("sitting_on_bed_edge", "Sentado al borde", "bed", "person_sitting_edge"),
+                StateCatalogEntry("standing", "De pie", "room", "person_standing"),
+                StateCatalogEntry("walking", "Caminando", "room", "person_walking"),
+                StateCatalogEntry("sitting_in_chair", "Sentado en silla", "room", "person_chair"),
+                StateCatalogEntry("laying_on_floor", "Acostado en piso", "floor", "person_floor"),
+                StateCatalogEntry("sitting_on_floor", "Sentado en piso", "floor", "person_floor"),
+                StateCatalogEntry("kneeled", "Arrodillado", "floor", "person_kneeling"),
+                StateCatalogEntry("absent", "Ausente", "oov", "person_absent"),
+            ),
+            roomStates = listOf(
+                StateCatalogEntry("empty", "Vacía", "room", "room_empty"),
+                StateCatalogEntry("occupied", "Ocupada", "room", "room_occupied"),
+                StateCatalogEntry("unknown", "Desconocido", "room", "room_unknown"),
+            )
+        ))
     }
 }

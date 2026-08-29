@@ -1,6 +1,7 @@
 package com.hub.identity.infrastructure.persistence
 
 import com.hub.identity.domain.model.*
+import com.hub.shared.domain.UserId
 import com.hub.identity.domain.repository.UserRepository
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query

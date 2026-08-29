@@ -1,5 +1,6 @@
 package com.hub.identity.domain.model
 
+import com.hub.shared.domain.UserId
 import java.time.Instant
 
 data class AuthSession(

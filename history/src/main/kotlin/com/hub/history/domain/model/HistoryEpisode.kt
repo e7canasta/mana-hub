@@ -1,8 +1,8 @@
 package com.hub.history.domain.model
 
 import com.hub.shared.domain.AggregateRoot
-import com.hub.population.domain.model.ResidentId
-import com.hub.residence.domain.model.BedId
+import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.BedId
 import java.time.Instant
 
 class HistoryEpisode private constructor(
@@ -11,17 +11,15 @@ class HistoryEpisode private constructor(
     val residentId: ResidentId,
     val bedId: BedId?,
     val sourceAlertId: String?,
-    val kind: String,
+    val kind: EpisodeKind,
     val severity: HistoryEpisodeSeverity,
     val occurredAt: Instant,
-    val location: String?,
     val activity: String?,
     val injuryStatus: String?,
     val selfRecovery: Boolean,
     val responseSeconds: Int?,
     val narrative: String?,
-    val interventionsJson: String,
-    val source: String,
+    val source: EventSource,
     val modelVersion: String?,
     val confidence: Double?,
     val provenanceJson: String,
@@ -30,27 +28,25 @@ class HistoryEpisode private constructor(
 
     companion object {
         fun create(
-            sourceRecordId: String, residentId: ResidentId, bedId: BedId?, kind: String,
-            severity: HistoryEpisodeSeverity, occurredAt: Instant, source: String
+            sourceRecordId: String, residentId: ResidentId, bedId: BedId?, kind: EpisodeKind,
+            severity: HistoryEpisodeSeverity, occurredAt: Instant, source: EventSource
         ): HistoryEpisode = HistoryEpisode(
             id = HistoryEpisodeId.random(), sourceRecordId = sourceRecordId, residentId = residentId,
             bedId = bedId, sourceAlertId = null, kind = kind, severity = severity,
-            occurredAt = occurredAt, location = null, activity = null, injuryStatus = null,
+            occurredAt = occurredAt, activity = null, injuryStatus = null,
             selfRecovery = false, responseSeconds = null, narrative = null,
-            interventionsJson = "[]", source = source, modelVersion = null, confidence = null,
+            source = source, modelVersion = null, confidence = null,
             provenanceJson = "{}", version = 0
         )
 
-        fun reconstitute(
-            id: HistoryEpisodeId, sourceRecordId: String, residentId: ResidentId, bedId: BedId?,
-            sourceAlertId: String?, kind: String, severity: HistoryEpisodeSeverity, occurredAt: Instant,
-            location: String?, activity: String?, injuryStatus: String?, selfRecovery: Boolean,
-            responseSeconds: Int?, narrative: String?, interventionsJson: String, source: String,
-            modelVersion: String?, confidence: Double?, provenanceJson: String, version: Long
-        ): HistoryEpisode = HistoryEpisode(
-            id, sourceRecordId, residentId, bedId, sourceAlertId, kind, severity, occurredAt,
-            location, activity, injuryStatus, selfRecovery, responseSeconds, narrative,
-            interventionsJson, source, modelVersion, confidence, provenanceJson, version
+        fun reconstitute(data: HistoryEpisodeData): HistoryEpisode = HistoryEpisode(
+            id = data.id, sourceRecordId = data.sourceRecordId, residentId = data.residentId,
+            bedId = data.bedId, sourceAlertId = data.sourceAlertId, kind = data.kind,
+            severity = data.severity, occurredAt = data.occurredAt, activity = data.activity,
+            injuryStatus = data.injuryStatus, selfRecovery = data.selfRecovery,
+            responseSeconds = data.responseSeconds, narrative = data.narrative,
+            source = data.source, modelVersion = data.modelVersion, confidence = data.confidence,
+            provenanceJson = data.provenanceJson, version = data.version
         )
     }
 }

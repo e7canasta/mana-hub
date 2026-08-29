@@ -1,7 +1,8 @@
 package com.hub.population.domain.model
 
 import com.hub.shared.domain.AggregateRoot
-import com.hub.residence.domain.model.BedId
+import com.hub.shared.domain.BedId
+import com.hub.shared.domain.ResidentId
 import java.time.Instant
 
 class BedAssignment private constructor(

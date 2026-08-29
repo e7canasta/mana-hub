@@ -3,7 +3,8 @@ package com.hub.population.infrastructure.persistence
 import com.hub.population.domain.model.*
 import com.hub.population.domain.repository.BedAssignmentRepository
 import com.hub.population.domain.repository.ResidentRepository
-import com.hub.residence.domain.model.BedId
+import com.hub.shared.domain.BedId
+import com.hub.shared.domain.ResidentId
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query

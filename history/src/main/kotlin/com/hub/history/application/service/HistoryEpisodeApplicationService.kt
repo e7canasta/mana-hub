@@ -4,10 +4,14 @@ import com.hub.history.application.dto.*
 import com.hub.history.domain.model.*
 import com.hub.history.domain.repository.HistoryEpisodeDetectionRepository
 import com.hub.history.domain.repository.HistoryEpisodeReviewRepository
-import com.hub.population.domain.model.ResidentId
-import com.hub.residence.domain.model.BedId
+import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.BedId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 
 @Service
 class HistoryEpisodeApplicationService(
@@ -26,17 +30,17 @@ class HistoryEpisodeApplicationService(
             occurredAt = request.occurredAt,
             source = request.source
         )
-        return detectionRepository.save(detection).toResponse()
+        return toResponse(detectionRepository.save(detection))
     }
 
     @Transactional(readOnly = true)
     fun getResidentHistoryEpisodes(residentId: String): List<HistoryEpisodeResponse> {
-        return detectionRepository.findByResidentId(ResidentId(residentId)).map { it.toResponse() }
+        return detectionRepository.findByResidentId(ResidentId(residentId)).map { toResponse(it) }
     }
 
     @Transactional(readOnly = true)
     fun getHistoryEpisodeSequence(episodeId: String): List<HistoryEpisodeReviewResponse> {
-        return reviewRepository.findByEpisodeId(HistoryEpisodeId(episodeId)).map { it.toReviewResponse() }
+        return reviewRepository.findByEpisodeId(HistoryEpisodeId(episodeId)).map { toReviewResponse(it) }
     }
 
     @Transactional
@@ -48,18 +52,76 @@ class HistoryEpisodeApplicationService(
             detectionVerdict = request.detectionVerdict,
             reviewNote = request.reviewNote,
         )
-        return reviewRepository.save(review).toReviewResponse()
+        return toReviewResponse(reviewRepository.save(review))
     }
 
-    private fun HistoryEpisode.toResponse() = HistoryEpisodeResponse(
-        id = id.value, sourceRecordId = sourceRecordId, residentId = residentId.value,
-        bedId = bedId?.value, kind = kind, severity = severity, occurredAt = occurredAt,
-        narrative = narrative, source = source
+    @Transactional(readOnly = true)
+    fun getFallsSummary(residentId: String, months: Int = 12): FallsSummaryResponse {
+        val rid = ResidentId(residentId)
+        val falls = detectionRepository.findByResidentIdAndKind(rid, EpisodeKind.FALL)
+            .sortedByDescending { it.occurredAt }
+
+        val now = LocalDate.now()
+        val cutoff = now.minusMonths(months.toLong())
+
+        val fallsInRange = falls.filter {
+            val date = it.occurredAt.atZone(ZoneOffset.UTC).toLocalDate()
+            date.isAfter(cutoff)
+        }
+
+        val streakDays = calculateStreak(fallsInRange, now)
+        val previousStreak = calculatePreviousStreak(fallsInRange)
+
+        val lastFall = falls.firstOrNull()
+
+        val monthLabels = (0 until months).map { now.minusMonths(it.toLong()) }
+            .map { YearMonth.from(it) }
+            .reversed()
+
+        val fallsByMonth = fallsInRange.groupBy {
+            YearMonth.from(it.occurredAt.atZone(ZoneOffset.UTC).toLocalDate())
+        }
+
+        val monthSummaries = monthLabels.map { ym ->
+            FallsMonthSummary(
+                label = ym.toString(),
+                falls = fallsByMonth[ym]?.size ?: 0
+            )
+        }
+
+        return FallsSummaryResponse(
+            residentId = residentId,
+            streakDays = streakDays,
+            previousStreakDays = previousStreak,
+            fallsLast12Months = fallsInRange.size,
+            lastFallAt = lastFall?.occurredAt?.toString(),
+            lastFallInjury = lastFall?.injuryStatus,
+            months = monthSummaries
+        )
+    }
+
+    private fun calculateStreak(falls: List<HistoryEpisode>, today: LocalDate): Int {
+        if (falls.isEmpty()) return 0
+        val lastFallDate = falls.first().occurredAt.atZone(ZoneOffset.UTC).toLocalDate()
+        return ChronoUnit.DAYS.between(lastFallDate, today).toInt()
+    }
+
+    private fun calculatePreviousStreak(falls: List<HistoryEpisode>): Int {
+        if (falls.size < 2) return 0
+        val secondLastFall = falls[1].occurredAt.atZone(ZoneOffset.UTC).toLocalDate()
+        val firstFall = falls[0].occurredAt.atZone(ZoneOffset.UTC).toLocalDate()
+        return ChronoUnit.DAYS.between(secondLastFall, firstFall).toInt()
+    }
+
+    private fun toResponse(e: HistoryEpisode) = HistoryEpisodeResponse(
+        id = e.id.value, sourceRecordId = e.sourceRecordId, residentId = e.residentId.value,
+        bedId = e.bedId?.value, kind = e.kind, severity = e.severity, occurredAt = e.occurredAt,
+        narrative = e.narrative, source = e.source
     )
 
-    private fun HistoryEpisodeReview.toReviewResponse() = HistoryEpisodeReviewResponse(
-        id = id.value, episodeId = episodeId.value, status = status,
-        detectionVerdict = detectionVerdict, reviewNote = reviewNote,
-        resolvedAt = resolvedAt, actorId = actorId
+    private fun toReviewResponse(r: HistoryEpisodeReview) = HistoryEpisodeReviewResponse(
+        id = r.id.value, episodeId = r.episodeId.value, status = r.status,
+        detectionVerdict = r.detectionVerdict, reviewNote = r.reviewNote,
+        resolvedAt = r.resolvedAt, actorId = r.actorId
     )
 }

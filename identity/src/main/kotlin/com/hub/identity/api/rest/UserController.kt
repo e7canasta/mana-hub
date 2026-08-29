@@ -6,7 +6,7 @@ import com.hub.identity.application.dto.CreateUserRequest as AppCreateUserReques
 import com.hub.identity.application.dto.UpdateUserRequest as AppUpdateUserRequest
 import com.hub.identity.application.dto.UserResponse
 import com.hub.identity.application.service.UserApplicationService
-import com.hub.identity.domain.model.UserId
+import com.hub.shared.domain.UserId
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

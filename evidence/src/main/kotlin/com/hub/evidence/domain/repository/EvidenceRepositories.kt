@@ -1,8 +1,8 @@
 package com.hub.evidence.domain.repository
 
 import com.hub.evidence.domain.model.*
-import com.hub.population.domain.model.ResidentId
-import com.hub.residence.domain.model.BedId
+import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.BedId
 
 interface EvidenceRepository {
     fun findById(id: EvidenceId): Evidence?

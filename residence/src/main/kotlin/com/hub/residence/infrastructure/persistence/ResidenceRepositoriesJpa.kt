@@ -1,6 +1,8 @@
 package com.hub.residence.infrastructure.persistence
 
 import com.hub.residence.domain.model.*
+import com.hub.shared.domain.BedId
+import com.hub.shared.domain.FacilityId
 import com.hub.residence.domain.repository.*
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository

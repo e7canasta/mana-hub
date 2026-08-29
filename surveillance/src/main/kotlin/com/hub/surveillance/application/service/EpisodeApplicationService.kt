@@ -3,8 +3,8 @@ package com.hub.surveillance.application.service
 import com.hub.surveillance.application.dto.*
 import com.hub.surveillance.domain.model.*
 import com.hub.surveillance.domain.repository.EpisodeRepository
-import com.hub.population.domain.model.ResidentId
-import com.hub.residence.domain.model.BedId
+import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.BedId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

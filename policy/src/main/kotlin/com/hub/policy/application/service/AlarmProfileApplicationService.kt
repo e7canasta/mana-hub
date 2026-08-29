@@ -3,13 +3,14 @@ package com.hub.policy.application.service
 import com.hub.policy.application.dto.*
 import com.hub.policy.domain.model.*
 import com.hub.policy.domain.repository.AlarmProfileRepository
-import com.hub.population.domain.model.ResidentId
+import com.hub.shared.domain.ResidentId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class AlarmProfileApplicationService(
-    private val alarmProfileRepository: AlarmProfileRepository
+    private val alarmProfileRepository: AlarmProfileRepository,
+    private val auditService: com.hub.audit.domain.service.AuditService
 ) {
 
     @Transactional(readOnly = true)
@@ -63,6 +64,17 @@ class AlarmProfileApplicationService(
         )
 
         alarmProfileRepository.save(newProfile)
+
+        if (request.reason != null) {
+            auditService.recordAction(
+                actorId = request.updatedBy ?: "system",
+                action = "alarm_profile.update",
+                entityType = "AlarmProfileVersion",
+                entityId = residentId,
+                metadataJson = """{"reason":"${request.reason.replace("\"", "\\\"")}","riskLevel":"${riskLevel.name}"}"""
+            )
+        }
+
         return getResidentProfile(residentId)!!
     }
 

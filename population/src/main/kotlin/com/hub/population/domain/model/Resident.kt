@@ -1,6 +1,7 @@
 package com.hub.population.domain.model
 
 import com.hub.shared.domain.AggregateRoot
+import com.hub.shared.domain.ResidentId
 import java.time.Instant
 import java.time.LocalDate
 

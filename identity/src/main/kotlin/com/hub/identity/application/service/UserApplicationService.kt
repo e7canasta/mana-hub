@@ -4,7 +4,7 @@ import com.hub.identity.application.dto.CreateUserRequest
 import com.hub.identity.application.dto.UpdateUserRequest
 import com.hub.identity.application.dto.UserResponse
 import com.hub.identity.domain.model.User
-import com.hub.identity.domain.model.UserId
+import com.hub.shared.domain.UserId
 import com.hub.identity.domain.repository.UserRepository
 import com.hub.identity.domain.service.AuthenticationService
 import com.hub.shared.domain.DomainEventPublisher

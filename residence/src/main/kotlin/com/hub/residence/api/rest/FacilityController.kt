@@ -3,6 +3,8 @@ package com.hub.residence.api.rest
 import com.hub.residence.application.dto.*
 import com.hub.residence.application.service.FacilityApplicationService
 import com.hub.residence.domain.model.*
+import com.hub.shared.domain.BedId
+import com.hub.shared.domain.FacilityId
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

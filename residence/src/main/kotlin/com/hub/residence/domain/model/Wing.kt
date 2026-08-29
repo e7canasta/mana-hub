@@ -1,6 +1,7 @@
 package com.hub.residence.domain.model
 
 import com.hub.shared.domain.AggregateRoot
+import com.hub.shared.domain.FacilityId
 import java.time.Instant
 
 class Wing private constructor(

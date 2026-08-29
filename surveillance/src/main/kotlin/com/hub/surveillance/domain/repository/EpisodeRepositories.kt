@@ -2,7 +2,7 @@ package com.hub.surveillance.domain.repository
 
 import com.hub.surveillance.domain.model.Episode
 import com.hub.surveillance.domain.model.EpisodeId
-import com.hub.population.domain.model.ResidentId
+import com.hub.shared.domain.ResidentId
 
 interface EpisodeRepository {
     fun findById(id: EpisodeId): Episode?

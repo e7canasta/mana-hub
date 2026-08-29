@@ -5,8 +5,8 @@ import com.hub.evidence.domain.model.*
 import com.hub.evidence.domain.repository.ClipWindowRepository
 import com.hub.evidence.domain.repository.EvidenceRepository
 import com.hub.evidence.domain.repository.TimelineRepository
-import com.hub.population.domain.model.ResidentId
-import com.hub.residence.domain.model.BedId
+import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.BedId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

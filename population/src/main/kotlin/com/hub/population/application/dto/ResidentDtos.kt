@@ -16,6 +16,14 @@ data class UpdateResidentRequest(
     val birthDate: LocalDate? = null
 )
 
+data class ResidentLocation(
+    val wingId: String?,
+    val wingName: String?,
+    val roomNumber: String?,
+    val bedId: String?,
+    val bedLabel: String?
+)
+
 data class ResidentResponse(
     val id: String,
     val externalId: String?,
@@ -23,7 +31,8 @@ data class ResidentResponse(
     val birthDate: LocalDate?,
     val admissionDate: LocalDate,
     val status: ResidentStatus,
-    val isDischarged: Boolean
+    val isDischarged: Boolean,
+    val location: ResidentLocation? = null
 )
 
 data class CreateAssignmentRequest(

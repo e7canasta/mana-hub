@@ -143,4 +143,5 @@ data class UpdateAlarmProfileRequest(
     val overridesJson: String? = null,
     val riskLevel: String? = null,
     val updatedBy: String? = null,
+    val reason: String? = null,
 )

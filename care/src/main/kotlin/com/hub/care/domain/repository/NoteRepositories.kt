@@ -1,7 +1,7 @@
 package com.hub.care.domain.repository
 
 import com.hub.care.domain.model.*
-import com.hub.population.domain.model.ResidentId
+import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.Identifier
 
 interface ResidentNoteRepository {

@@ -6,8 +6,9 @@ import com.hub.observation.domain.repository.CurrentBedStateRepository
 import com.hub.observation.domain.repository.NotificationEventRepository
 import com.hub.observation.domain.repository.SensorEventRepository
 import com.hub.observation.domain.repository.SummaryRepository
-import com.hub.population.domain.model.ResidentId
-import com.hub.residence.domain.model.BedId
+import com.hub.population.domain.repository.BedAssignmentRepository
+import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.BedId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -17,7 +18,8 @@ class ObservationApplicationService(
     private val sensorEventRepository: SensorEventRepository,
     private val bedStateRepository: CurrentBedStateRepository,
     private val summaryRepository: SummaryRepository,
-    private val notificationEventRepository: NotificationEventRepository
+    private val notificationEventRepository: NotificationEventRepository,
+    private val bedAssignmentRepository: BedAssignmentRepository
 ) {
 
     @Transactional
@@ -44,6 +46,40 @@ class ObservationApplicationService(
     @Transactional(readOnly = true)
     fun getBedState(bedId: String): BedStateResponse? {
         return bedStateRepository.findByBedId(BedId(bedId))?.toResponse()
+    }
+
+    @Transactional(readOnly = true)
+    fun getCurrentState(residentId: String): CurrentStateResponse {
+        val assignment = bedAssignmentRepository.findOpenByResidentId(ResidentId(residentId))
+        if (assignment == null) {
+            return CurrentStateResponse(
+                residentId = residentId,
+                bedId = null,
+                roomState = null,
+                state = null,
+                sleeping = null,
+                stateSince = null
+            )
+        }
+        val bedState = bedStateRepository.findByBedId(assignment.bedId)
+        if (bedState == null) {
+            return CurrentStateResponse(
+                residentId = residentId,
+                bedId = assignment.bedId.value,
+                roomState = null,
+                state = null,
+                sleeping = null,
+                stateSince = null
+            )
+        }
+        return CurrentStateResponse(
+            residentId = residentId,
+            bedId = bedState.bedId.value,
+            roomState = bedState.roomState,
+            state = bedState.state,
+            sleeping = bedState.sleeping,
+            stateSince = bedState.stateSince
+        )
     }
 
     @Transactional

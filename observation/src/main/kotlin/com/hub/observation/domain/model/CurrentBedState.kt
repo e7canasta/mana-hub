@@ -1,7 +1,7 @@
 package com.hub.observation.domain.model
 
-import com.hub.population.domain.model.ResidentId
-import com.hub.residence.domain.model.BedId
+import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.BedId
 import java.time.Instant
 
 data class CurrentBedState(

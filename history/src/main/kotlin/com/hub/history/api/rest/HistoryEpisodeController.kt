@@ -39,4 +39,12 @@ class HistoryEpisodeController(
     ): ResponseEntity<HistoryEpisodeReviewResponse> {
         return ResponseEntity.ok(historyEpisodeApplicationService.reviewHistoryEpisode(episodeId, request))
     }
+
+    @GetMapping("/residents/{residentId}/falls")
+    fun getFallsSummary(
+        @PathVariable residentId: String,
+        @RequestParam(defaultValue = "12") months: Int
+    ): ResponseEntity<FallsSummaryResponse> {
+        return ResponseEntity.ok(historyEpisodeApplicationService.getFallsSummary(residentId, months))
+    }
 }

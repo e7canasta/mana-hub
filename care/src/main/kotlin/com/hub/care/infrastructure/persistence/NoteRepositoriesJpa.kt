@@ -4,7 +4,7 @@ import com.hub.care.domain.model.*
 import com.hub.care.domain.repository.EpisodeNoteRepository
 import com.hub.care.domain.repository.ResidentNoteRepository
 import com.hub.care.domain.repository.ShiftNoteRepository
-import com.hub.population.domain.model.ResidentId
+import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.Identifier
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository

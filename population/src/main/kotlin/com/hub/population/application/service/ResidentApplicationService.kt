@@ -4,8 +4,12 @@ import com.hub.population.application.dto.*
 import com.hub.population.domain.model.*
 import com.hub.population.domain.repository.BedAssignmentRepository
 import com.hub.population.domain.repository.ResidentRepository
-import com.hub.residence.domain.model.BedId
+import com.hub.residence.domain.repository.BedRepository
+import com.hub.residence.domain.repository.RoomRepository
+import com.hub.residence.domain.repository.WingRepository
+import com.hub.shared.domain.BedId
 import com.hub.shared.domain.DomainEventPublisher
+import com.hub.shared.domain.ResidentId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -13,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional
 class ResidentApplicationService(
     private val residentRepository: ResidentRepository,
     private val assignmentRepository: BedAssignmentRepository,
+    private val bedRepository: com.hub.residence.domain.repository.BedRepository,
+    private val roomRepository: com.hub.residence.domain.repository.RoomRepository,
+    private val wingRepository: com.hub.residence.domain.repository.WingRepository,
     private val eventPublisher: DomainEventPublisher
 ) {
 
@@ -103,10 +110,27 @@ class ResidentApplicationService(
         }
     }
 
-    private fun Resident.toResponse() = ResidentResponse(
-        id = id.value, externalId = externalId, fullName = fullName, birthDate = birthDate,
-        admissionDate = admissionDate, status = status, isDischarged = !isActive
-    )
+    private fun Resident.toResponse(): ResidentResponse {
+        val assignment = assignmentRepository.findOpenByResidentId(id)
+        val location = if (assignment != null) {
+            val bed = bedRepository.findById(assignment.bedId)
+            val room = bed?.let { roomRepository.findById(it.roomId) }
+            val wing = room?.let { wingRepository.findById(it.wingId) }
+            ResidentLocation(
+                wingId = wing?.id?.value,
+                wingName = wing?.name,
+                roomNumber = room?.number,
+                bedId = bed?.id?.value,
+                bedLabel = bed?.label
+            )
+        } else null
+
+        return ResidentResponse(
+            id = id.value, externalId = externalId, fullName = fullName, birthDate = birthDate,
+            admissionDate = admissionDate, status = status, isDischarged = !isActive,
+            location = location
+        )
+    }
 
     private fun BedAssignment.toResponse() = AssignmentResponse(
         id = id.value, residentId = residentId.value, bedId = bedId.value,
