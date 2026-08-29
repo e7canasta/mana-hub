@@ -24,6 +24,10 @@ Each context group is a superset of DDD contexts sharing a domain language.
 | [Facility Management](specs/facility-management/README.md) | Residence + Streams + Identity + Coverage | Facility → Wing → Room → Bed → Camera |
 | [Clinical History](specs/clinical-history/README.md) | History + Evidence + Care + Observation | Timeline → Evidence → Notes → Summaries |
 
+## Destilado 2026-08-29
+
+> **44 docs auditados:** 8 vigentes, 22 destilados, 14 archivados. Ver [`DESTILADO.md`](DESTILADO.md) — preserva invariantes `R-*`, Gherkin, taxonomía hallazgos, matriz severidad y MoSCoW que no están en `api.md`/`data-model.md`. **Roadmap archivado** en `archive/roadmap/`, **Mermaid** en `archive/data-model-mermaid.md`.
+
 ## Technical References
 
 | Document | Description | Status |
@@ -33,9 +37,10 @@ Each context group is a superset of DDD contexts sharing a domain language.
 | [Data Model](../data-model.md) | PostgreSQL 17, 44 tables, consolidated DDL | ✅ Rewritten 2026-08-29 |
 | [Domain Model](big-picture/domain-model.md) | Entities + aggregates (real) | ✅ Updated 2026-08-29 |
 | [Data Flow](big-picture/data-flow.md) | 8 phases, vocabulario canónico | ✅ Updated 2026-08-29 |
-| [Vocabulary](../docs/vocabulario-unificado.md) | Unified language (5 términos) | ✅ Validated |
-| [Business Glossary](../docs/business-glossary-domain-model.md) | Glosario + capability map | ⚠️ Partial — needs sync with `domain-model.md` (remove `AlarmPreset` ghost) |
-| [Data Model Mermaid](../docs/data-model-mermaid.md) | ER diagrams (Mermaid) | ⚠️ Deprecated — use `data-model.md` |
+| [Vocabulary](vocabulario-unificado.md) | Unified language (5 términos) | ✅ Validated |
+| [Destilado](DESTILADO.md) | Invariantes, Gherkin, hallazgos, severidad, MoSCoW | ✅ New 2026-08-29 |
+| [Business Glossary](business-glossary-domain-model.md) | Glosario + capability map | ⚠️ Partial — banner destilado, ver `DESTILADO.md:1` |
+| [Data Model Mermaid](archive/data-model-mermaid.md) | ER Mermaid deprecated | 📦 Archived — use `data-model.md` |
 | [Architecture Overview](big-picture/architecture-overview.md) | Modules, layers, integration | ✅ Updated 2026-08-29 |
 | [Context Map](big-picture/context-map.md) | 12 bounded contexts | ✅ Updated 2026-08-29 |
 

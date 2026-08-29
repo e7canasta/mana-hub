@@ -1,5 +1,7 @@
 # mana-hub BDD Specs
 
+> ⚠️ **Destilado 2026-08-29:** Los DSL Specs (`DSL Spec (Kotlin Test)`) en 18 archivos usan firma fantasma `ManaHubClient(session).population.residents.create` vs real `manahub{ population.admitResident }` (`clients/core/ManaHubClient.kt:66`). **Gherkin `Scenarios` y `Acceptance Criteria` son válidos** y preservados. Ver `docs/DESTILADO.md:2` (tabla Gherkin) y `docs/design-memory/dsl-design.md` (firma real) antes de implementar. `Domain Objects` con `AlarmPreset` fantasma → ver `data-model.md` + `domain-model.md`.
+
 ## Context Groups
 
 Each context group is a superset of DDD contexts sharing a domain language. BDD specs validate user stories within each group.

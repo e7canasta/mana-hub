@@ -4,8 +4,11 @@ import com.hub.population.domain.repository.BedAssignmentRepository
 import com.hub.population.domain.repository.ResidentRepository
 import com.hub.observation.domain.repository.CurrentBedStateRepository
 import com.hub.observation.domain.repository.SummaryRepository
-import com.hub.history.domain.repository.HistoryEpisodeRepositories
+import com.hub.history.domain.repository.HistoryEpisodeDetectionRepository
+import com.hub.history.domain.repository.HistoryEpisodeReviewRepository
 import com.hub.care.domain.repository.CareSummaryRepository
+import com.hub.policy.domain.repository.AlarmProfileRepository
+import com.hub.policy.domain.repository.AlarmProfileOverrideRepository
 import com.hub.shared.domain.ResidentId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,9 +23,11 @@ class ProjectionService(
     private val bedAssignmentRepository: BedAssignmentRepository,
     private val bedStateRepository: CurrentBedStateRepository,
     private val summaryRepository: SummaryRepository,
-    private val historyEpisodeRepository: HistoryEpisodeRepositories.HistoryEpisodeRepository,
-    private val historyReviewRepository: HistoryEpisodeRepositories.HistoryEpisodeReviewRepository,
+    private val historyEpisodeRepository: HistoryEpisodeDetectionRepository,
+    private val historyReviewRepository: HistoryEpisodeReviewRepository,
     private val careSummaryRepository: CareSummaryRepository,
+    private val alarmProfileRepository: AlarmProfileRepository,
+    private val alarmOverrideRepository: AlarmProfileOverrideRepository,
 ) {
 
     // ──────────────────────────────────────────────────────── resident-rail
@@ -31,10 +36,10 @@ class ProjectionService(
     fun getResidentRail(): List<ResidentRailItem> {
         val residents = residentRepository.findAll()
         return residents.map { resident ->
-            val assignment = bedAssignmentRepository.findOpenByResidentId(ResidentId(resident.id))
+            val assignment = bedAssignmentRepository.findOpenByResidentId(resident.id)
             val bedState = assignment?.let { bedStateRepository.findByBedId(it.bedId) }
             ResidentRailItem(
-                id = resident.id,
+                id = resident.id.value,
                 fullName = resident.fullName,
                 location = assignment?.let {
                     RailLocation(wingName = null, roomNumber = null, bedLabel = null)
@@ -58,7 +63,7 @@ class ProjectionService(
         val assignment = bedAssignmentRepository.findOpenByResidentId(ResidentId(residentId))
         val bedState = assignment?.let { bedStateRepository.findByBedId(it.bedId) }
         return ResidentChartProjection(
-            id = resident.id,
+            id = resident.id.value,
             fullName = resident.fullName,
             birthDate = resident.birthDate,
             admissionDate = resident.admissionDate,
@@ -75,7 +80,7 @@ class ProjectionService(
 
     @Transactional(readOnly = true)
     fun getSleepTab(residentId: String, from: LocalDate, to: LocalDate): SleepTabProjection {
-        val summaries = summaryRepository.findSleepByResidentIdAndDateRange(
+        val summaries = summaryRepository.findSleepByResidentAndRange(
             ResidentId(residentId), from, to
         )
         return SleepTabProjection(
@@ -102,7 +107,7 @@ class ProjectionService(
 
     @Transactional(readOnly = true)
     fun getMobilityTab(residentId: String, from: LocalDate, to: LocalDate): MobilityTabProjection {
-        val summaries = summaryRepository.findMobilityByResidentIdAndDateRange(
+        val summaries = summaryRepository.findMobilityByResidentAndRange(
             ResidentId(residentId), from, to
         )
         return MobilityTabProjection(
@@ -125,7 +130,7 @@ class ProjectionService(
 
     @Transactional(readOnly = true)
     fun getBathroomTab(residentId: String, from: LocalDate, to: LocalDate): BathroomTabProjection {
-        val summaries = summaryRepository.findBathroomByResidentIdAndDateRange(
+        val summaries = summaryRepository.findBathroomByResidentAndRange(
             ResidentId(residentId), from, to
         )
         return BathroomTabProjection(
@@ -146,7 +151,7 @@ class ProjectionService(
 
     @Transactional(readOnly = true)
     fun getCareTab(residentId: String, from: LocalDate, to: LocalDate): CareTabProjection {
-        val summaries = careSummaryRepository.findByResidentIdAndDateRange(
+        val summaries = careSummaryRepository.findByResidentAndRange(
             ResidentId(residentId), from, to
         )
         val days = summaries.map {
@@ -230,7 +235,7 @@ class ProjectionService(
         return EpisodesTabProjection(
             residentId = residentId,
             episodes = episodes.zip(reviews).map { (ep, revs) ->
-                val lastReview = revs.maxByOrNull { it.resolvedAt }
+                val lastReview = revs.maxByOrNull { it.resolvedAt ?: java.time.Instant.MIN }
                 EpisodeListItemProjection(
                     id = ep.id.value,
                     kind = ep.kind.name,
@@ -243,6 +248,44 @@ class ProjectionService(
                     reviewedAt = lastReview?.resolvedAt,
                 )
             },
+        )
+    }
+
+    // ─────────────────────────────────────────────────────── alarm (read)
+
+    @Transactional(readOnly = true)
+    fun getAlarmPresets(residentId: String): AlarmPresetsProjection {
+        val version = alarmProfileRepository.findCurrentByResidentId(ResidentId(residentId))
+        if (version == null) {
+            return AlarmPresetsProjection(
+                residentId = residentId,
+                riskLevel = null, mobilityAid = null, autopilot = null,
+                mode = null, templateId = null, overrides = emptyMap(),
+                updatedAt = null, updatedBy = null, recommendation = null,
+            )
+        }
+        val overrides = alarmOverrideRepository.findByProfileVersionId(version.id.value)
+            .associate { override ->
+                override.ruleId to when (override) {
+                    is com.hub.policy.domain.model.PolicyOverride.DwellOverride ->
+                        mapOf("warningAfterMinutes" to override.warningAfterMinutes, "alertAfterMinutes" to override.alertAfterMinutes)
+                    is com.hub.policy.domain.model.PolicyOverride.HysteresisOverride ->
+                        mapOf("hysteresisSeconds" to override.hysteresisSeconds)
+                    is com.hub.policy.domain.model.PolicyOverride.ComeBackOverride ->
+                        mapOf("baselineState" to override.baselineState, "alertAfterMinutes" to override.alertAfterMinutes)
+                }
+            }
+        return AlarmPresetsProjection(
+            residentId = residentId,
+            riskLevel = version.riskLevel.name.lowercase(),
+            mobilityAid = version.mobilityAid?.name?.lowercase(),
+            autopilot = version.autopilot,
+            mode = version.mode?.name?.lowercase(),
+            templateId = version.templateId?.value,
+            overrides = overrides,
+            updatedAt = version.validFrom.toString(),
+            updatedBy = version.updatedBy,
+            recommendation = null,
         )
     }
 }

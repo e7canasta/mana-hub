@@ -6,24 +6,12 @@ import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
 
 @RestController
-@RequestMapping("/api/v1/views")
-class ProjectionController(
-    private val projectionService: ProjectionService
+@RequestMapping("/api/v1/views/resident-chart/{residentId}")
+class WellbeingProjectionController(
+    private val projectionService: ProjectionService,
 ) {
 
-    @GetMapping("/resident-rail")
-    fun getResidentRail(): ResponseEntity<List<ResidentRailItem>> {
-        return ResponseEntity.ok(projectionService.getResidentRail())
-    }
-
-    @GetMapping("/resident-chart/{residentId}")
-    fun getResidentChart(@PathVariable residentId: String): ResponseEntity<ResidentChartProjection> {
-        return projectionService.getResidentChart(residentId)
-            ?.let { ResponseEntity.ok(it) }
-            ?: ResponseEntity.notFound().build()
-    }
-
-    @GetMapping("/resident-chart/{residentId}/sleep")
+    @GetMapping("/sleep")
     fun getSleepTab(
         @PathVariable residentId: String,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate,
@@ -32,7 +20,7 @@ class ProjectionController(
         return ResponseEntity.ok(projectionService.getSleepTab(residentId, from, to))
     }
 
-    @GetMapping("/resident-chart/{residentId}/mobility")
+    @GetMapping("/mobility")
     fun getMobilityTab(
         @PathVariable residentId: String,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate,
@@ -41,7 +29,7 @@ class ProjectionController(
         return ResponseEntity.ok(projectionService.getMobilityTab(residentId, from, to))
     }
 
-    @GetMapping("/resident-chart/{residentId}/bathroom")
+    @GetMapping("/bathroom")
     fun getBathroomTab(
         @PathVariable residentId: String,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate,
@@ -50,7 +38,7 @@ class ProjectionController(
         return ResponseEntity.ok(projectionService.getBathroomTab(residentId, from, to))
     }
 
-    @GetMapping("/resident-chart/{residentId}/care")
+    @GetMapping("/care")
     fun getCareTab(
         @PathVariable residentId: String,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate,
@@ -59,16 +47,11 @@ class ProjectionController(
         return ResponseEntity.ok(projectionService.getCareTab(residentId, from, to))
     }
 
-    @GetMapping("/resident-chart/{residentId}/falls")
+    @GetMapping("/falls")
     fun getFallsTab(
         @PathVariable residentId: String,
         @RequestParam(defaultValue = "12") months: Int,
     ): ResponseEntity<FallsTabProjection> {
         return ResponseEntity.ok(projectionService.getFallsTab(residentId, months))
-    }
-
-    @GetMapping("/resident-chart/{residentId}/episodes")
-    fun getEpisodesTab(@PathVariable residentId: String): ResponseEntity<EpisodesTabProjection> {
-        return ResponseEntity.ok(projectionService.getEpisodesTab(residentId))
     }
 }

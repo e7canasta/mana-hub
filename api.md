@@ -124,13 +124,13 @@ Stack: **Kotlin 2.4.20-RC + Spring Boot 4.0.1 + Spring Web MVC** (no `rutas.toml
 
 ## 8. Policy (5) — `policy/api/rest/AlarmProfileController.kt:10` (`/api/v1/alarm-presets`)
 
-| Method | Path |
-|--------|------|
-| GET | `/api/v1/alarm-presets/catalog` |
-| GET | `/api/v1/alarm-presets` |
-| GET | `/api/v1/alarm-presets/{residentId}` |
-| PATCH | `/api/v1/alarm-presets/{residentId}` |
-| GET | `/api/v1/alarm-presets/{residentId}/history` |
+| Method | Path                                         |
+| ------ | -------------------------------------------- |
+| GET    | `/api/v1/alarm-presets/catalog`              |
+| GET    | `/api/v1/alarm-presets`                      |
+| GET    | `/api/v1/alarm-presets/{residentId}`         |
+| PATCH  | `/api/v1/alarm-presets/{residentId}`         |
+| GET    | `/api/v1/alarm-presets/{residentId}/history` |
 
 > Gaps: `POST /alarm-presets/apply-recommendations`, `POST /autopilot`, `POST /{id}/apply-recommendation` no existen aún (DAG overrides vía `alarm_profile_overrides` tabla V9).
 

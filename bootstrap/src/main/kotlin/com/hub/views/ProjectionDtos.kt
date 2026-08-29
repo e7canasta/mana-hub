@@ -2,6 +2,7 @@ package com.hub.views
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 // ──────────────────────────────────────────────────────────── resident-rail
 
@@ -52,8 +53,8 @@ data class SleepDayProjection(
     val outOfBedMinutes: Int,
     val bedExitCount: Int,
     val wakeCount: Int,
-    val startedAt: Instant?,
-    val endedAt: Instant?,
+    val startedAt: LocalDateTime?,
+    val endedAt: LocalDateTime?,
 )
 
 data class MobilityTabProjection(
@@ -137,4 +138,41 @@ data class EpisodeListItemProjection(
     val verdict: String?,
     val reviewNote: String?,
     val reviewedAt: Instant?,
+)
+
+// ───────────────────────────────────────────────────────── alarm
+
+/** Presets de alarma — la configuración que le dice al sistema cómo monitorear. */
+data class AlarmPresetsProjection(
+    val residentId: String,
+    val riskLevel: String?,
+    val mobilityAid: String?,
+    val autopilot: Boolean?,
+    val mode: String?,
+    val templateId: String?,
+    val overrides: Map<String, Any>,
+    val updatedAt: String?,
+    val updatedBy: String?,
+    val recommendation: AlarmRecommendationProjection?,
+)
+
+data class AlarmRecommendationProjection(
+    val level: String?,
+    val changed: Boolean,
+    val factors: List<String>,
+    val score: Int?,
+)
+
+// ─────────────────────────────────────────────────────────── commands
+
+/** Comando para actualizar los presets de alarma. */
+data class UpdateAlarmPresetsCommand(
+    val riskLevel: String? = null,
+    val mobilityAid: String? = null,
+    val autopilot: Boolean? = null,
+    val mode: String? = null,
+    val templateId: String? = null,
+    val overrides: Map<String, Any>? = null,
+    val reason: String? = null,
+    val updatedBy: String? = null,
 )

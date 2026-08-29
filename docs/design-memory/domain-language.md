@@ -1,35 +1,36 @@
-# Domain Language
+# Domain Language — Destilado 2026-08-29
 
-## Canonical Terms
+> Redirige a fuente canónica `docs/vocabulario-unificado.md:53` (5 términos). Este archivo es cheat-sheet destilado.
 
-| Term | Definition | Context |
-|------|------------|---------|
-| **Perception** | Raw sensor reading | Observation |
-| **Scene Change** | Confirmed state transition | Observation |
-| **Notification** | Visual-only alert (no episode) | Observation |
-| **Episode** | Incident requiring attention | Surveillance |
-| **Finding (Hallazgo)** | Clinical insight or pattern | Care |
+## Términos Canónicos — `vocabulario-unificado.md:53`
 
-## Context Groups
+| Término | Definición | Tabla / Código | Naturaleza |
+|---------|------------|----------------|------------|
+| **PERCEPCIÓN** | Lectura cruda sensor (postura, ubicación, staff_present) | `sensor_events` (`kind POSTURE|LOCATION|STAFF_PRESENCE|ACCESSORY_PRESENCE`) | Cruda, volátil |
+| **CAMBIO DE ESCENA** | Transición confirmada tras hysteresis | `scene_events` (`TRANSITION|PERMANENCE`, `triggerType hysteresis|permanence|manual`) | Validada |
+| **NOTIFICACIÓN** | Solo visual, no abre episodio | `notification_events` | Informativa |
+| **EPISODIO** | Requiere atención, agrupa scene changes | `episodes` (`INFO|WARNING|CRITICAL|EMERGENCY`) | Accionable |
+| **HALLAZGO** | Conclusión experta/ML (INSIGHT/PATTERN) | `resident_notes` (`kind INSIGHT|PATTERN`) | Interpretada |
+| **EVIDENCIA** | Clip/timeline material | `evidence|timelines|clip_windows` | Soporte |
 
-| Group | Contexts | Language |
-|-------|----------|----------|
-| Resident Lifecycle | Population + Policy + Surveillance | Admit, Assign, Configure, Monitor |
-| Clinical Monitoring | Observation + Surveillance + Evidence | Perceive, Detect, Record, Capture |
-| Care Operations | Care + Surveillance + Audit | Round, Note, Review, Log |
-| Facility Management | Residence + Streams + Identity | Build, Assign, Register |
-| Clinical History | History + Evidence + Care | Timeline, Summarize, Review |
+Ver matriz severidad × confirmación en `vocabulario-unificado.md:143`: `INFO` virtual, `WARNING` virtual+video, `CRITICAL/EMERGENCY` en sitio+grabación. `ESTADO SEGURO` auto-resolución (deuda).
 
-## Rules of Use
+## Grupos de Contexto — `docs/big-picture/context-map.md:5`
 
-### Say
-- "The sensor emitted a **perception**"
-- "There was a **scene change** at 03:12"
-- "That only generated a **notification**, not an episode"
-- "The **episode** #123 auto-resolved when resident returned to bed"
-- "The doctor recorded a **finding**: insomnia pattern"
+| Grupo | Contextos | Flujo DSL |
+|-------|----------|-----------|
+| Resident Lifecycle | Population + Policy + Surveillance | `admit → assign → configureAlarmProfile → monitor` |
+| Clinical Monitoring | Observation + Surveillance + Evidence | `registerPerception → registerSceneChange → registerEpisode → createEvidence` |
+| Care Operations | Care + Coverage + Surveillance | `startRound → addResidentNote/registerFinding → addShiftNote` |
+| Facility Management | Residence + Streams + Identity + Coverage | `setupFacility{wing{room{bed}}} → assignStreamToRoom → registerUser` |
+| Clinical History | History + Evidence + Care + Observation | `residentHistoryEpisodes → historyEpisodeSequence → sleep/mobility/bathroomSummaries → careSummaries` |
 
-### Don't Say
-- ~~"The observation says..."~~ → ambiguous
-- ~~"Alert"~~ → use notification or episode
-- ~~"Event"~~ alone → specify: perception, scene change, episode
+## Reglas de Uso
+
+- ¿Lo dijo el **SENSOR**? → **Percepción** (`POST /internal/v1/events`)
+- ¿Lo confirmó **MOTOR DE ESCENA**? → **Cambio de Escena** (`POST /internal/v1/scene-events`)
+- ¿Solo informa? → **Notificación** (`POST /internal/v1/notifications`)
+- ¿Requiere atención? → **Episodio** (`POST /api/v1/episodes`)
+- ¿Lo concluyó **PERSONA/IA** con análisis? → **Hallazgo** (`POST /api/v1/residents/{id}/notes kind=INSIGHT`)
+
+No decir: ~~"observación"~~ ambiguo, ~~"alerta"~~ genérico, ~~"evento"~~ sin calificar.
