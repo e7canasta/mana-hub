@@ -9,7 +9,7 @@ import io.nats.client.PushSubscribeOptions
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.client.RestClient
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import java.time.Instant
@@ -30,7 +30,7 @@ class NatsIngestService(
     @Value("\${bridge.target.url:http://localhost:8080}") private val targetUrl: String,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
-    private val client = WebClient.builder().baseUrl(targetUrl).build()
+    private val client = RestClient.builder().baseUrl(targetUrl).build()
     private val subscriptions = mutableListOf<JetStreamSubscription>()
 
     companion object {
@@ -88,10 +88,9 @@ class NatsIngestService(
             client.post()
                 .uri("/webhooks/events")
                 .header("Content-Type", "application/json")
-                .bodyValue(objectMapper.writeValueAsString(event))
+                .body(objectMapper.writeValueAsString(event))
                 .retrieve()
-                .bodyToMono(String::class.java)
-                .block()
+                .body(String::class.java)
 
             log.debug("Forwarded {} from {} to hub", raw["type"], subject)
         } catch (e: Exception) {

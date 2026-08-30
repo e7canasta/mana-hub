@@ -33,9 +33,17 @@ dependencies {
     implementation(libs.jackson.module.kotlin)
     implementation(libs.jackson.datatype.jsr310)
     implementation(libs.springdoc.openapi.starter.webmvc.ui)
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
 
     runtimeOnly(libs.postgresql)
+
+configurations.named("runtimeClasspath") {
+    exclude(group = "net.java.dev.jna", module = "jna")
+    exclude(group = "net.java.dev.jna", module = "jna-platform")
+}
+
+tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
+    requiresUnpack("**/bcprov-*.jar")
+}
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.mockk)
