@@ -19,7 +19,8 @@ dependencies {
     implementation(project(":streams"))
     implementation(project(":observation"))
     implementation(project(":integration"))
-    implementation(project(":event-bridge"))
+    // event-bridge runs as standalone process, not embedded in mana-hub
+    // implementation(project(":event-bridge"))
 
     implementation(platform("org.springframework.boot:spring-boot-dependencies:$springBootVersion"))
     implementation(libs.spring.boot.starter.web)

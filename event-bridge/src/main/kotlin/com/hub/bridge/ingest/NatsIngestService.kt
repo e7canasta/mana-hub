@@ -67,7 +67,10 @@ class NatsIngestService(
     private fun subscribeTo(subject: String, name: String) {
         val dispatcher = connection.createDispatcher { msg ->
             try {
-                val envelope = busMapper.readValue<EventEnvelope>(String(msg.data))
+                val raw = String(msg.data)
+                log.info("NATS RECEIVED {} subject={} bytes={}", name, msg.subject, raw.length)
+                val envelope = busMapper.readValue<EventEnvelope>(raw)
+                log.info("NATS DESERIALIZED {} type={} eventId={}", name, envelope.type, envelope.eventId)
                 eventRouter.route(envelope, msg.subject)
                 msg.ack()
             } catch (e: Exception) {

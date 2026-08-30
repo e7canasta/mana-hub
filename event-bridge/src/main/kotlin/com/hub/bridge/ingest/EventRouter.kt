@@ -23,9 +23,11 @@ class EventRouter(
 
         when {
             subject.startsWith("scene.") -> {
+                log.info("ROUTING SceneEvent type={} subject={}", type, subject)
                 forward("/internal/v1/integration/scene-events", payload, type, subject)
             }
             subject.startsWith("sentinel.") -> {
+                log.info("ROUTING SentinelSignal type={} subject={}", type, subject)
                 forward("/internal/v1/integration/signal-events", payload, type, subject)
             }
             subject.startsWith("perception.") -> {
@@ -50,17 +52,19 @@ class EventRouter(
     }
 
     private fun forward(path: String, payload: String, type: String, subject: String) {
+        val callId = java.util.UUID.randomUUID().toString().take(8)
+        log.info("FORWARD CALL #{} type={} path={} subject={}", callId, type, path, subject)
         try {
-            client.post()
+            val response = client.post()
                 .uri(path)
                 .header("Content-Type", "application/json")
                 .body(payload)
                 .retrieve()
-                .body(String::class.java)
+                .toEntity(String::class.java)
 
-            log.info("Forwarded {} → {} from {}", type, path, subject)
+            log.info("FORWARD OK #{} type={} status={} body={}", callId, type, response.statusCode, response.body?.take(50) ?: "empty")
         } catch (e: Exception) {
-            log.error("Failed to forward {} to {}: {}", type, path, e.message)
+            log.error("FORWARD FAIL #{} type={} path={}: {}", callId, type, path, e.message)
         }
     }
 }

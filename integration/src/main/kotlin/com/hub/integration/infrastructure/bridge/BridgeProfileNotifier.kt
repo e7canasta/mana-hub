@@ -2,6 +2,7 @@ package com.hub.integration.infrastructure.bridge
 
 import com.hub.integration.application.service.ProfileChangedEvent
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
@@ -12,15 +13,16 @@ import org.springframework.web.client.RestClient
  */
 @Component
 class BridgeProfileNotifier(
-    private val client: RestClient,
+    @Value("\${bridge.target.url:http://localhost:8090}") private val bridgeUrl: String,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
+    private val client: RestClient = RestClient.builder().baseUrl(bridgeUrl).build()
 
     @EventListener
     fun onProfileChanged(event: ProfileChangedEvent) {
         try {
             client.post()
-                .uri("http://localhost:8090/webhooks/profile-change")
+                .uri("/webhooks/profile-change")
                 .header("Content-Type", "application/json")
                 .body(event.rawJson)
                 .retrieve()

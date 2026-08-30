@@ -52,6 +52,9 @@ class IntegrationService(
                     if (it.isObject) it.path("value").asText("unknown") else it.asText("unknown")
                 }
 
+                log.info("EPISODE_OPENED processing: episodeId={} bed={} resident={} severity={} thread={}",
+                    episodeId, bedId, residentId, severity, Thread.currentThread().name)
+
                 val request = CreateEpisodeRequest(
                     id = episodeId,
                     residentId = residentId,

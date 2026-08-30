@@ -20,9 +20,9 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/internal/v1/integration")
 class PolicyIntegrationController(
     private val alarmProfileService: AlarmProfileApplicationService,
-    private val objectMapper: ObjectMapper,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
+    private val objectMapper = ObjectMapper()
 
     /**
      * Receive PolicyChangeDetected from mana-hive and persist the AlarmProfile.

@@ -16,14 +16,15 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/internal/v1/integration")
 class IntegrationController(
     private val integrationService: IntegrationService,
-    private val objectMapper: ObjectMapper,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
+    private val objectMapper = ObjectMapper()
 
     @PostMapping("/scene-events")
     fun ingestSceneEvent(@RequestBody body: String): ResponseEntity<String> {
         val tree = objectMapper.readTree(body)
-        log.info("SceneEvent received: {}", tree.get("type") ?: "unknown")
+        val type = tree.get("type") ?: "unknown"
+        log.info("SceneEvent received: {} body.length={}", type, body.length)
         integrationService.ingestSceneEvent(tree)
         return ResponseEntity.status(HttpStatus.CREATED).build()
     }
@@ -31,7 +32,8 @@ class IntegrationController(
     @PostMapping("/signal-events")
     fun ingestSignalEvent(@RequestBody body: String): ResponseEntity<String> {
         val tree = objectMapper.readTree(body)
-        log.info("SentinelSignal received: {}", tree.get("type") ?: "unknown")
+        val type = tree.get("type") ?: "unknown"
+        log.info("SentinelSignal received: {} body.length={}", type, body.length)
         integrationService.ingestSignalEvent(tree)
         return ResponseEntity.status(HttpStatus.CREATED).build()
     }
