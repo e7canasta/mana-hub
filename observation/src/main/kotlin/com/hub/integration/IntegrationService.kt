@@ -1,13 +1,21 @@
 package com.hub.integration
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.hub.observation.domain.model.SceneEvent
+import com.hub.observation.domain.repository.SceneEventRepository
+import com.hub.shared.domain.BedId
+import com.hub.shared.domain.Identifier
+import com.hub.shared.domain.ResidentId
 import com.hub.surveillance.application.dto.CreateEpisodeRequest
 import com.hub.surveillance.application.dto.UpdateEpisodeRequest
 import com.hub.surveillance.application.service.EpisodeApplicationService
 import com.hub.surveillance.domain.model.EpisodeSeverity
+import com.hub.surveillance.domain.repository.EpisodeRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
+import java.util.UUID
 
 /**
  * Handles ingestion of bus events from mana-hive.
@@ -18,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class IntegrationService(
     private val episodeService: EpisodeApplicationService,
+    private val episodeRepository: EpisodeRepository,
+    private val sceneEventRepository: SceneEventRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -28,7 +38,25 @@ class IntegrationService(
         }
         val type = body.path("type").asText("unknown")
         log.info("SceneEvent ingested: {} on bed {}", type, bedId)
-        // TODO: persist to scene_events table via observation module
+        try {
+            val event = SceneEvent(
+                id = Identifier(UUID.randomUUID().toString()),
+                eventId = body.path("eventId").asText(UUID.randomUUID().toString()),
+                bedId = BedId(bedId),
+                residentId = body.path("resident").let { if (it.isMissingNode || it.isNull) null else runCatching { ResidentId(it.asText()) }.getOrNull() }
+                    ?: body.path("bed").let { null },
+                eventType = type,
+                fromState = body.path("from").asText(null)?.takeIf { it != "null" },
+                toState = body.path("to").asText(null)?.takeIf { it != "null" },
+                triggerType = body.path("trigger").asText(null),
+                timestamp = runCatching { Instant.parse(body.path("at").asText()) }.getOrElse { Instant.now() },
+                payloadJson = body.toString(),
+            )
+            sceneEventRepository.save(event)
+            log.info("SceneEvent persisted: {} {}", type, event.eventId)
+        } catch (e: Exception) {
+            log.warn("Failed to persist SceneEvent {}: {}", type, e.message)
+        }
     }
 
     @Transactional
@@ -100,7 +128,16 @@ class IntegrationService(
                 val previousSeverity = body.path("previousSeverity").asText("unknown")
                 val severity = body.path("severity").asText("unknown")
                 log.info("Episode {} complicated: {} → {}", episodeId, previousSeverity, severity)
-                // Update severity in DB if needed — the episode already exists
+                try {
+                    val ep = episodeRepository.findById(com.hub.surveillance.domain.model.EpisodeId(episodeId))
+                    if (ep != null) {
+                        val escalated = ep.escalate(severity)
+                        episodeRepository.save(escalated)
+                        log.info("Episode {} escalated persisted: {} → {}", episodeId, previousSeverity, severity)
+                    }
+                } catch (e: Exception) {
+                    log.warn("Failed to escalate {}: {}", episodeId, e.message)
+                }
             }
 
             "UMBRELLA_EVENT" -> {
