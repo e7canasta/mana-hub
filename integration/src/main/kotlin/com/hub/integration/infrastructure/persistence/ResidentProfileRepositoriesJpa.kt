@@ -26,12 +26,11 @@ class ResidentProfileEntity(
 )
 
 interface ResidentProfileEntityRepository : JpaRepository<ResidentProfileEntity, String> {
-    @Query("SELECT e FROM ResidentProfileEntity e WHERE e.residentId = :residentId AND e.supersedes IS NULL")
-    fun findCurrentByResidentId(residentId: String): ResidentProfileEntity?
+    fun findTopByResidentIdOrderByVersionDesc(residentId: String): ResidentProfileEntity?
 
     fun findByResidentId(residentId: String): List<ResidentProfileEntity>
 
-    @Query("SELECT e FROM ResidentProfileEntity e WHERE e.supersedes IS NULL")
+    @Query("SELECT e FROM ResidentProfileEntity e WHERE e.version = (SELECT MAX(e2.version) FROM ResidentProfileEntity e2 WHERE e2.residentId = e.residentId)")
     fun findActiveProfiles(): List<ResidentProfileEntity>
 }
 
@@ -41,13 +40,16 @@ class ResidentProfileRepositoryAdapter(
 ) : ResidentProfileRepository {
 
     override fun findCurrentByResidentId(residentId: String): ResidentProfile? =
-        jpa.findCurrentByResidentId(residentId)?.toDomain()
+        jpa.findTopByResidentIdOrderByVersionDesc(residentId)?.toDomain()
 
     override fun findByResidentId(residentId: String): List<ResidentProfile> =
         jpa.findByResidentId(residentId).map { it.toDomain() }
 
     override fun save(profile: ResidentProfile): ResidentProfile =
         jpa.save(profile.toEntity()).toDomain()
+
+    override fun saveAndFlush(profile: ResidentProfile): ResidentProfile =
+        jpa.saveAndFlush(profile.toEntity()).toDomain()
 
     override fun findActiveProfiles(): List<ResidentProfile> =
         jpa.findActiveProfiles().map { it.toDomain() }

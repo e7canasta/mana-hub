@@ -22,25 +22,16 @@ class ResidentProfileService(
     fun ingestProfile(rawJson: String): ResidentProfile {
         val profile = ResidentProfile.fromRawJson(rawJson)
 
-        // Check if same version already exists
+        // Idempotency: same (residentId, version) already persisted
         val existing = repository.findByResidentId(profile.residentId)
-        val current = existing.find { it.supersedes == null }
-
-        if (current != null && current.version == profile.version) {
+        existing.find { it.version == profile.version }?.let {
             log.info("Profile v{} for {} already exists, skipping", profile.version, profile.residentId)
-            return current
+            return it
         }
 
-        // Expire current profile if new version is higher
-        if (current != null && current.version < profile.version) {
-            val expired = current.copy(supersedes = profile.version - 1)
-            repository.save(expired)
-            log.info("Expired profile v{} for {}", current.version, profile.residentId)
-        }
-
-        // Save new profile (handle duplicate key race condition)
+        // Save new profile (flush inside try so constraint violation is caught in-transaction)
         val saved = try {
-            repository.save(profile)
+            repository.saveAndFlush(profile)
         } catch (e: org.springframework.dao.DataIntegrityViolationException) {
             log.info("Profile v{} for {} already exists (race condition), fetching", profile.version, profile.residentId)
             repository.findByResidentId(profile.residentId).find { it.version == profile.version }
