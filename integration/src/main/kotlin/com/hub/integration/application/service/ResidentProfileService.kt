@@ -38,14 +38,25 @@ class ResidentProfileService(
             log.info("Expired profile v{} for {}", current.version, profile.residentId)
         }
 
-        // Save new profile
-        val saved = repository.save(profile)
+        // Save new profile (handle duplicate key race condition)
+        val saved = try {
+            repository.save(profile)
+        } catch (e: org.springframework.dao.DataIntegrityViolationException) {
+            log.info("Profile v{} for {} already exists (race condition), fetching", profile.version, profile.residentId)
+            repository.findByResidentId(profile.residentId).find { it.version == profile.version }
+                ?: throw e
+        }
         log.info("Profile saved: {} v{} for {}", profile.profileId, profile.version, profile.residentId)
 
-        // Notify bridge
-        eventPublisher.publishEvent(ProfileChangedEvent(profile.residentId, rawJson))
+        // Notify bridge (non-blocking)
+        try {
+            eventPublisher.publishEvent(ProfileChangedEvent(profile.residentId, rawJson))
+            log.info("Bridge notified of profile change for {}", profile.residentId)
+        } catch (e: Exception) {
+            log.warn("Failed to notify bridge for {}: {}", profile.residentId, e.message)
+        }
 
-        return saved
+        return saved!!
     }
 
     @Transactional(readOnly = true)

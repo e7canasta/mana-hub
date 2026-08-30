@@ -26,13 +26,19 @@ data class ResidentProfile(
     companion object {
         fun fromRawJson(rawJson: String, id: String = java.util.UUID.randomUUID().toString()): ResidentProfile {
             val tree = com.fasterxml.jackson.databind.ObjectMapper().readTree(rawJson)
+            val validFromText = tree.path("validFrom").asText("")
+            val validFrom = if (validFromText.isNotEmpty()) {
+                java.time.Instant.parse(validFromText)
+            } else {
+                java.time.Instant.now()
+            }
             return ResidentProfile(
                 id = id,
                 residentId = tree.path("residentId").asText("unknown"),
                 profileId = tree.path("profileId").asText("unknown"),
                 version = tree.path("version").asInt(1),
                 supersedes = tree.path("supersedes").asInt(-1).let { if (it < 0) null else it },
-                validFrom = java.time.Instant.parse(tree.path("validFrom").asText()),
+                validFrom = validFrom,
                 provenanceJson = tree.path("provenance").toString(),
                 windowsJson = tree.path("windows").toString(),
                 subjectsJson = tree.path("subjects").toString(),
