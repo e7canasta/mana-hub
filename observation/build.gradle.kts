@@ -7,6 +7,9 @@ dependencies {
     implementation(project(":residence"))
     implementation(project(":population"))
     implementation(project(":evidence"))
+    implementation(project(":surveillance"))
+    implementation(project(":policy"))
+    implementation("com.manahive:contracts:1.0.0")
 
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.validation)

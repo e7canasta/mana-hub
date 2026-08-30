@@ -16,17 +16,34 @@ class EpisodeApplicationService(
 
     @Transactional
     fun createEpisode(request: CreateEpisodeRequest): EpisodeResponse {
-        val episode = Episode.create(
-            residentId = ResidentId(request.residentId),
-            bedId = request.bedId?.let { BedId(it) },
-            severity = request.severity,
-            title = request.title,
-            detail = request.detail,
-            occurredAt = request.occurredAt,
-            evidenceKind = request.evidenceKind,
-            evidenceRef = request.evidenceRef
-        )
-        return episodeRepository.save(episode).toResponse()
+        // If ID provided and already exists, return existing
+        if (request.id != null) {
+            val existing = episodeRepository.findById(EpisodeId.from(request.id))
+            if (existing != null) {
+                return existing.toResponse()
+            }
+        }
+
+        return try {
+            val episode = Episode.create(
+                residentId = ResidentId(request.residentId),
+                bedId = request.bedId?.let { BedId(it) },
+                severity = request.severity,
+                title = request.title,
+                detail = request.detail,
+                occurredAt = request.occurredAt,
+                evidenceKind = request.evidenceKind,
+                evidenceRef = request.evidenceRef,
+                id = request.id?.let { EpisodeId.from(it) },
+            )
+            episodeRepository.save(episode).toResponse()
+        } catch (e: org.springframework.dao.DataIntegrityViolationException) {
+            // Race condition: another thread created it — fetch and return
+            if (request.id != null) {
+                episodeRepository.findById(EpisodeId.from(request.id))?.toResponse()
+                    ?: throw e
+            } else throw e
+        }
     }
 
     @Transactional(readOnly = true)

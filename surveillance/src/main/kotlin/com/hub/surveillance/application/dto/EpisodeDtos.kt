@@ -5,6 +5,7 @@ import com.hub.surveillance.domain.model.EpisodeSeverity
 import java.time.Instant
 
 data class CreateEpisodeRequest(
+    val id: String? = null,
     val residentId: String,
     val bedId: String? = null,
     val severity: EpisodeSeverity,

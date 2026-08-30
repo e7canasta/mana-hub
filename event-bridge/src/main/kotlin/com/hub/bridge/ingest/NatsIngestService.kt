@@ -1,6 +1,8 @@
 package com.hub.bridge.ingest
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.manahive.contracts.EventEnvelope
 import io.nats.client.Connection
@@ -29,6 +31,11 @@ class NatsIngestService(
     private val log = LoggerFactory.getLogger(javaClass)
     private val dispatchers = mutableListOf<Dispatcher>()
     private lateinit var jetStream: JetStream
+    private val busMapper = ObjectMapper().apply {
+        registerModule(JavaTimeModule())
+        registerModule(KotlinModule.Builder().build())
+        disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+    }
 
     companion object {
         const val PERCEPTION = "perception.observation.v1.>"
@@ -60,7 +67,7 @@ class NatsIngestService(
     private fun subscribeTo(subject: String, name: String) {
         val dispatcher = connection.createDispatcher { msg ->
             try {
-                val envelope = objectMapper.readValue<EventEnvelope>(String(msg.data))
+                val envelope = busMapper.readValue<EventEnvelope>(String(msg.data))
                 eventRouter.route(envelope, msg.subject)
                 msg.ack()
             } catch (e: Exception) {

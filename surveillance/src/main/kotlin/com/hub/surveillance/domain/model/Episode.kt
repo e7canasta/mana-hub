@@ -79,9 +79,10 @@ class Episode private constructor(
     companion object {
         fun create(
             residentId: ResidentId, bedId: BedId?, severity: EpisodeSeverity, title: String?,
-            detail: String?, occurredAt: Instant, evidenceKind: String? = null, evidenceRef: String? = null
+            detail: String?, occurredAt: Instant, evidenceKind: String? = null, evidenceRef: String? = null,
+            id: EpisodeId? = null,
         ): Episode = Episode(
-            id = EpisodeId.random(), residentId = residentId, bedId = bedId, evidenceKind = evidenceKind,
+            id = id ?: EpisodeId.random(), residentId = residentId, bedId = bedId, evidenceKind = evidenceKind,
             evidenceRef = evidenceRef, ruleId = null, severity = severity, status = "pending",
             statusActorId = null, statusAt = null, title = title, detail = detail,
             occurredAt = occurredAt, escalationLevel = 0, escalatedAt = null, escalatedTo = null, version = 0
