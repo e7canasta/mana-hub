@@ -12,7 +12,10 @@ plugins {
 
 dependencyResolutionManagement {
     repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
-    repositories { mavenCentral() }
+    repositories {
+        mavenLocal() // mana-hive contracts JAR
+        mavenCentral()
+    }
 }
 
 rootProject.name = "mana-hub"
@@ -32,7 +35,6 @@ include("surveillance")
 include("evidence")
 include("streams")
 include("observation")
-include("hive-bridge")
 include("event-bridge")
 include("bootstrap")
 include("clients")

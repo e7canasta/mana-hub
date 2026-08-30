@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/vocabulario-unificado.md",
+                "file": "docs/big-picture/context-map.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "vocabulario-unificado"
+              "title": "context-map"
             }
           }
         ]
@@ -190,6 +190,8 @@
   },
   "active": "489807c8b11d03e7",
   "lastOpenFiles": [
+    "docs/big-picture/architecture-overview.md",
+    "docs/vocabulario-unificado.md",
     "hive-bridge/build/kotlin/compileKotlin/classpath-snapshot/shrunk-classpath-snapshot.bin",
     "hive-bridge/build/kotlin/compileKotlin/cacheable/last-build.bin",
     "hive-bridge/build/classes/kotlin/main/META-INF/com.hub_hive-bridge.kotlin_module",
@@ -200,12 +202,10 @@
     "hive-bridge/build/classes/kotlin/main/com/manahive/messaging/NatsObjectMapper.class",
     "hive-bridge/build/classes/kotlin/main/com/manahive/messaging/NatsConfig.class",
     "hive-bridge/build/classes/kotlin/main/com/manahive/messaging/NatsClientConfiguration.class",
-    "hive-bridge/build/classes/kotlin/main/com/manahive/messaging/BusEvents.class",
     "docs/integracion-hive-hub.md",
     "docs/user-stories-director-medico.md",
     "docs/big-picture/context-map.md",
     "docs/big-picture/README.md",
-    "docs/big-picture/architecture-overview.md",
     "docs/design-memory/domain-language.md",
     "docs/big-picture/domain-model.md",
     "docs/big-picture/data-flow.md",
@@ -223,7 +223,6 @@
     "docs/archive/roadmap/sprint-02-monitoring.md",
     "docs/archive/roadmap/sprint-01-core.md",
     "docs/roadmap/sprint-01-core.md",
-    "docs/vocabulario-unificado.md",
     "api.md",
     "AGENTS.md"
   ]
