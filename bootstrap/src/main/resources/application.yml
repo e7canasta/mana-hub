@@ -52,6 +52,13 @@ bridge:
   target:
     url: http://localhost:8080
 
+hub:
+  integration:
+    scene-events:
+      ignore:
+        - SignalLost
+        - SignalRecovered
+
 logging:
   level:
     com.hub: INFO
