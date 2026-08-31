@@ -1,5 +1,12 @@
 package com.hub.coverage.infrastructure.persistence
 
+import com.hub.coverage.domain.model.*
+import com.hub.coverage.domain.repository.ShiftRepository
+import com.hub.coverage.domain.repository.StaffGroupRepository
+import com.hub.coverage.domain.repository.StaffMemberRepository
+import com.hub.shared.domain.FacilityId
+import com.hub.shared.domain.StaffMemberId
+import com.hub.shared.domain.UserId
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
@@ -81,4 +88,55 @@ interface UnitShiftCoverageEntityRepository : JpaRepository<UnitShiftCoverageEnt
 interface StaffMemberEntityRepository : JpaRepository<StaffMemberEntity, String> {
     fun findByFacilityId(facilityId: String): List<StaffMemberEntity>
     fun findByUserId(userId: String): StaffMemberEntity?
+}
+
+// ── Adapters: Domain Repository → JPA ──────────────────────────
+
+@Repository
+class StaffGroupRepositoryAdapter(private val jpa: StaffGroupEntityRepository) : StaffGroupRepository {
+    override fun findById(id: StaffGroupId): StaffGroup? = jpa.findById(id.value).orElse(null)?.toDomain()
+    override fun findByFacilityId(facilityId: FacilityId): List<StaffGroup> = jpa.findByFacilityId(facilityId.value).map { it.toDomain() }
+    override fun save(staffGroup: StaffGroup): StaffGroup = jpa.save(staffGroup.toEntity()).toDomain()
+
+    private fun StaffGroupEntity.toDomain() = StaffGroup.reconstitute(
+        StaffGroupId(id), FacilityId(facilityId), name,
+        retiredAt?.let { Instant.parse(it) }, retiredBy, version
+    )
+    private fun StaffGroup.toEntity() = StaffGroupEntity(
+        id.value, facilityId.value, name,
+        retiredAt?.toString(), retiredBy, Instant.now(), Instant.now(), version
+    )
+}
+
+@Repository
+class ShiftRepositoryAdapter(private val jpa: FacilityShiftEntityRepository) : ShiftRepository {
+    override fun findById(id: StaffGroupId): FacilityShift? = jpa.findById(id.value).orElse(null)?.toDomain()
+    override fun findByFacilityId(facilityId: FacilityId): List<FacilityShift> = jpa.findByFacilityId(facilityId.value).map { it.toDomain() }
+    override fun save(shift: FacilityShift): FacilityShift = jpa.save(shift.toEntity()).toDomain()
+
+    private fun FacilityShiftEntity.toDomain() = FacilityShift.reconstitute(
+        StaffGroupId(id), FacilityId(facilityId), key, label, startMinute, sortOrder,
+        retiredAt?.let { Instant.parse(it) }, retiredBy, version
+    )
+    private fun FacilityShift.toEntity() = FacilityShiftEntity(
+        id.value, facilityId.value, key, label, startMinute, sortOrder,
+        retiredAt?.toString(), retiredBy, Instant.now(), Instant.now(), version
+    )
+}
+
+@Repository
+class StaffMemberRepositoryAdapter(private val jpa: StaffMemberEntityRepository) : StaffMemberRepository {
+    override fun findById(id: StaffMemberId): StaffMember? = jpa.findById(id.value).orElse(null)?.toDomain()
+    override fun findByFacilityId(facilityId: String): List<StaffMember> = jpa.findByFacilityId(facilityId).map { it.toDomain() }
+    override fun findByUserId(userId: String): StaffMember? = jpa.findByUserId(userId)?.toDomain()
+    override fun save(member: StaffMember): StaffMember = jpa.save(member.toEntity()).toDomain()
+
+    private fun StaffMemberEntity.toDomain() = StaffMember.reconstitute(
+        StaffMemberId(id), FacilityId(facilityId), fullName, StaffRole.valueOf(role),
+        userId?.let { UserId(it) }, version
+    )
+    private fun StaffMember.toEntity() = StaffMemberEntity(
+        id.value, facilityId.value, fullName, role.name, userId?.value,
+        null, null, Instant.now(), Instant.now(), version
+    )
 }

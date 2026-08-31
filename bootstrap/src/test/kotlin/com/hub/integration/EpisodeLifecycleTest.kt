@@ -1,0 +1,76 @@
+package com.hub.integration
+
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
+
+class EpisodeLifecycleTest : IntegrationTestBase() {
+
+    @Test
+    fun `create and acknowledge episode`() {
+        val created = post("/api/v1/episodes", mapOf(
+            "residentId" to "jose",
+            "bedId" to "bed-4",
+            "severity" to "CRITICAL",
+            "title" to "Caída detectada",
+            "detail" to "Residente cayó al salir de la cama",
+            "occurredAt" to "2026-08-31T02:30:00Z"
+        )) as Map<String, Any>
+        val episodeId = created["id"] as String
+        assertThat(created["status"]).isEqualTo("pending")
+
+        val acked = post("/api/v1/episodes/$episodeId/acknowledge", mapOf("actorId" to "nurse_1"))
+        assertThat(acked).isNotNull
+    }
+
+    @Test
+    fun `resolve episode`() {
+        val created = post("/api/v1/episodes", mapOf(
+            "residentId" to "jose",
+            "bedId" to "bed-4",
+            "severity" to "WARNING",
+            "title" to "Resolución test",
+            "occurredAt" to "2026-08-31T03:00:00Z"
+        )) as Map<String, Any>
+        val episodeId = created["id"] as String
+
+        val resolved = client.exchange(
+            "$baseUrl/api/v1/episodes/$episodeId",
+            HttpMethod.PATCH,
+            HttpEntity(mapOf("status" to "resolved")),
+            Any::class.java
+        )
+        assertThat(resolved.statusCode).isEqualTo(HttpStatus.OK)
+    }
+
+    @Test
+    fun `episode note via panel`() {
+        val created = post("/api/v1/episodes", mapOf(
+            "residentId" to "jose",
+            "bedId" to "bed-4",
+            "severity" to "INFO",
+            "title" to "Note test",
+            "occurredAt" to "2026-08-31T04:00:00Z"
+        )) as Map<String, Any>
+        val episodeId = created["id"] as String
+
+        val note = post("/api/v1/panel/episodes/$episodeId/notes", mapOf(
+            "kind" to "CLINICAL_NOTE",
+            "body" to "Residente estable",
+            "authorId" to "nurse_1"
+        )) as Map<String, Any>
+        assertThat(note["body"]).isEqualTo("Residente estable")
+    }
+
+    @Test
+    fun `resident note via panel`() {
+        val note = post("/api/v1/panel/residents/jose/notes", mapOf(
+            "kind" to "CARE",
+            "body" to "PA 140/90",
+            "authorId" to "nurse_1"
+        )) as Map<String, Any>
+        assertThat(note["body"]).isEqualTo("PA 140/90")
+    }
+}
