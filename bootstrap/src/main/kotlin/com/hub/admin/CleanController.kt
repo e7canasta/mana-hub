@@ -1,5 +1,6 @@
 package com.hub.admin
 
+import com.hub.integration.infrastructure.persistence.ResidentProfileEntityRepository
 import com.hub.observation.infrastructure.persistence.SceneEventEntityRepository
 import com.hub.surveillance.infrastructure.persistence.EpisodeEntityRepository
 import org.springframework.http.ResponseEntity
@@ -10,16 +11,27 @@ import org.springframework.web.bind.annotation.*
 class CleanController(
     private val episodeJpa: EpisodeEntityRepository,
     private val sceneJpa: SceneEventEntityRepository,
+    private val profileJpa: ResidentProfileEntityRepository,
 ) {
     @PostMapping("/clean")
-    fun clean(@RequestParam residentId: String, @RequestParam(required = false) bedId: String? = null): ResponseEntity<Map<String, Any>> {
+    fun clean(
+        @RequestParam residentId: String,
+        @RequestParam(required = false) bedId: String? = null,
+        @RequestParam(required = false, defaultValue = "false") cleanProfiles: Boolean = false,
+    ): ResponseEntity<Map<String, Any>> {
         val episodes = episodeJpa.findByResidentId(residentId)
         val deletedEpisodes = episodes.size
         episodeJpa.deleteAll(episodes)
         val scenes = if (bedId != null) sceneJpa.findByBedId(bedId) else sceneJpa.findAll().filter { it.residentId == residentId }
         val deletedScenes = scenes.size
         sceneJpa.deleteAll(scenes)
-        return ResponseEntity.ok(mapOf("episodes" to deletedEpisodes, "scenes" to deletedScenes, "residentId" to residentId))
+        var deletedProfiles = 0
+        if (cleanProfiles) {
+            val profiles = profileJpa.findByResidentId(residentId)
+            deletedProfiles = profiles.size
+            profileJpa.deleteAll(profiles)
+        }
+        return ResponseEntity.ok(mapOf("episodes" to deletedEpisodes, "scenes" to deletedScenes, "profiles" to deletedProfiles, "residentId" to residentId))
     }
 
     @DeleteMapping("/episodes")

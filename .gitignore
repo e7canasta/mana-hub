@@ -1,11 +1,10 @@
 # ══════════════════════════════════════════════════════════════════════════════
-# mana-hub — .gitignore
+# mana-hub — .gitignore  (Kotlin 2.4 + Spring Boot 4 + Gradle 9 + PostgreSQL 17)
 # ══════════════════════════════════════════════════════════════════════════════
 
 # ── Gradle ──
 .gradle/
 build/
-!gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
 !**/src/integrationTest/**/build/
@@ -17,6 +16,11 @@ build/
 *.ear
 *.nar
 out/
+.kotlin/
+hs_err_pid*
+*.hprof
+# keep gradle wrapper jar (debe ir DESPUÉS de *.jar para que la negación tenga efecto)
+!gradle/wrapper/gradle-wrapper.jar
 
 # ── IDE ──
 .idea/
@@ -32,11 +36,19 @@ out/
 *.swp
 *.swo
 *~
+.fleet/
+.cursor/
+.cursorignore
+.claude/
+
+# ── Obsidian (vault local, no es código) ──
+.obsidian/
 
 # ── OS ──
 .DS_Store
 Thumbs.db
 desktop.ini
+ehthumbs.db
 
 # ── Logs ──
 *.log
@@ -47,6 +59,8 @@ coverage/
 jacoco/
 htmlcov/
 *.exec
+*.lcov
+.coverage
 
 # ── Environment / Secrets ──
 .env
@@ -58,8 +72,24 @@ secrets.yml
 secrets.yaml
 application-local.yml
 application-local.properties
+application-*.local.yml
+application-*.local.properties
 
 # ── Database (local copies) ──
 *.db
 *.sqlite
 *.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+*.h2.db
+*.mv.db
+*.trace.db
+
+# ── Temporary / Misc ──
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp
+*.bak
+.cache/
