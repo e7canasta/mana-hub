@@ -26,7 +26,8 @@ class EvidenceEntity(
     @Column(name = "shift") var shift: String? = null,
     @Column(name = "risk_level") var riskLevel: String? = null,
     @Column(name = "timestamp") var timestamp: Instant = Instant.now(),
-    @Column(name = "created_at") var createdAt: Instant = Instant.now()
+    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
+    @Version var version: Long = 0
 )
 
 @Entity
@@ -85,7 +86,7 @@ class EvidenceRepositoryAdapter(private val jpa: EvidenceEntityRepository) : Evi
 
     private fun EvidenceEntity.toDomain() = Evidence.reconstitute(
         EvidenceId(id), BedId(bedId), ResidentId(residentId), evidenceType, category,
-        sceneEventId, sceneEventJson, ruleId, shift, riskLevel, timestamp, 0
+        sceneEventId, sceneEventJson, ruleId, shift, riskLevel, timestamp, version
     )
     private fun Evidence.toEntity() = EvidenceEntity(
         id.value, bedId.value, residentId.value, evidenceType, category, sceneEventId,

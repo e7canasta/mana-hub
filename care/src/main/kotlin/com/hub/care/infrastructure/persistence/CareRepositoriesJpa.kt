@@ -55,7 +55,8 @@ class CareNoteEntity(
     @Column(name = "body") var body: String = "",
     @Column(name = "duration_min") var durationMin: Int? = null,
     @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now()
+    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
+    @Version var version: Long = 0
 )
 
 @Repository

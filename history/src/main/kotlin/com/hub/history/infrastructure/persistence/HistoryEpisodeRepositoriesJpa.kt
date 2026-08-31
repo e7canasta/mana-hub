@@ -32,7 +32,8 @@ class HistoryEpisodeEntity(
     @Column(name = "model_version") var modelVersion: String? = null,
     @Column(name = "confidence") var confidence: Double? = null,
     @Column(name = "provenance_json") var provenanceJson: String = "{}",
-    @Column(name = "created_at") var createdAt: Instant = Instant.now()
+    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
+    @Version var version: Long = 0
 )
 
 @Entity
@@ -45,6 +46,7 @@ class HistoryEpisodeReviewEntity(
     @Column(name = "review_note") var reviewNote: String? = null,
     @Column(name = "resolved_at") var resolvedAt: Instant? = null,
     @Column(name = "actor_id") var actorId: String = "",
+    @Column(name = "recorded_at") var recordedAt: Instant = Instant.now(),
     @Column(name = "created_at") var createdAt: Instant = Instant.now(),
     @Version var version: Long = 0
 )
@@ -89,7 +91,7 @@ class HistoryEpisodeRepositoryAdapter(private val jpa: HistoryEpisodeEntityRepos
             modelVersion = modelVersion,
             confidence = confidence,
             provenanceJson = provenanceJson,
-            version = 0
+            version = version
         )
     )
 
@@ -110,7 +112,8 @@ class HistoryEpisodeReviewRepositoryAdapter(private val jpa: HistoryEpisodeRevie
         HistoryEpisodeId(id), HistoryEpisodeId(episodeId), status, detectionVerdict, reviewNote, resolvedAt, actorId, version
     )
     private fun HistoryEpisodeReview.toEntity() = HistoryEpisodeReviewEntity(
-        id.value, episodeId.value, status, detectionVerdict, reviewNote, resolvedAt, actorId, Instant.now()
+        id.value, episodeId.value, status, detectionVerdict, reviewNote, resolvedAt, actorId,
+        Instant.now(), Instant.now()
     )
 }
 

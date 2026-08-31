@@ -31,6 +31,7 @@ class PolicyRecommendationEntity(
     @Column(name = "patch_risk_level") var patchRiskLevel: String? = null,
     @Column(name = "patch_mobility_aid") var patchMobilityAid: String? = null,
     @Column(name = "patch_autopilot") var patchAutopilot: Boolean? = null,
+    @Version var version: Long = 0,
     @Column(name = "created_at") var createdAt: Instant = Instant.now(),
     @Column(name = "resolved_at") var resolvedAt: Instant? = null,
     @Column(name = "applied_at") var appliedAt: Instant? = null,
