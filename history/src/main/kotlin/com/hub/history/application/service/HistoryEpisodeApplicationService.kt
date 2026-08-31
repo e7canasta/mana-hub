@@ -5,6 +5,7 @@ import com.hub.history.domain.model.*
 import com.hub.history.domain.repository.HistoryEpisodeDetectionRepository
 import com.hub.history.domain.repository.HistoryEpisodeReviewRepository
 import com.hub.shared.domain.ResidentId
+import com.hub.shared.time.HubClock
 import com.hub.shared.domain.BedId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -15,6 +16,10 @@ import java.time.temporal.ChronoUnit
 
 @Service
 class HistoryEpisodeApplicationService(
+    /* El reloj del Hub: durante un escenario está en la misma escala que
+     * hive, así que la revisión de un episodio del 3 de septiembre cae el 3 de
+     * septiembre. Ver `HubClock`. */
+    private val clock: HubClock,
     private val detectionRepository: HistoryEpisodeDetectionRepository,
     private val reviewRepository: HistoryEpisodeReviewRepository
 ) {
@@ -59,6 +64,7 @@ class HistoryEpisodeApplicationService(
     @Transactional
     fun reviewHistoryEpisode(episodeId: String, request: ReviewHistoryEpisodeRequest): HistoryEpisodeReviewResponse {
         val review = HistoryEpisodeReview.create(
+            now = clock.now(),
             episodeId = HistoryEpisodeId(episodeId),
             actorId = request.actorId,
             status = request.status,

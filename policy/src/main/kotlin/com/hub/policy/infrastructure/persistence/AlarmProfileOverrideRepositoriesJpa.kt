@@ -26,6 +26,8 @@ class AlarmProfileOverrideEntity(
     @Column(name = "baseline_state") var baselineState: String? = null,
     @Column(name = "severity") var severity: String? = null,
     @Column(name = "closure_condition") var closureCondition: String? = null,
+    /* La regla se mira y no habla. Ver `PolicyOverride.observeOnly`. */
+    @Column(name = "observe_only") var observeOnly: Boolean? = null,
     @Column(name = "created_at") var createdAt: Instant = Instant.now(),
 )
 
@@ -64,6 +66,9 @@ class AlarmProfileOverrideRepositoryAdapter(
             ruleId = ruleId,
             transitionKey = transitionKey ?: "",
             hysteresisSeconds = hysteresisSeconds ?: 0,
+            severity = severity,
+            closureCondition = closureCondition,
+            observeOnly = observeOnly,
         )
         "dwell" -> PolicyOverride.DwellOverride(
             id = Identifier(id),
@@ -71,6 +76,9 @@ class AlarmProfileOverrideRepositoryAdapter(
             stateKind = stateKind ?: "",
             warningAfterMinutes = warningAfterMinutes,
             alertAfterMinutes = alertAfterMinutes,
+            severity = severity,
+            closureCondition = closureCondition,
+            observeOnly = observeOnly,
         )
         "comeback" -> PolicyOverride.ComeBackOverride(
             id = Identifier(id),
@@ -80,6 +88,7 @@ class AlarmProfileOverrideRepositoryAdapter(
             alertAfterMinutes = alertAfterMinutes,
             severity = severity,
             closureCondition = closureCondition,
+            observeOnly = observeOnly,
         )
         else -> throw IllegalArgumentException("Unknown override type: $overrideType")
     }
@@ -92,6 +101,9 @@ class AlarmProfileOverrideRepositoryAdapter(
             overrideType = "hysteresis",
             transitionKey = transitionKey,
             hysteresisSeconds = hysteresisSeconds,
+            severity = severity,
+            closureCondition = closureCondition,
+            observeOnly = observeOnly,
         )
         is PolicyOverride.DwellOverride -> AlarmProfileOverrideEntity(
             id = id.value,
@@ -101,6 +113,9 @@ class AlarmProfileOverrideRepositoryAdapter(
             stateKind = stateKind,
             warningAfterMinutes = warningAfterMinutes,
             alertAfterMinutes = alertAfterMinutes,
+            severity = severity,
+            closureCondition = closureCondition,
+            observeOnly = observeOnly,
         )
         is PolicyOverride.ComeBackOverride -> AlarmProfileOverrideEntity(
             id = id.value,
@@ -112,6 +127,7 @@ class AlarmProfileOverrideRepositoryAdapter(
             alertAfterMinutes = alertAfterMinutes,
             severity = severity,
             closureCondition = closureCondition,
+            observeOnly = observeOnly,
         )
     }
 }

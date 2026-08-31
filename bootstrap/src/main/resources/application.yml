@@ -21,7 +21,17 @@ spring:
     show-sql: false
     open-in-view: false
   flyway:
-    enabled: false
+    # Prendido.
+    #
+    # Estuvo en `false` con diecinueve migraciones en el árbol, que es la peor
+    # combinación posible: el repositorio parece tener control de esquema y no lo
+    # tiene, así que nadie puede saber si la base coincide con el código. Se
+    # descubre cuando una consulta falla con `column ... does not exist`.
+    #
+    # No estaba apagado por capricho: había **versiones duplicadas** (dos V3 y
+    # dos V10) y Flyway se niega a arrancar con eso. Renumeradas a V3.1 y V10.1,
+    # que conserva el orden original.
+    enabled: true
   jackson:
     default-property-inclusion: non_null
     deserialization:

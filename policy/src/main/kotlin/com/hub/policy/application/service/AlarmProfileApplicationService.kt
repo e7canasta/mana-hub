@@ -317,6 +317,18 @@ class AlarmProfileApplicationService(
                     if (o.closureCondition != null) entry["closureCondition"] = o.closureCondition
                 }
             }
+            /* Los tres campos comunes se escriben una vez para todas las
+             * variantes, en vez de repetirlos en cada rama. Repetirlos es como
+             * se perdieron: la rama de `dwell` simplemente no los tenía. */
+            /* En variables locales: son propiedades de la interfaz con getter
+             * abierto, y Kotlin no puede hacer smart cast sobre eso. */
+            val sev = o.severity
+            val clo = o.closureCondition
+            val obs = o.observeOnly
+            if (sev != null) entry["severity"] = sev
+            if (clo != null) entry["closureCondition"] = clo
+            if (obs != null) entry["observeOnly"] = obs
+
             result[o.ruleId] = entry
         }
         return result
@@ -336,6 +348,9 @@ class AlarmProfileApplicationService(
                         ruleId = ruleId,
                         transitionKey = raw["transitionKey"] as? String ?: "",
                         hysteresisSeconds = (raw["hysteresisSeconds"] as? Number)?.toInt() ?: 0,
+                        severity = raw["severity"] as? String,
+                        closureCondition = raw["closureCondition"] as? String,
+                        observeOnly = raw["observeOnly"] as? Boolean,
                     )
                 )
                 "dwell" -> result.add(
@@ -345,6 +360,9 @@ class AlarmProfileApplicationService(
                         stateKind = raw["stateKind"] as? String ?: ruleId,
                         warningAfterMinutes = (raw["warningAfterMinutes"] as? Number)?.toInt(),
                         alertAfterMinutes = (raw["alertAfterMinutes"] as? Number)?.toInt(),
+                        severity = raw["severity"] as? String,
+                        closureCondition = raw["closureCondition"] as? String,
+                        observeOnly = raw["observeOnly"] as? Boolean,
                     )
                 )
                 "comeback" -> result.add(
@@ -356,6 +374,7 @@ class AlarmProfileApplicationService(
                         alertAfterMinutes = (raw["alertAfterMinutes"] as? Number)?.toInt(),
                         severity = raw["severity"] as? String,
                         closureCondition = raw["closureCondition"] as? String,
+                        observeOnly = raw["observeOnly"] as? Boolean,
                     )
                 )
             }

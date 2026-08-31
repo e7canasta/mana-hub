@@ -33,6 +33,12 @@ dependencies {
     implementation(libs.postgresql)
     implementation(libs.flyway.core)
     implementation(libs.flyway.database.postgresql)
+    /* La autoconfiguración de Flyway, que en Spring Boot 4 vive en su propio
+     * módulo. Sin esto, `flyway-core` está en el classpath, `spring.flyway.enabled`
+     * dice `true`, y **Flyway no corre**: la app arranca sin migrar y sin decir
+     * una palabra, hasta que una consulta falla con `relation does not exist`.
+     * Esa es la mitad de por qué el esquema y las migraciones se separaron. */
+    implementation("org.springframework.boot:spring-boot-flyway")
     implementation(libs.jackson.module.kotlin)
     implementation(libs.jackson.datatype.jsr310)
     implementation(libs.springdoc.openapi.starter.webmvc.ui)
