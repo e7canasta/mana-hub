@@ -8,7 +8,9 @@ data class CareSummaryResponse(
     val totalMinutes: Int,
     val proactiveMinutes: Int,
     val roundsCount: Int,
-    val notesCount: Int
+    val notesCount: Int,
+    /** false: día en el rango sin fila ingestada. Cero no es "sin visitas". */
+    val measured: Boolean = true,
 )
 
 data class CareSummaryListResponse(

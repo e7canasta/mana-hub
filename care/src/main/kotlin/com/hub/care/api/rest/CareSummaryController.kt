@@ -2,6 +2,7 @@ package com.hub.care.api.rest
 
 import com.hub.care.application.dto.*
 import com.hub.care.application.service.CareSummaryApplicationService
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
@@ -26,7 +27,9 @@ class CareSummaryController(
     fun ingestCareSummary(
         @RequestBody request: IngestCareSummaryRequest
     ): ResponseEntity<CareSummaryResponse> {
-        return ResponseEntity.ok(careSummaryApplicationService.ingestCareSummary(request))
+        val (created, body) = careSummaryApplicationService.ingestCareSummary(request)
+        return if (created) ResponseEntity.status(HttpStatus.CREATED).body(body)
+        else ResponseEntity.ok(body)
     }
 
     // Legacy alias — maintains backward compatibility for any client still using the old path

@@ -171,6 +171,11 @@ class SceneEventEntity(
 interface SceneEventEntityRepository : JpaRepository<SceneEventEntity, String> {
     fun findByResidentId(residentId: String): List<SceneEventEntity>
     fun findByBedId(bedId: String): List<SceneEventEntity>
+    fun findByResidentIdAndTimestampGreaterThanEqualAndTimestampLessThan(
+        residentId: String,
+        from: Instant,
+        to: Instant,
+    ): List<SceneEventEntity>
 }
 
 @Entity
@@ -258,9 +263,26 @@ class SummaryRepositoryAdapter(
     override fun findBathroomByResidentAndRange(residentId: ResidentId, from: LocalDate, to: LocalDate): List<BathroomSummary> =
         bathroomJpa.findByResidentIdAndObservedOnBetween(residentId.value, from, to).map { it.toDomain() }
 
-    override fun saveSleep(summary: SleepSummary): SleepSummary = sleepJpa.save(summary.toEntity()).toDomain()
-    override fun saveMobility(summary: MobilitySummary): MobilitySummary = mobilityJpa.save(summary.toEntity()).toDomain()
-    override fun saveBathroom(summary: BathroomSummary): BathroomSummary = bathroomJpa.save(summary.toEntity()).toDomain()
+    override fun saveSleep(summary: SleepSummary): SleepSummary {
+        val entity = summary.toEntity()
+        sleepJpa.findById(summary.id.value).ifPresent { old -> entity.createdAt = old.createdAt }
+        entity.updatedAt = Instant.now()
+        return sleepJpa.save(entity).toDomain()
+    }
+
+    override fun saveMobility(summary: MobilitySummary): MobilitySummary {
+        val entity = summary.toEntity()
+        mobilityJpa.findById(summary.id.value).ifPresent { old -> entity.createdAt = old.createdAt }
+        entity.updatedAt = Instant.now()
+        return mobilityJpa.save(entity).toDomain()
+    }
+
+    override fun saveBathroom(summary: BathroomSummary): BathroomSummary {
+        val entity = summary.toEntity()
+        bathroomJpa.findById(summary.id.value).ifPresent { old -> entity.createdAt = old.createdAt }
+        entity.updatedAt = Instant.now()
+        return bathroomJpa.save(entity).toDomain()
+    }
 
     private fun SleepSummaryEntity.toDomain() = SleepSummary(
         Identifier(id), sourceRecordId, ResidentId(residentId), observedOn,
@@ -298,7 +320,12 @@ class SummaryRepositoryAdapter(
 
 @Repository
 class SceneEventRepositoryAdapter(private val jpa: SceneEventEntityRepository) : SceneEventRepository {
-    override fun findByResidentId(residentId: ResidentId): List<SceneEvent> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
+    override fun findByResidentId(residentId: ResidentId): List<SceneEvent> =
+        jpa.findByResidentId(residentId.value).map { it.toDomain() }
+
+    override fun findByResidentId(residentId: ResidentId, from: Instant, to: Instant): List<SceneEvent> =
+        jpa.findByResidentIdAndTimestampGreaterThanEqualAndTimestampLessThan(residentId.value, from, to)
+            .map { it.toDomain() }
     override fun findByBedId(bedId: BedId): List<SceneEvent> = jpa.findByBedId(bedId.value).map { it.toDomain() }
     override fun save(event: SceneEvent): SceneEvent = jpa.save(event.toEntity()).toDomain()
 

@@ -5,6 +5,9 @@ import com.hub.insights.derive.BaselineService
 import com.hub.insights.derive.CareInsights
 import com.hub.insights.derive.MobilityInsights
 import com.hub.insights.derive.SleepInsights
+import com.hub.insights.find.Finding
+import com.hub.insights.find.FindingService
+import com.hub.insights.find.SleepBriefing
 import com.hub.insights.inbound.HubBathroomDay
 import com.hub.insights.inbound.HubCareDay
 import com.hub.insights.inbound.HubClient
@@ -26,6 +29,7 @@ import java.time.LocalDate
 class InsightsController(
     private val hub: HubClient,
     private val properties: InsightsProperties,
+    private val findings: FindingService,
 ) {
 
     @GetMapping("/sleep")
@@ -38,6 +42,7 @@ class InsightsController(
         val baseline = BaselineService.of(chart.admissionDate, from, to, properties.baselineMinDays)
         val tab = hub.getSleep(residentId, baseline.observedFrom, to)
         val derived = SleepInsights.derive(tab.summaries)
+        val briefing = findings.residentBriefing(residentId, from, to)
         return ResponseEntity.ok(
             SleepInsightResponse(
                 residentId = residentId,
@@ -48,6 +53,9 @@ class InsightsController(
                 observedDays = baseline.observedDays,
                 summaries = tab.summaries.map { it.toDto() },
                 derived = derived.toDto(),
+                cards = briefing?.sleepCards ?: SleepBriefing.cards(derived),
+                narrative = briefing?.narrative,
+                findings = briefing?.findings.orEmpty().forSleepTab(),
                 recommendations = WellbeingRecommendations.forSleep(baseline, derived),
             ),
         )
@@ -62,10 +70,10 @@ class InsightsController(
         val chart = hub.getChart(residentId) ?: return ResponseEntity.notFound().build()
         val baseline = BaselineService.of(chart.admissionDate, from, to, properties.baselineMinDays)
         val tab = hub.getCare(residentId, baseline.observedFrom, to)
-        val avg = tab.avgMinutesPerDay ?: CareInsights.avgMinutes(tab.summaries.map { it.totalMinutes })
+        val measured = tab.summaries.filter { it.measured }
+        val avg = tab.avgMinutesPerDay ?: CareInsights.avgMinutes(measured.map { it.totalMinutes })
         val share = tab.proactiveShare
-            ?: CareInsights.proactiveShare(tab.summaries.sumOf { it.totalMinutes }, tab.summaries.sumOf { it.proactiveMinutes })
-        val total = tab.summaries.sumOf { it.totalMinutes }
+        val total = measured.sumOf { it.totalMinutes }
         return ResponseEntity.ok(
             CareInsightResponse(
                 residentId = residentId,
@@ -91,12 +99,14 @@ class InsightsController(
         val chart = hub.getChart(residentId) ?: return ResponseEntity.notFound().build()
         val baseline = BaselineService.of(chart.admissionDate, from, to, properties.baselineMinDays)
         val tab = hub.getMobility(residentId, baseline.observedFrom, to)
+        val measured = tab.summaries.filter { it.measured }
         val recs = mutableListOf<Recommendation>()
         if (!baseline.ready) {
             recs += WellbeingRecommendations.forCare(baseline, null, 0).map {
                 it.copy(code = "MOBILITY_BASELINE_FORMING")
             }
         }
+        val avgWalking = MobilityInsights.avgWalking(measured.map { it.walkingMinutes })
         return ResponseEntity.ok(
             MobilityInsightResponse(
                 residentId = residentId,
@@ -105,8 +115,8 @@ class InsightsController(
                 observedFrom = baseline.observedFrom.toString(),
                 baselineReady = baseline.ready,
                 summaries = tab.summaries.map { it.toMobilityDto() },
-                avgWalkingMinutes = MobilityInsights.avgWalking(tab.summaries.map { it.walkingMinutes }),
-                avgDistanceMeters = MobilityInsights.avgDistance(tab.summaries.map { it.distanceMeters }),
+                avgWalkingMinutes = avgWalking,
+                estimatedDistanceMeters = avgWalking?.times(properties.walkingMetersPerMinute),
                 recommendations = recs,
             ),
         )
@@ -143,6 +153,7 @@ class InsightsController(
         wakeCount = wakeCount,
         startedAt = startedAt?.toString(),
         endedAt = endedAt?.toString(),
+        measured = measured,
     )
 
     private fun HubCareDay.toCareDto() = CareDayDto(
@@ -151,19 +162,32 @@ class InsightsController(
         proactiveMinutes = proactiveMinutes,
         roundsCount = roundsCount,
         notesCount = notesCount,
+        measured = measured,
     )
 
     private fun HubMobilityDay.toMobilityDto() = MobilityDayDto(
         day = day,
         walkingMinutes = walkingMinutes,
-        distanceMeters = distanceMeters,
         transferCount = transferCount,
         outOfBedMinutes = outOfBedMinutes,
+        inBedMinutes = inBedMinutes,
+        outOfSightMinutes = outOfSightMinutes,
+        measured = measured,
     )
 
     private fun HubBathroomDay.toBathroomDto() = BathroomDayDto(
         day = day,
         visitCount = visitCount,
         nightVisitCount = nightVisitCount,
+        assistedCount = assistedCount,
+        totalMinutes = totalMinutes,
+        measured = measured,
     )
+
+    private fun List<Finding>.forSleepTab() = filter { f ->
+        f.code.startsWith("SLEEP") ||
+            f.code.startsWith("BED_EXIT") ||
+            f.code.startsWith("POLICY_BED") ||
+            f.code == "BASELINE_FORMING"
+    }
 }

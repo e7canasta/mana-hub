@@ -5,6 +5,7 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientResponseException
+import java.time.Instant
 import java.time.LocalDate
 
 @Component
@@ -28,9 +29,9 @@ class HubClient(
             if (ex.statusCode.value() == 404) null else throw ex
         }
 
-    fun getSceneEvents(residentId: String): List<HubSceneEvent> =
+    fun getSceneEvents(residentId: String, from: Instant, to: Instant): List<HubSceneEvent> =
         hubRestClient.get()
-            .uri("/api/v1/residents/{id}/scene-events", residentId)
+            .uri("/api/v1/residents/{id}/scene-events?from={from}&to={to}", residentId, from, to)
             .retrieve()
             .body(object : ParameterizedTypeReference<List<HubSceneEvent>>() {})
             ?: emptyList()
@@ -63,42 +64,53 @@ class HubClient(
             .body(HubCareTab::class.java)
             ?: HubCareTab(residentId)
 
-    fun ingestSleep(residentId: String, observedOn: LocalDate, data: Map<String, Any?>): PublishResult =
+    fun getAlarmPresets(residentId: String): HubAlarmPresets =
+        try {
+            hubRestClient.get()
+                .uri("/api/v1/views/resident-chart/{id}/alarm-presets", residentId)
+                .retrieve()
+                .body(HubAlarmPresets::class.java)
+                ?: HubAlarmPresets(residentId)
+        } catch (ex: RestClientResponseException) {
+            if (ex.statusCode.value() == 404) HubAlarmPresets(residentId) else throw ex
+        }
+
+    fun getEpisodes(residentId: String): HubEpisodesTab =
+        hubRestClient.get()
+            .uri("/api/v1/views/resident-chart/{id}/episodes", residentId)
+            .retrieve()
+            .body(HubEpisodesTab::class.java)
+            ?: HubEpisodesTab(residentId)
+
+    fun ingestSleep(residentId: String, observedOn: LocalDate, data: SleepSummaryData): PublishResult =
         postSummary("/internal/v1/clinical/sleep-summaries", envelope(residentId, observedOn, "sleep", data))
 
-    fun ingestMobility(residentId: String, observedOn: LocalDate, data: Map<String, Any?>): PublishResult =
+    fun ingestMobility(residentId: String, observedOn: LocalDate, data: MobilitySummaryData): PublishResult =
         postSummary("/internal/v1/clinical/mobility-summaries", envelope(residentId, observedOn, "mobility", data))
 
-    fun ingestBathroom(residentId: String, observedOn: LocalDate, data: Map<String, Any?>): PublishResult =
+    fun ingestBathroom(residentId: String, observedOn: LocalDate, data: BathroomSummaryData): PublishResult =
         postSummary("/internal/v1/clinical/bathroom-summaries", envelope(residentId, observedOn, "bathroom", data))
 
-    fun ingestCare(
-        residentId: String,
-        observedOn: LocalDate,
-        totalMinutes: Int,
-        proactiveMinutes: Int,
-        roundsCount: Int,
-        notesCount: Int,
-    ): PublishResult {
+    fun ingestCare(residentId: String, observedOn: LocalDate, data: CareSummaryData): PublishResult {
         val body = mapOf(
             "sourceRecordId" to sourceId(residentId, observedOn, "care"),
             "residentId" to residentId,
             "observedOn" to observedOn.toString(),
-            "totalMinutes" to totalMinutes,
-            "proactiveMinutes" to proactiveMinutes,
-            "roundsCount" to roundsCount,
-            "notesCount" to notesCount,
+            "totalMinutes" to data.totalMinutes,
+            "proactiveMinutes" to data.proactiveMinutes,
+            "roundsCount" to data.roundsCount,
+            "notesCount" to data.notesCount,
             "source" to "insights",
             "modelVersion" to "insights-0.1",
         )
         return postSummary("/internal/v1/care-summaries", body)
     }
 
-    private fun envelope(
+    private fun <T> envelope(
         residentId: String,
         observedOn: LocalDate,
         kind: String,
-        data: Map<String, Any?>,
+        data: T,
     ) = IngestEnvelope(
         sourceRecordId = sourceId(residentId, observedOn, kind),
         residentId = residentId,
@@ -111,20 +123,23 @@ class HubClient(
 
     private fun postSummary(path: String, body: Any): PublishResult {
         return try {
-            hubRestClient.post()
+            val response = hubRestClient.post()
                 .uri(path)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body)
                 .retrieve()
                 .toBodilessEntity()
-            PublishResult.Created
+            when (response.statusCode.value()) {
+                200 -> PublishResult.Updated
+                else -> PublishResult.Created
+            }
         } catch (ex: RestClientResponseException) {
             when (ex.statusCode.value()) {
-                409, 500 -> PublishResult.AlreadyExists
+                409 -> PublishResult.AlreadyExists
                 else -> throw ex
             }
         }
     }
 }
 
-enum class PublishResult { Created, AlreadyExists, Skipped }
+enum class PublishResult { Created, Updated, AlreadyExists, Skipped }

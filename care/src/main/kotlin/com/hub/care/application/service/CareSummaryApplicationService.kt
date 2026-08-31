@@ -14,20 +14,35 @@ class CareSummaryApplicationService(
 ) {
 
     @Transactional
-    fun ingestCareSummary(request: IngestCareSummaryRequest): CareSummaryResponse {
-        val summary = CareSummary.create(
-            sourceRecordId = request.sourceRecordId,
-            residentId = ResidentId(request.residentId),
-            observedOn = request.observedOn,
-            totalMinutes = request.totalMinutes,
-            proactiveMinutes = request.proactiveMinutes,
-            roundsCount = request.roundsCount,
-            notesCount = request.notesCount,
-            source = request.source,
-            modelVersion = request.modelVersion,
-            confidence = request.confidence
-        )
-        return toResponse(careSummaryRepository.save(summary))
+    fun ingestCareSummary(request: IngestCareSummaryRequest): Pair<Boolean, CareSummaryResponse> {
+        val residentId = ResidentId(request.residentId)
+        val existing = careSummaryRepository.findByResidentAndDate(residentId, request.observedOn)
+        val summary = if (existing != null) {
+            existing.replay(
+                sourceRecordId = request.sourceRecordId,
+                totalMinutes = request.totalMinutes,
+                proactiveMinutes = request.proactiveMinutes,
+                roundsCount = request.roundsCount,
+                notesCount = request.notesCount,
+                source = request.source,
+                modelVersion = request.modelVersion,
+                confidence = request.confidence,
+            )
+        } else {
+            CareSummary.create(
+                sourceRecordId = request.sourceRecordId,
+                residentId = residentId,
+                observedOn = request.observedOn,
+                totalMinutes = request.totalMinutes,
+                proactiveMinutes = request.proactiveMinutes,
+                roundsCount = request.roundsCount,
+                notesCount = request.notesCount,
+                source = request.source,
+                modelVersion = request.modelVersion,
+                confidence = request.confidence,
+            )
+        }
+        return (existing == null) to toResponse(careSummaryRepository.save(summary))
     }
 
     @Transactional(readOnly = true)
@@ -46,6 +61,7 @@ class CareSummaryApplicationService(
                     proactiveMinutes = 0,
                     roundsCount = 0,
                     notesCount = 0,
+                    measured = false,
                 )
             }
         }

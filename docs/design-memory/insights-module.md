@@ -95,7 +95,7 @@ Comentarios de `PersonState.kt` — **no hay Walking**.
 
 | Grupo hive | Estado | Sueño | Movilidad | Baño |
 |------------|--------|-------|-----------|------|
-| in_bed | `Lying` | ≥ N min → calm; primeros N → restless | in_bed | — |
+| in_bed | `Lying` | primer Lying de la noche: N min latencia (restless), resto calm; vueltas siguientes todo calm | in_bed | — |
 | in_bed | `SittingInBed`, `BedEdge` | awake in bed | in_bed | — |
 | in_bed | `AttemptingExit` | restless (gusanito) | in_bed | — |
 | out_of_bed | `Standing`, `InRoom` | out of bed | out_of_bed, **no** andar | — |
@@ -104,7 +104,11 @@ Comentarios de `PersonState.kt` — **no hay Walking**.
 | furniture | `OnFloor`, `InChair`, `InWheelchair` | out of bed | out_of_bed, no andar | — |
 | unknown | `Unknown` | out of bed | out_of_sight | — |
 
-`deepSleepAfterMinutes` default 10. Andar ≈ tiempo **fuera de la habitación**, no `Standing`.
+`deepSleepAfterMinutes` = latencia **una vez por noche** (default 10). Andar ≈ tiempo **fuera de la habitación**, no `Standing`. Distancia en metros es estimado de insights (`walkingMinutes × N`); el SOR guarda `distanceMeters = 0`.
+
+Cada día de ficha lleva `measured`: el spine sigue existiendo; un cero con `measured=false` no es hallazgo. Insights derive ignora no medidos.
+
+Ingest de summaries es **upsert** por `(resident_id, observed_on)` (replay del rollup). GET `scene-events?from=&to=` acota la noche + lookback 12h.
 
 ### A — Batch nocturno (obligatorio)
 
@@ -225,6 +229,7 @@ Alternativa: hub persiste `insight_snapshots` (tabla futura) y panel solo lee �
 3. **F3 — Insights HTTP:** ✅ `GET /api/v1/insights/resident-chart/{id}/sleep|care|mobility|bathroom`
 4. **F4 — Cubo:** pendiente
 5. **F5 — Stream:** ✅ stub `POST /internal/v1/insights/episodes/resolved`
+6. **F6 — Hallazgos + informes:** ✅ catálogo fijo en `find/` + JSON de report + script `python-docx`
 
 App: puerto **8081**. Cron 06:00 **apagado** por defecto (`insights.rollup.enabled=false`). Trigger manual:
 
@@ -235,7 +240,58 @@ POST /internal/v1/insights/rollup?date=2026-08-31&publish=true
 
 ---
 
-## 9. Checklist antes de codear
+## 10. Hallazgos, decisiones e informes
+
+Después del rollup nocturno el cubo diario ya está. Insights **destila hallazgos** (no “regresiones” estadísticas): patrones contra uno mismo, concentración horaria, y huecos de política. El panel los pinta; un script arma el Word; más adelante el mismo JSON se persiste o se manda por mail.
+
+| Tipo (`FindingKind`) | Qué es | Ejemplo |
+|----------------------|--------|---------|
+| `BRIEFING` | Párrafo de la ventana | “Durmió 5h 48… Las salidas vienen aumentando…” |
+| `TREND` | Contra la semana anterior | salidas de cama ↑, baño noche ↑, inquieto alto |
+| `CLUSTER` | Concentración horaria | salidas entre 5:00 y 6:05 |
+| `POLICY` | Hallazgo + propuesta de umbral | avisar en el borde apenas se detecte |
+| `WATCH` | Nota / positivo / línea base | “en su rango”, Susan en formación |
+
+No se inventa cobertura de turno (“una sola enfermera en el piso”) si no está en el cubo. “Lo que avisa hoy” sale del **nivel + overrides** del hub; los números del catálogo FALL_RISK/NIGHT_WANDERING/CRITICAL están espejados en `PolicyCopy` (insights no depende de `policy`). Un override se marca **ajuste manual**.
+
+POC — detectores fijos en `FindingCatalog` (umbral 7 días, `baselineReady`):
+
+- `SLEEP_14D_BRIEFING`, KPIs inquieto / salidas / tiempo en cama / eficiencia
+- `BED_EXITS_RISING` (WoW ≥ 15% y +0.3)
+- `BED_EXIT_DAWN_CLUSTER` (≥3 salidas en 7d, ≥2/3 entre 05:00–06:05)
+- `POLICY_BED_EDGE_DAWN` si el cluster existe y el aviso de borde es ≥ 1 min → decisión con propuesta
+- `SLEEP_RESTLESS_HIGH` / `SLEEP_IN_RANGE` / `BATHROOM_NIGHT_UP` / `CARE_THIN`
+- `BASELINE_FORMING` y nada más (Susan)
+
+Una **tarjeta de decisión** es un `Finding` `POLICY` con `awaitingDecision`, `proposal.applyLabel = Aplicar el cambio`. Al aplicar (más adelante, comando de alarmas) el hallazgo queda como motivo, con `evidence.episodeIds`.
+
+### API (on-demand; persistir snapshots es fase 2)
+
+```
+GET /api/v1/insights/resident-chart/{id}/sleep          ← cards + narrative + findings de sueño
+GET /api/v1/insights/resident-chart/{id}/briefing?days=14
+GET /api/v1/insights/resident-chart/{id}/report?days=30  ← JSON del Word (episodios incluidos)
+GET /api/v1/insights/facility/briefing?days=14           ← a revisar vs tendencias positivas
+GET /api/v1/insights/facility/report?days=30
+```
+
+`downloadUrl` va `null` en esta POC. El panel puede pedir el JSON ahora o un link más tarde; es el mismo documento.
+
+### Word
+
+`scripts/reports/generate.py` (python-docx) — dos plantillas: ficha del residente (30d) y briefing de dirección.
+
+```
+pip install -r scripts/reports/requirements.txt
+python scripts/reports/generate.py --resident jose --days 30
+python scripts/reports/generate.py --facility --days 14
+```
+
+Salida: `scripts/reports/generated/`. Insights **no** shell-out a Python. Email diario a una lista de contactos: mismo JSON, otro job.
+
+---
+
+## 11. Checklist antes de codear
 
 - [ ] TZ única por facility en config
 - [ ] Ventana sueño documentada por residencia

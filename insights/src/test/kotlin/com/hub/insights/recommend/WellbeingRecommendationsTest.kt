@@ -20,6 +20,7 @@ class WellbeingRecommendationsTest {
             avgCalmMinutes7d = 0,
             deltaCalmMinutesWoW = null,
             avgRestlessMinutes7d = 0,
+            avgAsleepMinutes7d = 0,
             restlessShare = 0.9,
             avgBedExits = 0.0,
             maxBedExits = 0,

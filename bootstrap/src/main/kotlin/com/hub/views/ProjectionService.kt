@@ -10,6 +10,7 @@ import com.hub.care.domain.repository.CareSummaryRepository
 import com.hub.policy.domain.repository.AlarmProfileRepository
 import com.hub.policy.domain.repository.AlarmProfileOverrideRepository
 import com.hub.residence.domain.repository.BedRepository
+import com.hub.residence.domain.repository.FacilityRepository
 import com.hub.residence.domain.repository.RoomRepository
 import com.hub.residence.domain.repository.WingRepository
 import com.hub.shared.domain.BedId
@@ -19,7 +20,8 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.ZoneOffset
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 @Service
 class ProjectionService(
@@ -35,6 +37,7 @@ class ProjectionService(
     private val bedRepository: BedRepository,
     private val roomRepository: RoomRepository,
     private val wingRepository: WingRepository,
+    private val facilityRepository: FacilityRepository,
 ) {
 
     /**
@@ -53,9 +56,11 @@ class ProjectionService(
         private val bedRepository: BedRepository,
         private val roomRepository: RoomRepository,
         private val wingRepository: WingRepository,
+        private val facilityRepository: FacilityRepository,
     ) {
         private val rooms = mutableMapOf<String, com.hub.residence.domain.model.Room?>()
         private val wings = mutableMapOf<String, com.hub.residence.domain.model.Wing?>()
+        private val facilities = mutableMapOf<String, com.hub.residence.domain.model.Facility?>()
 
         fun resolve(bedId: BedId): RailLocation? {
             val bed = bedRepository.findById(bedId) ?: return null
@@ -69,9 +74,21 @@ class ProjectionService(
                 bedLabel = bed.label,
             )
         }
+
+        fun zone(bedId: BedId): ZoneId {
+            val bed = bedRepository.findById(bedId) ?: return DEFAULT_ZONE
+            val room = rooms.getOrPut(bed.roomId.value) { roomRepository.findById(bed.roomId) }
+            val wing = room?.let { r ->
+                wings.getOrPut(r.wingId.value) { wingRepository.findById(r.wingId) }
+            }
+            val facility = wing?.let { w ->
+                facilities.getOrPut(w.facilityId.value) { facilityRepository.findById(w.facilityId) }
+            }
+            return facility?.timezone?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: DEFAULT_ZONE
+        }
     }
 
-    private fun locations() = LocationResolver(bedRepository, roomRepository, wingRepository)
+    private fun locations() = LocationResolver(bedRepository, roomRepository, wingRepository, facilityRepository)
 
     /**
      * Días antes de la admisión no son observables: el cubo/panel no deben
@@ -100,10 +117,10 @@ class ProjectionService(
                 id = resident.id.value,
                 fullName = resident.fullName,
                 location = assignment?.let { resolver.resolve(it.bedId) },
-                currentState = bedState?.let {
+                    currentState = bedState?.let {
                     RailState(
                         state = it.state,
-                        staffPresent = null,
+                        staffPresent = it.staffPresent,
                         stateSince = it.stateSince,
                     )
                 },
@@ -125,7 +142,7 @@ class ProjectionService(
             admissionDate = resident.admissionDate,
             location = assignment?.let { locations().resolve(it.bedId) },
             currentState = bedState?.let {
-                RailState(state = it.state, staffPresent = null, stateSince = it.stateSince)
+                RailState(state = it.state, staffPresent = it.staffPresent, stateSince = it.stateSince)
             },
         )
     }
@@ -150,6 +167,7 @@ class ProjectionService(
                 wakeCount = summary?.wakeCount ?: 0,
                 startedAt = summary?.startedAt,
                 endedAt = summary?.endedAt,
+                measured = summary != null,
             )
         }
         return SleepTabProjection(
@@ -177,6 +195,9 @@ class ProjectionService(
                 distanceMeters = summary?.distanceMeters ?: 0.0,
                 transferCount = summary?.transferCount ?: 0,
                 outOfBedMinutes = summary?.outOfBedMinutes ?: 0,
+                inBedMinutes = summary?.inBedMinutes ?: 0,
+                outOfSightMinutes = summary?.outOfSightMinutes ?: 0,
+                measured = summary != null,
             )
         }
         return MobilityTabProjection(
@@ -202,6 +223,9 @@ class ProjectionService(
                 day = date.toString(),
                 visitCount = summary?.visitCount ?: 0,
                 nightVisitCount = summary?.nightVisitCount ?: 0,
+                assistedCount = summary?.assistedCount ?: 0,
+                totalMinutes = summary?.totalMinutes ?: 0,
+                measured = summary != null,
             )
         }
         return BathroomTabProjection(
@@ -229,18 +253,25 @@ class ProjectionService(
                 proactiveMinutes = summary?.proactiveMinutes ?: 0,
                 roundsCount = summary?.roundsCount ?: 0,
                 notesCount = summary?.notesCount ?: 0,
+                measured = summary != null,
             )
         }
-        val total = days.sumOf { it.totalMinutes }
-        val proactive = days.sumOf { it.proactiveMinutes }
+        val measuredDays = days.filter { it.measured }
+        val total = measuredDays.sumOf { it.totalMinutes }
+        val proactive = measuredDays.sumOf { it.proactiveMinutes }
+        val roundsObserved = measuredDays.any { it.roundsCount > 0 }
         return CareTabProjection(
             residentId = residentId,
             from = from.toString(),
             to = to.toString(),
             observedFrom = observedFrom.toString(),
             summaries = days,
-            avgMinutesPerDay = if (days.isEmpty()) 0.0 else total.toDouble() / days.size,
-            proactiveShare = if (total == 0) 0.0 else proactive.toDouble() / total,
+            avgMinutesPerDay = if (measuredDays.isEmpty()) null else total.toDouble() / measuredDays.size,
+            proactiveShare = when {
+                !roundsObserved -> null
+                total == 0 -> 0.0
+                else -> proactive.toDouble() / total
+            },
         )
     }
 
@@ -252,8 +283,10 @@ class ProjectionService(
         val falls = episodes.filter { it.kind.name == "FALL" }
             .sortedByDescending { it.occurredAt }
 
-        val now = LocalDate.now()
-        val monthRange = (0 until months).map { YearMonth.now().minusMonths(it.toLong()) }
+        val assignment = bedAssignmentRepository.findOpenByResidentId(ResidentId(residentId))
+        val zone = assignment?.let { locations().zone(it.bedId) } ?: DEFAULT_ZONE
+        val now = LocalDate.now(zone)
+        val monthRange = (0 until months).map { YearMonth.now(zone).minusMonths(it.toLong()) }
 
         val lastFall = falls.firstOrNull()
         val lastFallAt = lastFall?.occurredAt
@@ -274,18 +307,16 @@ class ProjectionService(
         val firstObservedAt = episodes.minByOrNull { it.occurredAt }?.occurredAt
         val streakFrom = lastFallAt ?: firstObservedAt
         val streakDays = streakFrom?.let {
-            java.time.temporal.ChronoUnit.DAYS.between(
-                it.atZone(ZoneOffset.UTC).toLocalDate(), now
-            ).toInt().coerceAtLeast(0)
+            ChronoUnit.DAYS.between(it.atZone(zone).toLocalDate(), now).toInt().coerceAtLeast(0)
         }
 
         val previousFall = falls.drop(1).firstOrNull()
         /* Null y no 0: "no hubo una caida anterior" y "la anterior fue el mismo
          * dia" son cosas distintas, y con 0 se leen igual. */
         val previousStreakDays = if (previousFall != null && lastFallAt != null) {
-            java.time.temporal.ChronoUnit.DAYS.between(
-                previousFall.occurredAt.atZone(ZoneOffset.UTC).toLocalDate(),
-                lastFallAt.atZone(ZoneOffset.UTC).toLocalDate()
+            ChronoUnit.DAYS.between(
+                previousFall.occurredAt.atZone(zone).toLocalDate(),
+                lastFallAt.atZone(zone).toLocalDate(),
             ).toInt().coerceAtLeast(0)
         } else null
 
@@ -300,7 +331,7 @@ class ProjectionService(
                 FallMonthProjection(
                     label = ym.toString(),
                     falls = falls.count {
-                        it.occurredAt.atZone(ZoneOffset.UTC).toLocalDate().yearMonth == ym
+                        it.occurredAt.atZone(zone).toLocalDate().yearMonth == ym
                     },
                 )
             },
@@ -372,5 +403,9 @@ class ProjectionService(
             updatedBy = version.updatedBy,
             recommendation = null,
         )
+    }
+
+    companion object {
+        val DEFAULT_ZONE: ZoneId = ZoneId.of("America/Argentina/Buenos_Aires")
     }
 }

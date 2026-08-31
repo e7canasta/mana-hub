@@ -4,6 +4,7 @@ import com.hub.insights.inbound.HubSceneEvent
 import com.manahive.contracts.scene.StateKind
 import java.time.Duration
 import java.time.Instant
+import kotlin.math.roundToInt
 
 data class ScenePoint(
     val at: Instant,
@@ -18,16 +19,19 @@ data class Dwell(
     val kind: StateKind,
     val fromKind: StateKind?,
 ) {
-    val minutes: Int
-        get() = Duration.between(start, end).seconds.coerceAtLeast(0).toInt() / 60
+    val seconds: Long
+        get() = Duration.between(start, end).seconds.coerceAtLeast(0)
 }
+
+fun minutesFromSeconds(seconds: Long): Int =
+    if (seconds <= 0) 0 else (seconds / 60.0).roundToInt()
 
 object SceneTimeline {
 
     /**
      * Solo hechos que cambian el FSM de persona:
-     * [SceneEvent.TransitionDetected], [SceneEvent.NightOpened].
-     * ComeBackExceeded / DwellExceeded se descartan (mismo estado).
+     * [com.manahive.contracts.scene.SceneEvent.TransitionDetected],
+     * [com.manahive.contracts.scene.SceneEvent.NightOpened].
      */
     fun points(events: List<HubSceneEvent>): List<ScenePoint> =
         events.mapNotNull { ev ->
@@ -63,9 +67,6 @@ object SceneTimeline {
         return result
     }
 
-    /**
-     * Visitas de staff: [SceneEvent.StaffPresenceDetected] → [SceneEvent.StaffLeftDetected].
-     */
     fun staffVisits(events: List<HubSceneEvent>, windowStart: Instant, windowEnd: Instant): List<StaffVisit> {
         if (!windowEnd.isAfter(windowStart)) return emptyList()
         val stamps = events.mapNotNull { ev ->
@@ -102,6 +103,6 @@ data class StaffVisit(
     val enteredAt: Instant,
     val leftAt: Instant,
 ) {
-    val minutes: Int
-        get() = Duration.between(enteredAt, leftAt).seconds.coerceAtLeast(0).toInt() / 60
+    val seconds: Long
+        get() = Duration.between(enteredAt, leftAt).seconds.coerceAtLeast(0)
 }

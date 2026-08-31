@@ -49,60 +49,114 @@ class EventIngestionService(
     }
 
     @Transactional
-    fun ingestSleepSummary(request: IngestSummaryRequest<SleepSummaryData>) {
-        val summary = SleepSummary.create(
-            sourceRecordId = request.sourceRecordId,
-            residentId = ResidentId(request.residentId),
-            observedOn = request.observedOn,
-            calmMinutes = request.data.calmMinutes,
-            restlessMinutes = request.data.restlessMinutes,
-            awakeMinutes = request.data.awakeMinutes,
-            outOfBedMinutes = request.data.outOfBedMinutes,
-            bedExitCount = request.data.bedExitCount,
-            wakeCount = request.data.wakeCount,
-            source = request.source,
-            modelVersion = request.modelVersion,
-            confidence = request.confidence,
-            startedAt = request.data.startedAt,
-            endedAt = request.data.endedAt
-        )
+    fun ingestSleepSummary(request: IngestSummaryRequest<SleepSummaryData>): Boolean {
+        val residentId = ResidentId(request.residentId)
+        val existing = summaryRepository.findSleepByResidentAndDate(residentId, request.observedOn)
+        val summary = if (existing != null) {
+            existing.copy(
+                sourceRecordId = request.sourceRecordId,
+                calmMinutes = request.data.calmMinutes,
+                restlessMinutes = request.data.restlessMinutes,
+                awakeMinutes = request.data.awakeMinutes,
+                outOfBedMinutes = request.data.outOfBedMinutes,
+                bedExitCount = request.data.bedExitCount,
+                wakeCount = request.data.wakeCount,
+                source = request.source,
+                modelVersion = request.modelVersion,
+                confidence = request.confidence,
+                startedAt = request.data.startedAt,
+                endedAt = request.data.endedAt,
+            )
+        } else {
+            SleepSummary.create(
+                sourceRecordId = request.sourceRecordId,
+                residentId = residentId,
+                observedOn = request.observedOn,
+                calmMinutes = request.data.calmMinutes,
+                restlessMinutes = request.data.restlessMinutes,
+                awakeMinutes = request.data.awakeMinutes,
+                outOfBedMinutes = request.data.outOfBedMinutes,
+                bedExitCount = request.data.bedExitCount,
+                wakeCount = request.data.wakeCount,
+                source = request.source,
+                modelVersion = request.modelVersion,
+                confidence = request.confidence,
+                startedAt = request.data.startedAt,
+                endedAt = request.data.endedAt,
+            )
+        }
         summaryRepository.saveSleep(summary)
+        return existing == null
     }
 
     @Transactional
-    fun ingestMobilitySummary(request: IngestSummaryRequest<MobilitySummaryData>) {
-        val summary = MobilitySummary.create(
-            sourceRecordId = request.sourceRecordId,
-            residentId = ResidentId(request.residentId),
-            observedOn = request.observedOn,
-            inBedMinutes = request.data.inBedMinutes,
-            outOfBedMinutes = request.data.outOfBedMinutes,
-            outOfSightMinutes = request.data.outOfSightMinutes,
-            walkingMinutes = request.data.walkingMinutes,
-            distanceMeters = request.data.distanceMeters,
-            transferCount = request.data.transferCount,
-            source = request.source,
-            modelVersion = request.modelVersion,
-            confidence = request.confidence
-        )
+    fun ingestMobilitySummary(request: IngestSummaryRequest<MobilitySummaryData>): Boolean {
+        val residentId = ResidentId(request.residentId)
+        val existing = summaryRepository.findMobilityByResidentAndDate(residentId, request.observedOn)
+        val summary = if (existing != null) {
+            existing.copy(
+                sourceRecordId = request.sourceRecordId,
+                inBedMinutes = request.data.inBedMinutes,
+                outOfBedMinutes = request.data.outOfBedMinutes,
+                outOfSightMinutes = request.data.outOfSightMinutes,
+                walkingMinutes = request.data.walkingMinutes,
+                distanceMeters = request.data.distanceMeters,
+                transferCount = request.data.transferCount,
+                source = request.source,
+                modelVersion = request.modelVersion,
+                confidence = request.confidence,
+            )
+        } else {
+            MobilitySummary.create(
+                sourceRecordId = request.sourceRecordId,
+                residentId = residentId,
+                observedOn = request.observedOn,
+                inBedMinutes = request.data.inBedMinutes,
+                outOfBedMinutes = request.data.outOfBedMinutes,
+                outOfSightMinutes = request.data.outOfSightMinutes,
+                walkingMinutes = request.data.walkingMinutes,
+                distanceMeters = request.data.distanceMeters,
+                transferCount = request.data.transferCount,
+                source = request.source,
+                modelVersion = request.modelVersion,
+                confidence = request.confidence,
+            )
+        }
         summaryRepository.saveMobility(summary)
+        return existing == null
     }
 
     @Transactional
-    fun ingestBathroomSummary(request: IngestSummaryRequest<BathroomSummaryData>) {
-        val summary = BathroomSummary.create(
-            sourceRecordId = request.sourceRecordId,
-            residentId = ResidentId(request.residentId),
-            observedOn = request.observedOn,
-            visitCount = request.data.visitCount,
-            nightVisitCount = request.data.nightVisitCount,
-            assistedCount = request.data.assistedCount,
-            totalMinutes = request.data.totalMinutes,
-            source = request.source,
-            modelVersion = request.modelVersion,
-            confidence = request.confidence
-        )
+    fun ingestBathroomSummary(request: IngestSummaryRequest<BathroomSummaryData>): Boolean {
+        val residentId = ResidentId(request.residentId)
+        val existing = summaryRepository.findBathroomByResidentAndDate(residentId, request.observedOn)
+        val summary = if (existing != null) {
+            existing.copy(
+                sourceRecordId = request.sourceRecordId,
+                visitCount = request.data.visitCount,
+                nightVisitCount = request.data.nightVisitCount,
+                assistedCount = request.data.assistedCount,
+                totalMinutes = request.data.totalMinutes,
+                source = request.source,
+                modelVersion = request.modelVersion,
+                confidence = request.confidence,
+            )
+        } else {
+            BathroomSummary.create(
+                sourceRecordId = request.sourceRecordId,
+                residentId = residentId,
+                observedOn = request.observedOn,
+                visitCount = request.data.visitCount,
+                nightVisitCount = request.data.nightVisitCount,
+                assistedCount = request.data.assistedCount,
+                totalMinutes = request.data.totalMinutes,
+                source = request.source,
+                modelVersion = request.modelVersion,
+                confidence = request.confidence,
+            )
+        }
         summaryRepository.saveBathroom(summary)
+        return existing == null
     }
 
     @Transactional

@@ -40,6 +40,7 @@ interface NotificationEventRepository {
 
 interface SceneEventRepository {
     fun findByResidentId(residentId: ResidentId): List<SceneEvent>
+    fun findByResidentId(residentId: ResidentId, from: Instant, to: Instant): List<SceneEvent>
     fun findByBedId(bedId: BedId): List<SceneEvent>
     fun save(event: SceneEvent): SceneEvent
 }

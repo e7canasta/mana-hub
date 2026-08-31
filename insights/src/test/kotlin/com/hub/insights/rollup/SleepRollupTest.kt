@@ -20,11 +20,11 @@ class SleepRollupTest {
         val start = Instant.parse("2026-09-03T22:00:00Z")
         val end = Instant.parse("2026-09-04T00:32:00Z")
         val dwells = SceneTimeline.dwells(points, start, end)
-        val sleep = SleepRollup.compute(dwells, LocalDate.of(2026, 9, 3), zone, deepSleepAfterMinutes = 10)
+        val sleep = SleepRollup.compute(dwells, LocalDate.of(2026, 9, 3), zone, sleepOnsetMinutes = 10)
 
-        // 75m Lying: 10 inquieto + 65 profundo; 17m SittingInBed despierto; 60m Lying: 10+50
-        assertThat(sleep.calmMinutes).isEqualTo(115)
-        assertThat(sleep.restlessMinutes).isEqualTo(20)
+        // 75m primer Lying: 10 latencia + 65 profundo; 17m SittingInBed despierto; 60m Lying todo profundo
+        assertThat(sleep.calmMinutes).isEqualTo(125)
+        assertThat(sleep.restlessMinutes).isEqualTo(10)
         assertThat(sleep.awakeMinutes).isEqualTo(17)
         assertThat(sleep.wakeCount).isEqualTo(1)
         assertThat(sleep.bedExitCount).isEqualTo(0)
@@ -55,11 +55,11 @@ class SleepRollupTest {
             Instant.parse("2026-09-03T22:00:00Z"),
             Instant.parse("2026-09-03T23:40:00Z"),
         )
-        val sleep = SleepRollup.compute(dwells, LocalDate.of(2026, 9, 3), zone, deepSleepAfterMinutes = 10)
+        val sleep = SleepRollup.compute(dwells, LocalDate.of(2026, 9, 3), zone, sleepOnsetMinutes = 10)
         assertThat(sleep.bedExitCount).isEqualTo(1)
         assertThat(sleep.outOfBedMinutes).isEqualTo(10)
-        // 60m Lying (10 inquieto + 50 profundo) + 30m Lying (10+20) = 70 profundo
-        assertThat(sleep.calmMinutes).isEqualTo(70)
+        // 60m primer Lying (10 latencia + 50 profundo) + 30m Lying (todo profundo) = 80
+        assertThat(sleep.calmMinutes).isEqualTo(80)
     }
 
     @Test
@@ -77,7 +77,7 @@ class SleepRollupTest {
         val bath = BathroomRollup.compute(dwells, LocalDate.of(2026, 9, 3), zone)
         assertThat(bath.visitCount).isEqualTo(1)
         assertThat(bath.totalMinutes).isEqualTo(8)
-        val sleep = SleepRollup.compute(dwells, LocalDate.of(2026, 9, 3), zone, deepSleepAfterMinutes = 10)
+        val sleep = SleepRollup.compute(dwells, LocalDate.of(2026, 9, 3), zone, sleepOnsetMinutes = 10)
         assertThat(sleep.outOfBedMinutes).isEqualTo(8)
     }
 
@@ -93,7 +93,7 @@ class SleepRollupTest {
             Instant.parse("2026-09-03T12:00:00Z"),
             Instant.parse("2026-09-03T12:30:00Z"),
         )
-        val mobility = MobilityRollup.compute(dwells, LocalDate.of(2026, 9, 3), walkingMetersPerMinute = 50.0)
+        val mobility = MobilityRollup.compute(dwells, LocalDate.of(2026, 9, 3))
         assertThat(mobility.walkingMinutes).isEqualTo(15)
         assertThat(mobility.outOfBedMinutes).isEqualTo(30)
     }
@@ -133,7 +133,7 @@ class SleepRollupTest {
             Instant.parse("2026-09-03T22:00:00Z"),
             Instant.parse("2026-09-03T22:45:00Z"),
         )
-        val sleep = SleepRollup.compute(dwells, LocalDate.of(2026, 9, 3), zone, deepSleepAfterMinutes = 10)
+        val sleep = SleepRollup.compute(dwells, LocalDate.of(2026, 9, 3), zone, sleepOnsetMinutes = 10)
         assertThat(sleep.calmMinutes).isEqualTo(30)
         assertThat(sleep.restlessMinutes).isEqualTo(10)
         assertThat(sleep.awakeMinutes).isEqualTo(5)
@@ -157,6 +157,41 @@ class SleepRollupTest {
         )
         val points = SceneTimeline.points(events)
         assertThat(points.map { it.to }).containsExactly(StateKind.LYING, StateKind.STANDING)
+    }
+
+    @Test
+    fun `la latencia de sueño no se reaplica en cada Lying`() {
+        val events = listOf(
+            transition("2026-09-03T22:00:00Z", "Unknown", PersonState.Lying),
+            transition("2026-09-03T22:20:00Z", PersonState.Lying, PersonState.SittingInBed),
+            transition("2026-09-03T22:25:00Z", PersonState.SittingInBed, PersonState.Lying),
+        )
+        val dwells = SceneTimeline.dwells(
+            SceneTimeline.points(events),
+            Instant.parse("2026-09-03T22:00:00Z"),
+            Instant.parse("2026-09-03T22:55:00Z"),
+        )
+        val sleep = SleepRollup.compute(dwells, LocalDate.of(2026, 9, 3), zone, sleepOnsetMinutes = 10)
+        // 20m primer Lying: 10+10; 5m sitting; 30m segundo Lying: 30 calm
+        assertThat(sleep.restlessMinutes).isEqualTo(10)
+        assertThat(sleep.calmMinutes).isEqualTo(40)
+        assertThat(sleep.awakeMinutes).isEqualTo(5)
+    }
+
+    @Test
+    fun `visita de baño de 50s no se pierde`() {
+        val events = listOf(
+            transition("2026-09-03T23:00:00Z", PersonState.Lying, PersonState.InBathroom),
+            transition("2026-09-03T23:00:50Z", PersonState.InBathroom, PersonState.Lying),
+        )
+        val dwells = SceneTimeline.dwells(
+            SceneTimeline.points(events),
+            Instant.parse("2026-09-03T23:00:00Z"),
+            Instant.parse("2026-09-03T23:01:00Z"),
+        )
+        val bath = BathroomRollup.compute(dwells, LocalDate.of(2026, 9, 3), zone)
+        assertThat(bath.visitCount).isEqualTo(1)
+        assertThat(bath.totalMinutes).isEqualTo(1)
     }
 
     private fun e1VuelveSolo() = listOf(

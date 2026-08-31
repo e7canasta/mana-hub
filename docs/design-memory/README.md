@@ -13,7 +13,7 @@
 - [Summaries, ficha del residente e hidratador del cubo](summaries-resident-chart-cube.md) — memoria técnica: tablas `*_summaries`, proyecciones `/views/resident-chart`, relación con `scene_events`, pipeline cubo.
 
 ## Insights (compute)
-- [Módulo insights — rollups, KPIs y recomendaciones](insights-module.md) — subproyecto separado del SOR: batch nocturno + hooks episodio, API derived/recommendations.
+- [Módulo insights — rollups, KPIs, hallazgos e informes](insights-module.md) — subproyecto separado del SOR: batch nocturno + hallazgos (tendencia/cluster/política) + JSON de report.
 
 ## Architecture Decision Records
 - [ADR-001: Domain Events](decision-records/ADR-001-domain-events.md)

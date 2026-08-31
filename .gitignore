@@ -93,3 +93,6 @@ temp/
 *.temp
 *.bak
 .cache/
+
+# ── Informes generados ──
+scripts/reports/generated/

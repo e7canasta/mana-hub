@@ -46,8 +46,12 @@ class CareSummaryRepositoryAdapter(
     override fun findByResidentAndRange(residentId: ResidentId, from: LocalDate, to: LocalDate): List<CareSummary> =
         jpa.findByResidentIdAndObservedOnBetween(residentId.value, from, to).map { it.toDomain() }
 
-    override fun save(summary: CareSummary): CareSummary =
-        jpa.save(summary.toEntity()).toDomain()
+    override fun save(summary: CareSummary): CareSummary {
+        val entity = summary.toEntity()
+        jpa.findById(summary.id.value).ifPresent { old -> entity.createdAt = old.createdAt }
+        entity.updatedAt = Instant.now()
+        return jpa.save(entity).toDomain()
+    }
 
     private fun CareSummaryEntity.toDomain() = CareSummary.reconstitute(
         id = CareSummaryId(id),

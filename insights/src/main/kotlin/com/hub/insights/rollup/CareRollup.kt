@@ -9,26 +9,20 @@ data class CareRollupResult(
     val roundsCount: Int,
     val notesCount: Int,
     val visitCount: Int,
-) {
-    fun toPayload(): Map<String, Any?> = mapOf(
-        "totalMinutes" to totalMinutes,
-        "proactiveMinutes" to proactiveMinutes,
-        "roundsCount" to roundsCount,
-        "notesCount" to notesCount,
-    )
-}
+)
 
 object CareRollup {
 
     /**
-     * Cuidado visto por escena: [SceneEvent.StaffPresenceDetected] / StaffLeftDetected.
-     * Todo es reactivo/espontáneo (no ronda) hasta cruzar con `rounds`.
+     * Cuidado visto por escena: StaffPresenceDetected / StaffLeftDetected.
+     * [proactiveMinutes] y [roundsCount] quedan 0 hasta cruzar con rondas:
+     * no se publica un share de 0 % como si la residencia no hiciera rondas.
      */
     fun compute(visits: List<StaffVisit>, observedOn: LocalDate): CareRollupResult {
-        val total = visits.sumOf { it.minutes }
+        val totalSec = visits.sumOf { it.seconds }
         return CareRollupResult(
             observedOn = observedOn,
-            totalMinutes = total,
+            totalMinutes = minutesFromSeconds(totalSec),
             proactiveMinutes = 0,
             roundsCount = 0,
             notesCount = 0,

@@ -22,20 +22,20 @@ class EventIngestionController(
 
     @PostMapping("/clinical/sleep-summaries")
     fun ingestSleepSummary(@RequestBody request: IngestSummaryRequest<SleepSummaryData>): ResponseEntity<Void> {
-        eventIngestionService.ingestSleepSummary(request)
-        return ResponseEntity.status(HttpStatus.CREATED).build()
+        val created = eventIngestionService.ingestSleepSummary(request)
+        return if (created) ResponseEntity.status(HttpStatus.CREATED).build() else ResponseEntity.ok().build()
     }
 
     @PostMapping("/clinical/mobility-summaries")
     fun ingestMobilitySummary(@RequestBody request: IngestSummaryRequest<MobilitySummaryData>): ResponseEntity<Void> {
-        eventIngestionService.ingestMobilitySummary(request)
-        return ResponseEntity.status(HttpStatus.CREATED).build()
+        val created = eventIngestionService.ingestMobilitySummary(request)
+        return if (created) ResponseEntity.status(HttpStatus.CREATED).build() else ResponseEntity.ok().build()
     }
 
     @PostMapping("/clinical/bathroom-summaries")
     fun ingestBathroomSummary(@RequestBody request: IngestSummaryRequest<BathroomSummaryData>): ResponseEntity<Void> {
-        eventIngestionService.ingestBathroomSummary(request)
-        return ResponseEntity.status(HttpStatus.CREATED).build()
+        val created = eventIngestionService.ingestBathroomSummary(request)
+        return if (created) ResponseEntity.status(HttpStatus.CREATED).build() else ResponseEntity.ok().build()
     }
 
     @PostMapping("/clinical/incidents")

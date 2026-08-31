@@ -38,4 +38,15 @@ class SleepInsightsTest {
         assertThat(d.avgCalmMinutes7d).isEqualTo(350)
         assertThat(d.deltaCalmMinutesWoW).isNull()
     }
+
+    @Test
+    fun `dias no medidos no tiran el promedio a cero`() {
+        val days = listOf(
+            HubSleepDay(day = "2026-08-29", calmMinutes = 400, measured = true),
+            HubSleepDay(day = "2026-08-30", calmMinutes = 0, measured = false),
+            HubSleepDay(day = "2026-08-31", calmMinutes = 0, measured = false),
+        )
+        val d = SleepInsights.derive(days)
+        assertThat(d.avgCalmMinutes7d).isEqualTo(400)
+    }
 }

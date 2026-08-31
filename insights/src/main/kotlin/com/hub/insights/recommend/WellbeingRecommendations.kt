@@ -65,7 +65,16 @@ object WellbeingRecommendations {
                 ),
             )
         }
-        if (totalMinutes == 0 || (avgMinutes != null && avgMinutes == 0.0)) {
+        if (avgMinutes == null) {
+            return listOf(
+                Recommendation(
+                    code = "CARE_NOT_MEASURED",
+                    severity = "info",
+                    text = "Todavía no hay un rollup de cuidado para estos días. No es cero de visitas.",
+                ),
+            )
+        }
+        if (totalMinutes == 0 || avgMinutes == 0.0) {
             return listOf(
                 Recommendation(
                     code = "CARE_NONE",

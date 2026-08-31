@@ -7,6 +7,7 @@ data class SleepDerived(
     val avgCalmMinutes7d: Int?,
     val deltaCalmMinutesWoW: Int?,
     val avgRestlessMinutes7d: Int?,
+    val avgAsleepMinutes7d: Int?,
     val restlessShare: Double?,
     val avgBedExits: Double?,
     val maxBedExits: Int?,
@@ -19,10 +20,10 @@ data class SleepDerived(
 object SleepInsights {
 
     fun derive(days: List<HubSleepDay>): SleepDerived {
-        if (days.isEmpty()) {
-            return SleepDerived(null, null, null, null, null, null, null, null, null, null)
+        val ordered = days.filter { it.measured }.sortedBy { it.day }
+        if (ordered.isEmpty()) {
+            return SleepDerived(null, null, null, null, null, null, null, null, null, null, null)
         }
-        val ordered = days.sortedBy { it.day }
         val last7 = ordered.takeLast(7)
         val prev7 = ordered.dropLast(7).takeLast(7)
 
@@ -31,6 +32,7 @@ object SleepInsights {
         val delta = if (avgCalm != null && prevCalm != null) avgCalm - prevCalm else null
 
         val avgRestless = avgOrNull(last7.map { it.restlessMinutes })
+        val avgAsleep = avgOrNull(last7.map { it.calmMinutes + it.restlessMinutes })
         val calmSum = last7.sumOf { it.calmMinutes }
         val restlessSum = last7.sumOf { it.restlessMinutes }
         val asleep = calmSum + restlessSum
@@ -46,6 +48,7 @@ object SleepInsights {
             avgCalmMinutes7d = avgCalm,
             deltaCalmMinutesWoW = delta,
             avgRestlessMinutes7d = avgRestless,
+            avgAsleepMinutes7d = avgAsleep,
             restlessShare = share,
             avgBedExits = last7.map { it.bedExitCount }.average().takeIf { last7.isNotEmpty() },
             maxBedExits = last7.maxOfOrNull { it.bedExitCount },
@@ -71,7 +74,7 @@ object CareInsights {
         if (days.isEmpty()) null else days.average()
 
     fun proactiveShare(total: Int, proactive: Int): Double? =
-        if (total <= 0) 0.0 else proactive.toDouble() / total
+        if (total <= 0) null else proactive.toDouble() / total
 }
 
 object MobilityInsights {

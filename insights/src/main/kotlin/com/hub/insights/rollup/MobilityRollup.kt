@@ -1,5 +1,6 @@
 package com.hub.insights.rollup
 
+import com.hub.insights.inbound.MobilitySummaryData
 import java.time.LocalDate
 
 data class MobilityRollupResult(
@@ -8,46 +9,38 @@ data class MobilityRollupResult(
     val outOfBedMinutes: Int,
     val outOfSightMinutes: Int,
     val walkingMinutes: Int,
-    val distanceMeters: Double,
     val transferCount: Int,
 ) {
-    fun toPayload(): Map<String, Any?> = mapOf(
-        "inBedMinutes" to inBedMinutes,
-        "outOfBedMinutes" to outOfBedMinutes,
-        "outOfSightMinutes" to outOfSightMinutes,
-        "walkingMinutes" to walkingMinutes,
-        "distanceMeters" to distanceMeters,
-        "transferCount" to transferCount,
+    /** Distancia no es un hecho: el SOR guarda 0. El estimado vive en insights. */
+    fun toData(): MobilitySummaryData = MobilitySummaryData(
+        inBedMinutes = inBedMinutes,
+        outOfBedMinutes = outOfBedMinutes,
+        outOfSightMinutes = outOfSightMinutes,
+        walkingMinutes = walkingMinutes,
+        distanceMeters = 0.0,
+        transferCount = transferCount,
     )
 }
 
 object MobilityRollup {
 
-    /**
-     * Andar = [StateKind.outOfRoom] (InHallway, Outdoor, Absent).
-     * Standing / InRoom / InChair siguen en la habitación.
-     */
-    fun compute(
-        dwells: List<Dwell>,
-        observedOn: LocalDate,
-        walkingMetersPerMinute: Double,
-    ): MobilityRollupResult {
-        var inBed = 0
-        var outOfBed = 0
-        var outOfSight = 0
-        var walking = 0
+    fun compute(dwells: List<Dwell>, observedOn: LocalDate): MobilityRollupResult {
+        var inBed = 0L
+        var outOfBed = 0L
+        var outOfSight = 0L
+        var walking = 0L
         var transfers = 0
 
         for (d in dwells) {
             when {
-                d.kind.inBed -> inBed += d.minutes
+                d.kind.inBed -> inBed += d.seconds
                 d.kind.outOfRoom -> {
-                    walking += d.minutes
-                    outOfBed += d.minutes
-                    if (d.kind.outOfSight) outOfSight += d.minutes
+                    walking += d.seconds
+                    outOfBed += d.seconds
+                    if (d.kind.outOfSight) outOfSight += d.seconds
                 }
-                d.kind.outOfSight -> outOfSight += d.minutes
-                else -> outOfBed += d.minutes
+                d.kind.outOfSight -> outOfSight += d.seconds
+                else -> outOfBed += d.seconds
             }
             val fromInBed = d.fromKind?.inBed
             if (fromInBed != null && fromInBed != d.kind.inBed) transfers += 1
@@ -55,11 +48,10 @@ object MobilityRollup {
 
         return MobilityRollupResult(
             observedOn = observedOn,
-            inBedMinutes = inBed,
-            outOfBedMinutes = outOfBed,
-            outOfSightMinutes = outOfSight,
-            walkingMinutes = walking,
-            distanceMeters = walking * walkingMetersPerMinute,
+            inBedMinutes = minutesFromSeconds(inBed),
+            outOfBedMinutes = minutesFromSeconds(outOfBed),
+            outOfSightMinutes = minutesFromSeconds(outOfSight),
+            walkingMinutes = minutesFromSeconds(walking),
             transferCount = transfers,
         )
     }

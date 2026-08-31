@@ -11,6 +11,7 @@ data class HubResident(
     val fullName: String? = null,
     val admissionDate: LocalDate? = null,
     val status: String? = null,
+    val isDischarged: Boolean? = null,
 )
 
 data class HubChart(
@@ -20,11 +21,7 @@ data class HubChart(
 )
 
 /**
- * Fila que devuelve hub (`GET .../scene-events`) **o** el JSON hive original.
- *
- * Hive ([SceneEvent.TransitionDetected]): `type`, `at`, `from`, `to` = simpleName de PersonState.
- * Hive ([SceneEvent.NightOpened]): `initialState` (no `to`).
- * Hub aplana: `eventType`, `timestamp`, `fromState`, `toState` (`initialState` → `toState`).
+ * Anti-corruption: un campo canónico hive (`type`/`at`/`from`/`to`) y alias del GET aplanado.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class HubSceneEvent(
@@ -70,6 +67,7 @@ data class HubSleepDay(
     val wakeCount: Int = 0,
     val startedAt: LocalDateTime? = null,
     val endedAt: LocalDateTime? = null,
+    val measured: Boolean = true,
 )
 
 data class HubSleepTab(
@@ -86,6 +84,9 @@ data class HubMobilityDay(
     val distanceMeters: Double = 0.0,
     val transferCount: Int = 0,
     val outOfBedMinutes: Int = 0,
+    val inBedMinutes: Int = 0,
+    val outOfSightMinutes: Int = 0,
+    val measured: Boolean = true,
 )
 
 data class HubMobilityTab(
@@ -100,6 +101,9 @@ data class HubBathroomDay(
     val day: String,
     val visitCount: Int = 0,
     val nightVisitCount: Int = 0,
+    val assistedCount: Int = 0,
+    val totalMinutes: Int = 0,
+    val measured: Boolean = true,
 )
 
 data class HubBathroomTab(
@@ -116,6 +120,7 @@ data class HubCareDay(
     val proactiveMinutes: Int = 0,
     val roundsCount: Int = 0,
     val notesCount: Int = 0,
+    val measured: Boolean = true,
 )
 
 data class HubCareTab(
@@ -128,11 +133,75 @@ data class HubCareTab(
     val proactiveShare: Double? = null,
 )
 
-data class IngestEnvelope(
+data class SleepSummaryData(
+    val calmMinutes: Int = 0,
+    val restlessMinutes: Int = 0,
+    val awakeMinutes: Int = 0,
+    val outOfBedMinutes: Int = 0,
+    val bedExitCount: Int = 0,
+    val wakeCount: Int = 0,
+    val startedAt: LocalDateTime? = null,
+    val endedAt: LocalDateTime? = null,
+)
+
+data class MobilitySummaryData(
+    val inBedMinutes: Int = 0,
+    val outOfBedMinutes: Int = 0,
+    val outOfSightMinutes: Int = 0,
+    val walkingMinutes: Int = 0,
+    val distanceMeters: Double = 0.0,
+    val transferCount: Int = 0,
+)
+
+data class BathroomSummaryData(
+    val visitCount: Int = 0,
+    val nightVisitCount: Int = 0,
+    val assistedCount: Int = 0,
+    val totalMinutes: Int = 0,
+)
+
+data class CareSummaryData(
+    val totalMinutes: Int = 0,
+    val proactiveMinutes: Int = 0,
+    val roundsCount: Int = 0,
+    val notesCount: Int = 0,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class HubAlarmPresets(
+    val residentId: String? = null,
+    val riskLevel: String? = null,
+    val overrides: Map<String, HubOverrideEntry> = emptyMap(),
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class HubOverrideEntry(
+    val warningAfterMinutes: Int? = null,
+    val alertAfterMinutes: Int? = null,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class HubEpisodesTab(
+    val residentId: String? = null,
+    val episodes: List<HubEpisode> = emptyList(),
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class HubEpisode(
+    val id: String,
+    val kind: String? = null,
+    val severity: String? = null,
+    val occurredAt: Instant,
+    val selfRecovery: Boolean? = null,
+    val injuryStatus: String? = null,
+    val verdict: String? = null,
+)
+
+data class IngestEnvelope<T>(
     val sourceRecordId: String,
     val residentId: String,
     val observedOn: LocalDate,
-    val data: Map<String, Any?>,
+    val data: T,
     val source: String = "insights",
     val modelVersion: String = "insights-0.1",
 )

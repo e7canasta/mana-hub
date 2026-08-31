@@ -57,6 +57,8 @@ data class SleepDayProjection(
     val wakeCount: Int,
     val startedAt: LocalDateTime?,
     val endedAt: LocalDateTime?,
+    /** false: no hay fila ingestada ese día. Los ceros no son un hallazgo. */
+    val measured: Boolean,
 )
 
 data class MobilityTabProjection(
@@ -73,6 +75,9 @@ data class MobilityDayProjection(
     val distanceMeters: Double,
     val transferCount: Int,
     val outOfBedMinutes: Int,
+    val inBedMinutes: Int,
+    val outOfSightMinutes: Int,
+    val measured: Boolean,
 )
 
 data class BathroomTabProjection(
@@ -87,6 +92,9 @@ data class BathroomDayProjection(
     val day: String,
     val visitCount: Int,
     val nightVisitCount: Int,
+    val assistedCount: Int,
+    val totalMinutes: Int,
+    val measured: Boolean,
 )
 
 // ───────────────────────────────────────────────────────────── care
@@ -107,6 +115,7 @@ data class CareDayProjection(
     val proactiveMinutes: Int,
     val roundsCount: Int,
     val notesCount: Int,
+    val measured: Boolean,
 )
 
 // ───────────────────────────────────────────────────────────── falls

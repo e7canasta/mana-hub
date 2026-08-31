@@ -2,10 +2,15 @@ package com.hub.insights.rollup
 
 import com.hub.insights.config.InsightsProperties
 import com.hub.insights.config.ObservationWindow
+import com.hub.insights.inbound.BathroomSummaryData
+import com.hub.insights.inbound.CareSummaryData
 import com.hub.insights.inbound.HubClient
+import com.hub.insights.inbound.MobilitySummaryData
 import com.hub.insights.inbound.PublishResult
+import com.hub.insights.inbound.SleepSummaryData
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 
@@ -29,36 +34,41 @@ class RollupService(
             )
         }
 
-        val events = hub.getSceneEvents(residentId)
-        val points = SceneTimeline.points(events)
         val now = Instant.now()
-
         val sleepRange = window.sleepBounds(observedOn)
+        val dayRange = window.calendarDayBounds(observedOn)
+        val queryFrom = min(sleepRange.start, dayRange.start).minus(LOOKBACK)
+        val queryTo = max(min(sleepRange.endInclusive, now), min(dayRange.endInclusive, now))
+        val events = hub.getSceneEvents(residentId, queryFrom, queryTo)
+        val points = SceneTimeline.points(events)
+
         val sleepEnd = min(sleepRange.endInclusive, now)
         val sleepDwells = SceneTimeline.dwells(points, sleepRange.start, sleepEnd)
         val sleep = SleepRollup.compute(
             sleepDwells, observedOn, properties.zoneId, properties.deepSleepAfterMinutes,
         )
 
-        val dayRange = window.calendarDayBounds(observedOn)
         val dayEnd = min(dayRange.endInclusive, now)
         val dayDwells = SceneTimeline.dwells(points, dayRange.start, dayEnd)
-        val mobility = MobilityRollup.compute(dayDwells, observedOn, properties.walkingMetersPerMinute)
+        val mobility = MobilityRollup.compute(dayDwells, observedOn)
         val bathroom = BathroomRollup.compute(dayDwells, observedOn, properties.zoneId)
         val care = CareRollup.compute(
             SceneTimeline.staffVisits(events, dayRange.start, dayEnd),
             observedOn,
         )
+        val careData = CareSummaryData(
+            totalMinutes = care.totalMinutes,
+            proactiveMinutes = care.proactiveMinutes,
+            roundsCount = care.roundsCount,
+            notesCount = care.notesCount,
+        )
 
         val published = mutableMapOf<String, String>()
         if (publish) {
-            published["sleep"] = hub.ingestSleep(residentId, observedOn, sleep.toPayload()).name
-            published["mobility"] = hub.ingestMobility(residentId, observedOn, mobility.toPayload()).name
-            published["bathroom"] = hub.ingestBathroom(residentId, observedOn, bathroom.toPayload()).name
-            published["care"] = hub.ingestCare(
-                residentId, observedOn,
-                care.totalMinutes, care.proactiveMinutes, care.roundsCount, care.notesCount,
-            ).name
+            published["sleep"] = hub.ingestSleep(residentId, observedOn, sleep.toData()).name
+            published["mobility"] = hub.ingestMobility(residentId, observedOn, mobility.toData()).name
+            published["bathroom"] = hub.ingestBathroom(residentId, observedOn, bathroom.toData()).name
+            published["care"] = hub.ingestCare(residentId, observedOn, careData).name
         } else {
             published["sleep"] = PublishResult.Skipped.name
             published["mobility"] = PublishResult.Skipped.name
@@ -76,10 +86,10 @@ class RollupService(
             residentId = residentId,
             observedOn = observedOn,
             skipped = false,
-            sleep = sleep.toPayload(),
-            mobility = mobility.toPayload(),
-            bathroom = bathroom.toPayload(),
-            care = care.toPayload(),
+            sleep = sleep.toData(),
+            mobility = mobility.toData(),
+            bathroom = bathroom.toData(),
+            care = careData,
             published = published,
         )
     }
@@ -90,6 +100,11 @@ class RollupService(
     }
 
     private fun min(a: Instant, b: Instant) = if (a.isBefore(b)) a else b
+    private fun max(a: Instant, b: Instant) = if (a.isAfter(b)) a else b
+
+    companion object {
+        private val LOOKBACK: Duration = Duration.ofHours(12)
+    }
 }
 
 data class RollupOutcome(
@@ -97,9 +112,9 @@ data class RollupOutcome(
     val observedOn: LocalDate,
     val skipped: Boolean,
     val reason: String? = null,
-    val sleep: Map<String, Any?>? = null,
-    val mobility: Map<String, Any?>? = null,
-    val bathroom: Map<String, Any?>? = null,
-    val care: Map<String, Any?>? = null,
+    val sleep: SleepSummaryData? = null,
+    val mobility: MobilitySummaryData? = null,
+    val bathroom: BathroomSummaryData? = null,
+    val care: CareSummaryData? = null,
     val published: Map<String, String> = emptyMap(),
 )

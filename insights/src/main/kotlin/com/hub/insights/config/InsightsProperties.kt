@@ -11,7 +11,7 @@ data class InsightsProperties(
     val sleepWindow: SleepWindowProperties = SleepWindowProperties(),
     val baselineMinDays: Int = 7,
     val walkingMetersPerMinute: Double = 50.0,
-    /** Minutos continuos en Lying para contar sueño profundo (calm). */
+    /** Latencia de sueño: minutos del primer Lying de la noche (no de cada vuelta a la cama). */
     val deepSleepAfterMinutes: Int = 10,
     val rollup: RollupProperties = RollupProperties(),
 ) {

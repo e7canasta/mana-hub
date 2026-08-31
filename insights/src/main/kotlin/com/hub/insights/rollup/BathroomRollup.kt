@@ -1,5 +1,6 @@
 package com.hub.insights.rollup
 
+import com.hub.insights.inbound.BathroomSummaryData
 import com.manahive.contracts.scene.StateKind
 import java.time.LocalDate
 import java.time.LocalTime
@@ -12,11 +13,11 @@ data class BathroomRollupResult(
     val assistedCount: Int,
     val totalMinutes: Int,
 ) {
-    fun toPayload(): Map<String, Any?> = mapOf(
-        "visitCount" to visitCount,
-        "nightVisitCount" to nightVisitCount,
-        "assistedCount" to assistedCount,
-        "totalMinutes" to totalMinutes,
+    fun toData(): BathroomSummaryData = BathroomSummaryData(
+        visitCount = visitCount,
+        nightVisitCount = nightVisitCount,
+        assistedCount = assistedCount,
+        totalMinutes = totalMinutes,
     )
 }
 
@@ -29,14 +30,14 @@ object BathroomRollup {
         val visits = dwells.filter {
             it.kind == StateKind.IN_BATHROOM && it.fromKind != StateKind.IN_BATHROOM
         }
-        val minutes = dwells.filter { it.kind == StateKind.IN_BATHROOM }.sumOf { it.minutes }
+        val seconds = dwells.filter { it.kind == StateKind.IN_BATHROOM }.sumOf { it.seconds }
         val night = visits.count { isNight(it.start, zone) }
         return BathroomRollupResult(
             observedOn = observedOn,
             visitCount = visits.size,
             nightVisitCount = night,
             assistedCount = 0,
-            totalMinutes = minutes,
+            totalMinutes = minutesFromSeconds(seconds),
         )
     }
 

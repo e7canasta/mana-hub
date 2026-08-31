@@ -56,11 +56,12 @@ class SummaryQueryService(
 
     private fun MobilitySummary.toResponse() = MobilitySummaryResponse(
         residentId = residentId.value, observedOn = observedOn, walkingMinutes = walkingMinutes,
-        distanceMeters = distanceMeters, transferCount = transferCount, outOfBedMinutes = outOfBedMinutes
+        distanceMeters = distanceMeters, transferCount = transferCount, outOfBedMinutes = outOfBedMinutes,
+        inBedMinutes = inBedMinutes, outOfSightMinutes = outOfSightMinutes,
     )
 
     private fun BathroomSummary.toResponse() = BathroomSummaryResponse(
         residentId = residentId.value, observedOn = observedOn, visitCount = visitCount,
-        nightVisitCount = nightVisitCount
+        nightVisitCount = nightVisitCount, assistedCount = assistedCount, totalMinutes = totalMinutes,
     )
 }

@@ -1,13 +1,16 @@
 package com.hub.observation.api.rest
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.hub.observation.application.dto.*
 import com.hub.observation.application.service.BedStateService
 import com.hub.observation.application.service.ObservationApplicationService
 import com.hub.observation.application.service.SummaryQueryService
 import com.hub.observation.domain.repository.SceneEventRepository
 import com.hub.shared.domain.ResidentId
+import com.manahive.contracts.scene.SceneEvent as HiveSceneEvent
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.time.Instant
 import java.time.LocalDate
 
 @RestController
@@ -16,7 +19,8 @@ class ObservationController(
     private val observationApplicationService: ObservationApplicationService,
     private val summaryQueryService: SummaryQueryService,
     private val bedStateService: BedStateService,
-    private val sceneEventRepository: SceneEventRepository
+    private val sceneEventRepository: SceneEventRepository,
+    private val objectMapper: ObjectMapper,
 ) {
 
     @GetMapping("/wings/{wingId}/board")
@@ -106,8 +110,17 @@ class ObservationController(
     }
 
     @GetMapping("/residents/{residentId}/scene-events")
-    fun getSceneEvents(@PathVariable residentId: String): ResponseEntity<List<SceneEventResponse>> {
-        val events = sceneEventRepository.findByResidentId(ResidentId(residentId))
+    fun getSceneEvents(
+        @PathVariable residentId: String,
+        @RequestParam(required = false) from: Instant? = null,
+        @RequestParam(required = false) to: Instant? = null,
+    ): ResponseEntity<List<SceneEventResponse>> {
+        val events = if (from != null && to != null) {
+            sceneEventRepository.findByResidentId(ResidentId(residentId), from, to)
+        } else {
+            sceneEventRepository.findByResidentId(ResidentId(residentId))
+        }
+        val nightOpened = HiveSceneEvent.NightOpened::class.simpleName
         return ResponseEntity.ok(events.map {
             SceneEventResponse(
                 id = it.id.value,
@@ -118,7 +131,13 @@ class ObservationController(
                 fromState = it.fromState,
                 toState = it.toState,
                 triggerType = it.triggerType,
-                timestamp = it.timestamp
+                timestamp = it.timestamp,
+                type = it.eventType,
+                at = it.timestamp,
+                from = it.fromState,
+                to = it.toState,
+                initialState = if (it.eventType == nightOpened) it.toState else null,
+                twinSnapshot = parseTwin(it.twinSnapshotJson),
             )
         })
     }
@@ -164,5 +183,10 @@ class ObservationController(
                 StateCatalogEntry("unknown", "Desconocido", "room", "room_unknown"),
             )
         ))
+    }
+
+    private fun parseTwin(json: String): Any? {
+        if (json.isBlank() || json == "{}") return null
+        return runCatching { objectMapper.readValue(json, Map::class.java) }.getOrNull()
     }
 }

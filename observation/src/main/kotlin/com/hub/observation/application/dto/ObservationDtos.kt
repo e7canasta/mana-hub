@@ -90,7 +90,9 @@ data class MobilitySummaryResponse(
     val walkingMinutes: Int,
     val distanceMeters: Double,
     val transferCount: Int,
-    val outOfBedMinutes: Int
+    val outOfBedMinutes: Int,
+    val inBedMinutes: Int = 0,
+    val outOfSightMinutes: Int = 0,
 )
 
 data class MobilitySummaryListResponse(
@@ -104,7 +106,9 @@ data class BathroomSummaryResponse(
     val residentId: String,
     val observedOn: LocalDate,
     val visitCount: Int,
-    val nightVisitCount: Int
+    val nightVisitCount: Int,
+    val assistedCount: Int = 0,
+    val totalMinutes: Int = 0,
 )
 
 data class BathroomSummaryListResponse(
@@ -159,5 +163,12 @@ data class SceneEventResponse(
     val fromState: String?,
     val toState: String?,
     val triggerType: String?,
-    val timestamp: Instant
+    val timestamp: Instant,
+    /** Alias hive: [SceneEvent] simpleName. */
+    val type: String,
+    val at: Instant,
+    val from: String?,
+    val to: String?,
+    val initialState: String? = null,
+    val twinSnapshot: Any? = null,
 )

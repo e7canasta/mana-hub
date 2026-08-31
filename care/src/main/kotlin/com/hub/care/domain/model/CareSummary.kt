@@ -1,7 +1,6 @@
 package com.hub.care.domain.model
 
 import com.hub.shared.domain.ResidentId
-import java.time.Instant
 import java.time.LocalDate
 
 class CareSummary private constructor(
@@ -18,6 +17,36 @@ class CareSummary private constructor(
     val confidence: Double?,
     override var version: Long
 ) : com.hub.shared.domain.AggregateRoot<CareSummaryId>() {
+
+    fun replay(
+        sourceRecordId: String,
+        totalMinutes: Int,
+        proactiveMinutes: Int,
+        roundsCount: Int,
+        notesCount: Int,
+        source: String?,
+        modelVersion: String?,
+        confidence: Double?,
+    ): CareSummary {
+        require(sourceRecordId.isNotBlank()) { "sourceRecordId must not be blank" }
+        require(totalMinutes >= 0) { "totalMinutes must not be negative" }
+        require(proactiveMinutes >= 0) { "proactiveMinutes must not be negative" }
+        require(proactiveMinutes <= totalMinutes) { "proactiveMinutes cannot exceed totalMinutes" }
+        return reconstitute(
+            id = id,
+            sourceRecordId = sourceRecordId,
+            residentId = residentId,
+            observedOn = observedOn,
+            totalMinutes = totalMinutes,
+            proactiveMinutes = proactiveMinutes,
+            roundsCount = roundsCount,
+            notesCount = notesCount,
+            source = source,
+            modelVersion = modelVersion,
+            confidence = confidence,
+            version = version,
+        )
+    }
 
     companion object {
         fun create(
