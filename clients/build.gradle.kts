@@ -10,6 +10,7 @@ application {
 val libs = the<VersionCatalogsExtension>().named("libs")
 
 dependencies {
+    implementation(project(":shared-kernel"))
     implementation(kotlin("stdlib"))
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:${libs.findVersion("jackson").get()}")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${libs.findVersion("jackson").get()}")

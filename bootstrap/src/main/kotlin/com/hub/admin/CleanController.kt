@@ -1,5 +1,8 @@
 package com.hub.admin
 
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.hub.integration.infrastructure.persistence.ResidentProfileEntityRepository
 import com.hub.observation.infrastructure.persistence.SceneEventEntityRepository
 import com.hub.observation.infrastructure.persistence.SentinelSignalEntityRepository
@@ -15,6 +18,11 @@ class CleanController(
     private val signalJpa: SentinelSignalEntityRepository,
     private val profileJpa: ResidentProfileEntityRepository,
 ) {
+    private val mapper = ObjectMapper().apply { registerModule(JavaTimeModule()) }
+    private fun parseJsonOrRaw(json: String): Any = try {
+        mapper.readValue(json, object : TypeReference<Map<String, Any>>() {})
+    } catch (_: Exception) { json }
+    private fun parseJsonOrRawNullable(json: String?): Any? = json?.let { parseJsonOrRaw(it) }
     @PostMapping("/clean")
     fun clean(
         @RequestParam residentId: String,
@@ -65,7 +73,23 @@ class CleanController(
             val ts = e.timestamp
             (fromI == null || !ts.isBefore(fromI)) && (toI == null || ts.isBefore(toI.plusSeconds(1)))
         }
-        return ResponseEntity.ok(filtered.map { mapOf("eventType" to it.eventType, "at" to it.timestamp.toString(), "bed" to it.bedId, "residentId" to (it.residentId ?: "")) })
+        return ResponseEntity.ok(filtered.map { e ->
+            buildMap<String, Any> {
+                put("eventType", e.eventType)
+                put("at", e.timestamp.toString())
+                put("bed", e.bedId)
+                if (!e.residentId.isNullOrBlank()) put("residentId", e.residentId!!)
+                if (!e.fromState.isNullOrBlank()) put("from", e.fromState!!)
+                if (!e.toState.isNullOrBlank()) put("to", e.toState!!)
+                if (!e.triggerType.isNullOrBlank()) put("trigger", e.triggerType!!)
+                // V15 twinSnapshot como objeto — sin payload (no se persiste)
+                if (e.twinSnapshotJson.isNotBlank() && e.twinSnapshotJson != "{}") put("twinSnapshot", parseJsonOrRaw(e.twinSnapshotJson))
+                if (e.stateSince != null) put("stateSince", e.stateSince.toString())
+                if (e.sceneSince != null) put("sceneSince", e.sceneSince.toString())
+                val sl = e.signalLost; if (sl != null) put("signalLost", sl)
+                if (!e.monitorId.isNullOrBlank()) put("monitorId", e.monitorId!!)
+            }
+        })
     }
 
     @GetMapping("/signals")
@@ -85,6 +109,34 @@ class CleanController(
             val ts = e.timestamp
             (fromI == null || !ts.isBefore(fromI)) && (toI == null || ts.isBefore(toI.plusSeconds(1)))
         }
-        return ResponseEntity.ok(filtered.map { mapOf("type" to it.type, "at" to it.timestamp.toString(), "bed" to it.bedId, "residentId" to (it.residentId ?: ""), "episodeId" to (it.episodeId ?: ""), "severity" to (it.severity ?: "")) })
+        return ResponseEntity.ok(filtered.map { e ->
+            buildMap<String, Any> {
+                put("type", e.type)
+                put("at", e.timestamp.toString())
+                put("bed", e.bedId)
+                if (!e.residentId.isNullOrBlank()) put("residentId", e.residentId!!)
+                if (!e.episodeId.isNullOrBlank()) put("episodeId", e.episodeId!!)
+                if (!e.severity.isNullOrBlank()) put("severity", e.severity!!)
+                // trigger: SITTING_IN_BED para OPENED, LYING para UMBRELLA — solo si existe
+                if (!e.trigger.isNullOrBlank()) put("trigger", e.trigger!!)
+                if (!e.ruleId.isNullOrBlank()) put("ruleId", e.ruleId!!)
+                if (!e.field.isNullOrBlank()) put("field", e.field!!)
+                if (!e.triggerOn.isNullOrBlank()) put("triggerOn", e.triggerOn!!)
+                if (!e.cause.isNullOrBlank()) put("cause", e.cause!!)
+                if (!e.state.isNullOrBlank()) put("state", e.state!!)
+                if (!e.baseline.isNullOrBlank()) put("baseline", e.baseline!!)
+                if (!e.rulesFingerprint.isNullOrBlank()) put("rulesFingerprint", e.rulesFingerprint!!)
+                if (!e.gapDuration.isNullOrBlank()) put("gapDuration", e.gapDuration!!)
+                if (!e.previousSeverity.isNullOrBlank()) put("previousSeverity", e.previousSeverity!!)
+                if (!e.originalSeverity.isNullOrBlank()) put("originalSeverity", e.originalSeverity!!)
+                // V17 — detalles de regla (solo si existen, compacto por tipo) — sin payload
+                if (e.reversible != null) put("reversible", e.reversible!!)
+                if (e.requiresNvr != null) put("requiresNvr", e.requiresNvr!!)
+                if (!e.confirmationWindow.isNullOrBlank()) put("confirmationWindow", e.confirmationWindow!!)
+                if (e.requiresConfirmation != null) put("requiresConfirmation", e.requiresConfirmation!!)
+                if (!e.elapsed.isNullOrBlank()) put("elapsed", e.elapsed!!)
+                if (!e.threshold.isNullOrBlank()) put("threshold", e.threshold!!)
+            }
+        })
     }
 }

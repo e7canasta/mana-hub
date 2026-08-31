@@ -35,3 +35,6 @@ annotation class EvidenceDsl
 
 @DslMarker
 annotation class ObservationDsl
+
+@DslMarker
+annotation class PanelDsl

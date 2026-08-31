@@ -15,5 +15,10 @@ data class SceneEvent(
     val toState: String?,
     val triggerType: String?,
     val timestamp: Instant,
-    val payloadJson: String
+    val payloadJson: String,
+    val twinSnapshotJson: String = "{}",
+    val stateSince: Instant? = null,
+    val sceneSince: Instant? = null,
+    val signalLost: Boolean? = null,
+    val monitorId: String? = null
 )

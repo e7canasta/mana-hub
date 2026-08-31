@@ -32,10 +32,30 @@ class CareSummaryApplicationService(
 
     @Transactional(readOnly = true)
     fun getCareSummaryRange(residentId: String, from: LocalDate, to: LocalDate): CareSummaryListResponse {
-        val summaries = careSummaryRepository.findByResidentAndRange(ResidentId(residentId), from, to)
-            .map { toResponse(it) }
+        val byDay = careSummaryRepository.findByResidentAndRange(ResidentId(residentId), from, to)
+            .associateBy { it.observedOn }
+        val summaries = datesInRange(from, to).map { date ->
+            val summary = byDay[date]
+            if (summary != null) {
+                toResponse(summary)
+            } else {
+                CareSummaryResponse(
+                    residentId = residentId,
+                    observedOn = date,
+                    totalMinutes = 0,
+                    proactiveMinutes = 0,
+                    roundsCount = 0,
+                    notesCount = 0,
+                )
+            }
+        }
         return CareSummaryListResponse(residentId, from, to, summaries)
     }
+
+    private fun datesInRange(from: LocalDate, to: LocalDate): List<LocalDate> =
+        generateSequence(from) { it.plusDays(1) }
+            .takeWhile { !it.isAfter(to) }
+            .toList()
 
     private fun toResponse(s: CareSummary) = CareSummaryResponse(
         residentId = s.residentId.value,

@@ -11,6 +11,9 @@ import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
 import com.hub.shared.domain.Identifier
 import jakarta.persistence.*
+import org.hibernate.annotations.ColumnTransformer
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
@@ -154,7 +157,14 @@ class SceneEventEntity(
     @Column(name = "trigger_type") var triggerType: String? = null,
     @Column(name = "timestamp") var timestamp: Instant = Instant.now(),
     @Column(name = "payload_json") var payloadJson: String = "{}",
-    @Column(name = "received_at") var receivedAt: Instant = Instant.now()
+    @Column(name = "received_at") var receivedAt: Instant = Instant.now(),
+    @JdbcTypeCode(SqlTypes.JSON)
+    @ColumnTransformer(write = "?::jsonb")
+    @Column(name = "twin_snapshot", columnDefinition = "jsonb") var twinSnapshotJson: String = "{}",
+    @Column(name = "state_since") var stateSince: Instant? = null,
+    @Column(name = "scene_since") var sceneSince: Instant? = null,
+    @Column(name = "signal_lost") var signalLost: Boolean? = null,
+    @Column(name = "monitor_id") var monitorId: String? = null
 )
 
 @Repository
@@ -296,12 +306,16 @@ class SceneEventRepositoryAdapter(private val jpa: SceneEventEntityRepository) :
         id = Identifier(id), eventId = eventId, bedId = BedId(bedId),
         residentId = residentId?.let { ResidentId(it) }, eventType = eventType,
         fromState = fromState, toState = toState, triggerType = triggerType,
-        timestamp = timestamp, payloadJson = payloadJson
+        timestamp = timestamp, payloadJson = payloadJson,
+        twinSnapshotJson = twinSnapshotJson, stateSince = stateSince, sceneSince = sceneSince,
+        signalLost = signalLost, monitorId = monitorId
     )
     private fun SceneEvent.toEntity() = SceneEventEntity(
         id = id.value, eventId = eventId, bedId = bedId.value, residentId = residentId?.value,
         eventType = eventType, fromState = fromState, toState = toState, triggerType = triggerType,
-        timestamp = timestamp, payloadJson = payloadJson, receivedAt = Instant.now()
+        timestamp = timestamp, payloadJson = payloadJson, receivedAt = Instant.now(),
+        twinSnapshotJson = twinSnapshotJson, stateSince = stateSince, sceneSince = sceneSince,
+        signalLost = signalLost, monitorId = monitorId
     )
 }
 
@@ -319,6 +333,25 @@ class SentinelSignalEntity(
     @Column(name = "timestamp") var timestamp: Instant = Instant.now(),
     @Column(name = "payload_json") var payloadJson: String = "{}",
     @Column(name = "received_at") var receivedAt: Instant = Instant.now(),
+    @Column(name = "rule_id") var ruleId: String? = null,
+    @Column(name = "field") var field: String? = null,
+    @Column(name = "trigger_on") var triggerOn: String? = null,
+    @Column(name = "cause") var cause: String? = null,
+    @Column(name = "state") var state: String? = null,
+    @Column(name = "baseline") var baseline: String? = null,
+    @Column(name = "rules_fingerprint") var rulesFingerprint: String? = null,
+    @Column(name = "gap_duration") var gapDuration: String? = null,
+    @Column(name = "previous_severity") var previousSeverity: String? = null,
+    @Column(name = "original_severity") var originalSeverity: String? = null,
+    @JdbcTypeCode(SqlTypes.JSON)
+    @ColumnTransformer(write = "?::jsonb")
+    @Column(name = "payload_jsonb", columnDefinition = "jsonb") var payloadJsonb: String? = null,
+    @Column(name = "reversible") var reversible: Boolean? = null,
+    @Column(name = "requires_nvr") var requiresNvr: Boolean? = null,
+    @Column(name = "confirmation_window") var confirmationWindow: String? = null,
+    @Column(name = "requires_confirmation") var requiresConfirmation: Boolean? = null,
+    @Column(name = "elapsed") var elapsed: String? = null,
+    @Column(name = "threshold") var threshold: String? = null,
 )
 
 @Repository
@@ -337,10 +370,19 @@ class SentinelSignalRepositoryAdapter(private val jpa: SentinelSignalEntityRepos
     private fun SentinelSignalEntity.toDomain() = SentinelSignal(
         id = Identifier(id), signalId = signalId, bedId = BedId(bedId), residentId = residentId?.let { ResidentId(it) },
         episodeId = episodeId, type = type, severity = severity, trigger = trigger, timestamp = timestamp, payloadJson = payloadJson,
+        ruleId = ruleId, field = field, triggerOn = triggerOn, cause = cause, state = state, baseline = baseline,
+        rulesFingerprint = rulesFingerprint, gapDuration = gapDuration, previousSeverity = previousSeverity, originalSeverity = originalSeverity,
+        reversible = reversible, requiresNvr = requiresNvr, confirmationWindow = confirmationWindow, requiresConfirmation = requiresConfirmation,
+        elapsed = elapsed, threshold = threshold,
     )
     private fun SentinelSignal.toEntity() = SentinelSignalEntity(
         id = id.value, signalId = signalId, bedId = bedId.value, residentId = residentId?.value,
         episodeId = episodeId, type = type, severity = severity, trigger = trigger, timestamp = timestamp, payloadJson = payloadJson,
+        ruleId = ruleId, field = field, triggerOn = triggerOn, cause = cause, state = state, baseline = baseline,
+        rulesFingerprint = rulesFingerprint, gapDuration = gapDuration, previousSeverity = previousSeverity, originalSeverity = originalSeverity,
+        payloadJsonb = payloadJson,
+        reversible = reversible, requiresNvr = requiresNvr, confirmationWindow = confirmationWindow, requiresConfirmation = requiresConfirmation,
+        elapsed = elapsed, threshold = threshold,
     )
 }
 

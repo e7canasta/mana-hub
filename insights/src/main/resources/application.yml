@@ -1,0 +1,35 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: mana-insights
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+
+insights:
+  hub-url: ${INSIGHTS_HUB_URL:http://localhost:8080}
+  timezone: America/Argentina/Buenos_Aires
+  sleep-window:
+    start: "19:00"
+    end: "12:00"
+  baseline-min-days: 7
+  walking-meters-per-minute: 50.0
+  deep-sleep-after-minutes: 10
+  rollup:
+    enabled: false
+    cron: "0 0 6 * * *"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    com.hub.insights: INFO

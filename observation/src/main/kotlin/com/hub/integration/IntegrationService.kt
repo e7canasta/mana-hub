@@ -1,6 +1,7 @@
 package com.hub.integration
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.manahive.contracts.scene.SceneEvent as HiveSceneEvent
 import com.hub.observation.domain.model.SceneEvent
 import com.hub.observation.domain.model.SignalType
 import com.hub.observation.domain.model.SentinelSignal
@@ -55,20 +56,37 @@ class IntegrationService(
 
         try {
             val residentId = resolveResidentId(body, payload.bedId)
+            val twinNode = body.path("twinSnapshot")
+            val twinJson = if (twinNode.isMissingNode || twinNode.isNull) "{}" else twinNode.toString()
+            val stateSince = twinNode.path("stateSince").asText(null)?.let { runCatching { Instant.parse(it) }.getOrNull() }
+            val sceneSince = twinNode.path("sceneSince").asText(null)?.let { runCatching { Instant.parse(it) }.getOrNull() }
+            val signalLost = twinNode.path("signalLost").let { if (it.isMissingNode || it.isNull) null else it.asBoolean() }
+            val monitorId = twinNode.path("monitor").let { n ->
+                when {
+                    n.isMissingNode || n.isNull -> null
+                    n.isObject -> n.path("value").asText(null)
+                    else -> n.asText(null)
+                }
+            } ?: twinNode.path("monitorId").asText(null)
             val event = SceneEvent(
                 id = Identifier(UUID.randomUUID().toString()),
                 eventId = payload.eventId,
                 bedId = BedId(payload.bedId),
                 residentId = residentId,
                 eventType = payload.type,
-                fromState = body.path("from").asText(null)?.takeIf { it != "null" },
-                toState = body.path("to").asText(null)?.takeIf { it != "null" },
+                fromState = hiveFromState(payload.type, body),
+                toState = hiveToState(payload.type, body, twinNode),
                 triggerType = body.path("trigger").asText(null),
                 timestamp = payload.timestamp,
-                payloadJson = body.toString(),
+                payloadJson = "{}", // no payload persistido — columnas + twinSnapshot son la fuente (V15/V17)
+                twinSnapshotJson = twinJson,
+                stateSince = stateSince,
+                sceneSince = sceneSince,
+                signalLost = signalLost,
+                monitorId = monitorId,
             )
             sceneEventRepository.save(event)
-            log.info("SceneEvent persisted: {} {} resident={}", payload.type, payload.eventId, residentId?.value ?: "null")
+            log.info("SceneEvent persisted: {} {} resident={} twinSnapshot={}", payload.type, payload.eventId, residentId?.value ?: "null", twinJson != "{}")
         } catch (e: Exception) {
             log.warn("Failed to persist SceneEvent {}: {}", payload.type, e.message)
         }
@@ -88,6 +106,31 @@ class IntegrationService(
     private fun persistSignalAudit(payload: SignalPayload, raw: JsonNode) {
         try {
             val residentId = resolveResidentId(raw, payload.bedId)
+            // V16 enrichment — extrae desnormalizados de toMap() para query sin JSON (contracts/sentinel/SentinelSignal.kt:284)
+            fun textOrNull(node: JsonNode, field: String): String? = node.path(field).let { n ->
+                when {
+                    n.isMissingNode || n.isNull -> null
+                    n.asText().isBlank() || n.asText() == "unknown" || n.asText() == "none" -> null
+                    else -> n.asText()
+                }
+            }
+            val ruleId = textOrNull(raw, "rule")
+            val field = textOrNull(raw, "field")
+            val triggerOn = textOrNull(raw, "triggerOn")
+            val cause = textOrNull(raw, "cause")
+            val state = textOrNull(raw, "state")
+            val baseline = textOrNull(raw, "baseline")
+            val rulesFingerprint = raw.path("rulesFingerprint").asText(null)?.takeIf { it.isNotBlank() }
+            val gapDuration = textOrNull(raw, "gapDuration")
+            val previousSeverity = textOrNull(raw, "previousSeverity")
+            val originalSeverity = textOrNull(raw, "originalSeverity")
+            // V17 — detalles de regla sin JSON repetido
+            val reversible = raw.path("reversible").let { if (it.isMissingNode || it.isNull) null else it.asBoolean() }
+            val requiresNvr = raw.path("requiresNvr").let { if (it.isMissingNode || it.isNull) null else it.asBoolean() }
+            val confirmationWindow = textOrNull(raw, "confirmationWindow")
+            val requiresConfirmation = raw.path("requiresConfirmation").let { if (it.isMissingNode || it.isNull) null else it.asBoolean() }
+            val elapsed = textOrNull(raw, "elapsed")
+            val threshold = textOrNull(raw, "threshold")
             val signal = SentinelSignal(
                 id = Identifier(UUID.randomUUID().toString()),
                 signalId = payload.eventId,
@@ -95,15 +138,31 @@ class IntegrationService(
                 residentId = residentId,
                 episodeId = payload.episodeId,
                 type = payload.type?.name ?: raw.path("type").asText("unknown"),
-                severity = payload.severity,
-                trigger = payload.trigger,
+                severity = payload.severity ?: textOrNull(raw, "originalSeverity") ?: textOrNull(raw, "severity"),
+                trigger = payload.trigger ?: state ?: baseline,
                 timestamp = payload.timestamp,
-                payloadJson = raw.toString(),
+                payloadJson = "{}", // no payload persistido — columnas V16/V17 son la fuente
+                ruleId = ruleId,
+                field = field,
+                triggerOn = triggerOn,
+                cause = cause,
+                state = state,
+                baseline = baseline,
+                rulesFingerprint = rulesFingerprint,
+                gapDuration = gapDuration,
+                previousSeverity = previousSeverity,
+                originalSeverity = originalSeverity,
+                reversible = reversible,
+                requiresNvr = requiresNvr,
+                confirmationWindow = confirmationWindow,
+                requiresConfirmation = requiresConfirmation,
+                elapsed = elapsed,
+                threshold = threshold,
             )
             sentinelSignalRepository.save(signal)
-            log.info("SentinelSignal audit: {} episode={} bed={}", signal.type, payload.episodeId, payload.bedId)
+            log.info("SentinelSignal audit: {} rule={} trigger={} cause={} episode={} bed={}", signal.type, ruleId ?: "-", signal.trigger ?: "-", cause ?: "-", payload.episodeId, payload.bedId)
         } catch (e: Exception) {
-            log.warn("Failed to persist SentinelSignal audit: {}", e.message)
+            log.warn("Failed to persist SentinelSignal audit: {}", e.message, e)
         }
     }
 
@@ -204,7 +263,33 @@ class IntegrationService(
         return body.path("resident").let { if (it.isMissingNode || it.isNull) null else runCatching { ResidentId(it.asText()) }.getOrNull() }
             ?: body.path("residentId").let { if (it.isMissingNode || it.isNull) null else runCatching { ResidentId(it.asText()) }.getOrNull() }
             ?: bedAssignmentRepository.findOpenByBedId(BedId(bedId))?.residentId
+            ?: if (bedId == "bed-4") ResidentId("jose") else null // dev fallback: census jose->bed-4
     }
+
+    /**
+     * Wire hive ([SceneEventSerializer]): TransitionDetected usa `from`/`to`
+     * (simpleName de PersonState). NightOpened usa `initialState`, no `to`.
+     * SceneStateChanged también trae `from`/`to` pero son flags de escena
+     * (Present / NotPresent), no PersonState — se guardan igual en columnas.
+     */
+    private fun hiveFromState(type: String, body: JsonNode): String? {
+        if (type == HiveSceneEvent.NightOpened::class.simpleName) return null
+        return textOrNull(body, "from")
+    }
+
+    private fun hiveToState(type: String, body: JsonNode, twinNode: JsonNode): String? {
+        val twinState = textOrNull(twinNode, "state")
+        return when (type) {
+            HiveSceneEvent.NightOpened::class.simpleName ->
+                textOrNull(body, "initialState") ?: twinState
+            HiveSceneEvent.TransitionDetected::class.simpleName ->
+                textOrNull(body, "to") ?: twinState
+            else -> textOrNull(body, "to")
+        }
+    }
+
+    private fun textOrNull(node: JsonNode, field: String): String? =
+        node.path(field).asText(null)?.takeIf { it.isNotBlank() && it != "null" }
 
     // ── Payload mappers ─────────────────────────────────────────────
 

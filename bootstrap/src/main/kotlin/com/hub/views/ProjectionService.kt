@@ -73,6 +73,20 @@ class ProjectionService(
 
     private fun locations() = LocationResolver(bedRepository, roomRepository, wingRepository)
 
+    /**
+     * Días antes de la admisión no son observables: el cubo/panel no deben
+     * mostrar 14 ceros ficticios (Susan día 1–2). Cero = medido; pre-admisión = ausente.
+     */
+    private fun effectiveObservationFrom(residentId: String, from: LocalDate): LocalDate {
+        val admission = residentRepository.findById(ResidentId(residentId))?.admissionDate
+        return if (admission != null && admission.isAfter(from)) admission else from
+    }
+
+    private fun datesInRange(from: LocalDate, to: LocalDate): List<LocalDate> =
+        generateSequence(from) { it.plusDays(1) }
+            .takeWhile { !it.isAfter(to) }
+            .toList()
+
     // ──────────────────────────────────────────────────────── resident-rail
 
     @Transactional(readOnly = true)
@@ -120,26 +134,30 @@ class ProjectionService(
 
     @Transactional(readOnly = true)
     fun getSleepTab(residentId: String, from: LocalDate, to: LocalDate): SleepTabProjection {
-        val summaries = summaryRepository.findSleepByResidentAndRange(
-            ResidentId(residentId), from, to
-        )
+        val observedFrom = effectiveObservationFrom(residentId, from)
+        val byDay = summaryRepository.findSleepByResidentAndRange(
+            ResidentId(residentId), observedFrom, to
+        ).associateBy { it.observedOn }
+        val days = datesInRange(observedFrom, to).map { date ->
+            val summary = byDay[date]
+            SleepDayProjection(
+                day = date.toString(),
+                calmMinutes = summary?.calmMinutes ?: 0,
+                restlessMinutes = summary?.restlessMinutes ?: 0,
+                awakeMinutes = summary?.awakeMinutes ?: 0,
+                outOfBedMinutes = summary?.outOfBedMinutes ?: 0,
+                bedExitCount = summary?.bedExitCount ?: 0,
+                wakeCount = summary?.wakeCount ?: 0,
+                startedAt = summary?.startedAt,
+                endedAt = summary?.endedAt,
+            )
+        }
         return SleepTabProjection(
             residentId = residentId,
             from = from.toString(),
             to = to.toString(),
-            summaries = summaries.map {
-                SleepDayProjection(
-                    day = it.observedOn.toString(),
-                    calmMinutes = it.calmMinutes,
-                    restlessMinutes = it.restlessMinutes,
-                    awakeMinutes = it.awakeMinutes,
-                    outOfBedMinutes = it.outOfBedMinutes,
-                    bedExitCount = it.bedExitCount,
-                    wakeCount = it.wakeCount,
-                    startedAt = it.startedAt,
-                    endedAt = it.endedAt,
-                )
-            },
+            observedFrom = observedFrom.toString(),
+            summaries = days,
         )
     }
 
@@ -147,22 +165,26 @@ class ProjectionService(
 
     @Transactional(readOnly = true)
     fun getMobilityTab(residentId: String, from: LocalDate, to: LocalDate): MobilityTabProjection {
-        val summaries = summaryRepository.findMobilityByResidentAndRange(
-            ResidentId(residentId), from, to
-        )
+        val observedFrom = effectiveObservationFrom(residentId, from)
+        val byDay = summaryRepository.findMobilityByResidentAndRange(
+            ResidentId(residentId), observedFrom, to
+        ).associateBy { it.observedOn }
+        val days = datesInRange(observedFrom, to).map { date ->
+            val summary = byDay[date]
+            MobilityDayProjection(
+                day = date.toString(),
+                walkingMinutes = summary?.walkingMinutes ?: 0,
+                distanceMeters = summary?.distanceMeters ?: 0.0,
+                transferCount = summary?.transferCount ?: 0,
+                outOfBedMinutes = summary?.outOfBedMinutes ?: 0,
+            )
+        }
         return MobilityTabProjection(
             residentId = residentId,
             from = from.toString(),
             to = to.toString(),
-            summaries = summaries.map {
-                MobilityDayProjection(
-                    day = it.observedOn.toString(),
-                    walkingMinutes = it.walkingMinutes,
-                    distanceMeters = it.distanceMeters,
-                    transferCount = it.transferCount,
-                    outOfBedMinutes = it.outOfBedMinutes,
-                )
-            },
+            observedFrom = observedFrom.toString(),
+            summaries = days,
         )
     }
 
@@ -170,20 +192,24 @@ class ProjectionService(
 
     @Transactional(readOnly = true)
     fun getBathroomTab(residentId: String, from: LocalDate, to: LocalDate): BathroomTabProjection {
-        val summaries = summaryRepository.findBathroomByResidentAndRange(
-            ResidentId(residentId), from, to
-        )
+        val observedFrom = effectiveObservationFrom(residentId, from)
+        val byDay = summaryRepository.findBathroomByResidentAndRange(
+            ResidentId(residentId), observedFrom, to
+        ).associateBy { it.observedOn }
+        val days = datesInRange(observedFrom, to).map { date ->
+            val summary = byDay[date]
+            BathroomDayProjection(
+                day = date.toString(),
+                visitCount = summary?.visitCount ?: 0,
+                nightVisitCount = summary?.nightVisitCount ?: 0,
+            )
+        }
         return BathroomTabProjection(
             residentId = residentId,
             from = from.toString(),
             to = to.toString(),
-            summaries = summaries.map {
-                BathroomDayProjection(
-                    day = it.observedOn.toString(),
-                    visitCount = it.visitCount,
-                    nightVisitCount = it.nightVisitCount,
-                )
-            },
+            observedFrom = observedFrom.toString(),
+            summaries = days,
         )
     }
 
@@ -191,16 +217,18 @@ class ProjectionService(
 
     @Transactional(readOnly = true)
     fun getCareTab(residentId: String, from: LocalDate, to: LocalDate): CareTabProjection {
-        val summaries = careSummaryRepository.findByResidentAndRange(
-            ResidentId(residentId), from, to
-        )
-        val days = summaries.map {
+        val observedFrom = effectiveObservationFrom(residentId, from)
+        val byDay = careSummaryRepository.findByResidentAndRange(
+            ResidentId(residentId), observedFrom, to
+        ).associateBy { it.observedOn }
+        val days = datesInRange(observedFrom, to).map { date ->
+            val summary = byDay[date]
             CareDayProjection(
-                day = it.observedOn.toString(),
-                totalMinutes = it.totalMinutes,
-                proactiveMinutes = it.proactiveMinutes,
-                roundsCount = it.roundsCount,
-                notesCount = it.notesCount,
+                day = date.toString(),
+                totalMinutes = summary?.totalMinutes ?: 0,
+                proactiveMinutes = summary?.proactiveMinutes ?: 0,
+                roundsCount = summary?.roundsCount ?: 0,
+                notesCount = summary?.notesCount ?: 0,
             )
         }
         val total = days.sumOf { it.totalMinutes }
@@ -209,9 +237,10 @@ class ProjectionService(
             residentId = residentId,
             from = from.toString(),
             to = to.toString(),
+            observedFrom = observedFrom.toString(),
             summaries = days,
-            avgMinutesPerDay = if (days.isEmpty()) null else total.toDouble() / days.size,
-            proactiveShare = if (total == 0) null else proactive.toDouble() / total,
+            avgMinutesPerDay = if (days.isEmpty()) 0.0 else total.toDouble() / days.size,
+            proactiveShare = if (total == 0) 0.0 else proactive.toDouble() / total,
         )
     }
 

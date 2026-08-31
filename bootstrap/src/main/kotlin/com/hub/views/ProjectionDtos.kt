@@ -42,6 +42,8 @@ data class SleepTabProjection(
     val residentId: String,
     val from: String,
     val to: String,
+    /** Primer día con observación válida (max(from, admissionDate)). */
+    val observedFrom: String,
     val summaries: List<SleepDayProjection>,
 )
 
@@ -61,6 +63,7 @@ data class MobilityTabProjection(
     val residentId: String,
     val from: String,
     val to: String,
+    val observedFrom: String,
     val summaries: List<MobilityDayProjection>,
 )
 
@@ -76,6 +79,7 @@ data class BathroomTabProjection(
     val residentId: String,
     val from: String,
     val to: String,
+    val observedFrom: String,
     val summaries: List<BathroomDayProjection>,
 )
 
@@ -91,6 +95,7 @@ data class CareTabProjection(
     val residentId: String,
     val from: String,
     val to: String,
+    val observedFrom: String,
     val summaries: List<CareDayProjection>,
     val avgMinutesPerDay: Double?,
     val proactiveShare: Double?,
