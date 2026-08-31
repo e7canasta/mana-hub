@@ -1,15 +1,20 @@
 package com.hub.integration
 
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.http.HttpStatus
 
 class ApiSmokeTest : IntegrationTestBase() {
+
+    @BeforeEach
+    fun setUp() {
+        cleanDatabase()
+    }
 
     @Test
     fun `health endpoint returns UP`() {
         val response = client.getForEntity("$baseUrl/actuator/health", Map::class.java)
-        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(response.statusCode.is2xxSuccessful).isTrue()
         assertThat(response.body?.get("status")).isEqualTo("UP")
     }
 

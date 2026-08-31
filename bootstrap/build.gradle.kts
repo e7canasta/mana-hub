@@ -59,6 +59,7 @@ tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
     testImplementation(libs.assertj)
     testImplementation(libs.testcontainers.junit.jupiter)
     testImplementation(libs.testcontainers.postgresql)
+    testImplementation("org.apache.httpcomponents.client5:httpclient5")
 }
 
 tasks.bootBuildImage {

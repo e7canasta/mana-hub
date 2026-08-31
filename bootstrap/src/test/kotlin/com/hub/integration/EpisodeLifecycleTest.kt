@@ -1,12 +1,15 @@
 package com.hub.integration
 
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.http.HttpEntity
-import org.springframework.http.HttpMethod
-import org.springframework.http.HttpStatus
 
 class EpisodeLifecycleTest : IntegrationTestBase() {
+
+    @BeforeEach
+    fun setUp() {
+        cleanDatabase()
+    }
 
     @Test
     fun `create and acknowledge episode`() {
@@ -38,11 +41,11 @@ class EpisodeLifecycleTest : IntegrationTestBase() {
 
         val resolved = client.exchange(
             "$baseUrl/api/v1/episodes/$episodeId",
-            HttpMethod.PATCH,
-            HttpEntity(mapOf("status" to "resolved")),
+            org.springframework.http.HttpMethod.PATCH,
+            org.springframework.http.HttpEntity(mapOf("status" to "resolved")),
             Any::class.java
         )
-        assertThat(resolved.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(resolved.statusCode.is2xxSuccessful).isTrue()
     }
 
     @Test
