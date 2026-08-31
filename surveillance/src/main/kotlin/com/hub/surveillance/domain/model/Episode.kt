@@ -63,6 +63,11 @@ class Episode private constructor(
         )
     }
 
+    fun complicated(newSeverity: EpisodeSeverity, targetId: String, detail: String? = null): Episode {
+        val elevated = elevateSeverity(newSeverity, detail ?: "Complicated $severity → $newSeverity")
+        return elevated.escalate(targetId)
+    }
+
     /** Ventana: si llega señal más severa dentro del mismo episodio abierto, eleva severidad */
     fun elevateSeverity(newSeverity: EpisodeSeverity, newDetail: String?): Episode {
         if (!newSeverity.isMoreSevereThan(this.severity)) return this

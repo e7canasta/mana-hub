@@ -131,9 +131,10 @@ class IntegrationService(
                 try {
                     val ep = episodeRepository.findById(com.hub.surveillance.domain.model.EpisodeId(episodeId))
                     if (ep != null) {
-                        val escalated = ep.escalate(severity)
+                        val newSev = com.hub.surveillance.domain.model.EpisodeSeverity.from(severity)
+                        val escalated = ep.complicated(newSev, episodeId, "Escalated $previousSeverity → $severity")
                         episodeRepository.save(escalated)
-                        log.info("Episode {} escalated persisted: {} → {}", episodeId, previousSeverity, severity)
+                        log.info("Episode {} complicated persisted: {} → {} level={}", episodeId, previousSeverity, severity, escalated.escalationLevel)
                     }
                 } catch (e: Exception) {
                     log.warn("Failed to escalate {}: {}", episodeId, e.message)
@@ -146,6 +147,12 @@ class IntegrationService(
                 }
                 val state = body.path("state").asText("unknown")
                 log.info("UmbrellaEvent for episode {}: state={}", episodeId, state)
+                try {
+                    episodeService.updateEpisode(episodeId, UpdateEpisodeRequest(status = "resolved"))
+                    log.info("Episode closed via UmbrellaEvent: {}", episodeId)
+                } catch (e: Exception) {
+                    log.warn("Failed to close via UmbrellaEvent {}: {}", episodeId, e.message)
+                }
             }
 
             "SUPPRESSED_WITH_RECORD" -> {
