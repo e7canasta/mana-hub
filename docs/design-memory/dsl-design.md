@@ -1,6 +1,7 @@
-# DSL Design — Destilado 2026-08-29
+# DSL Design — Convenciones y scopes
 
-> **Reescrito sobre línea base real.** Reemplaza patrón fantasma `Client → Resource → Action` (no existe `facilities.list()` ni `session` param). Fuente: `clients/src/main/kotlin/com/hub/clients/core/ManaHubClient.kt:22` y `api.md`.
+> **Fuente:** `clients/src/main/kotlin/com/hub/clients/core/ManaHubClient.kt:22` y `api.md`.
+> **Estado:** ✓ Verificado contra código 2026-08-31. Firma real, no fantasma.
 
 ## Patrón Real: `manahub { scope { action } }` — 11 Scopes Tipados
 

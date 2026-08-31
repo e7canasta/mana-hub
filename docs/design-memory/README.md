@@ -1,22 +1,49 @@
-# Design Memory — Destilado 2026-08-29
+# Design Memory — mana-hub
 
-## Client DSL
-- [DSL Design](dsl-design.md) — **Reescrito** `manahub { scope { action } }` 11 scopes (`AGENTS.md`). Reemplaza patrón fantasma `Resource → Action`.
+> **Fuente de verdad arquitectónica.** Última actualización: 2026-08-31.
+>
+> Si no está acá, no existe como decisión tomada. Si está acá pero está
+> desactualizado, arrancá una discusión antes de codear.
 
-## API Design
-- [API Design](api-design.md) — **Destilado** `api.md` es fuente real (101 endpoints). Este archivo es aspiracional (wrapper/pagination no existe).
+---
 
-## Domain Language
-- [Domain Language](domain-language.md) — **Destilado** cheat-sheet de `vocabulario-unificado.md` (5 términos canónicos).
+## Blueprint Central
 
-## Summaries & Cubo
-- [Summaries, ficha del residente e hidratador del cubo](summaries-resident-chart-cube.md) — memoria técnica: tablas `*_summaries`, proyecciones `/views/resident-chart`, relación con `scene_events`, pipeline cubo.
+**→ [DESIGN-BLUEPRINT.md](DESIGN-BLUEPRINT.md)** — El documento. Arquitectura, bounded contexts, JPA conventions, domain events, panel CQRS, DSL, guardrails. Todo en un solo lugar.
 
-## Insights (compute)
-- [Módulo insights — rollups, KPIs, hallazgos e informes](insights-module.md) — subproyecto separado del SOR: batch nocturno + hallazgos (tendencia/cluster/política) + JSON de report.
+---
 
-## Architecture Decision Records
-- [ADR-001: Domain Events](decision-records/ADR-001-domain-events.md)
-- [ADR-002: Aggregate Roots](decision-records/ADR-002-aggregate-roots.md)
-- [ADR-003: Bounded Contexts](decision-records/ADR-003-bounded-contexts.md)
-- [ADR-004: Client DSL](decision-records/ADR-004-client-dsl.md)
+## Documentos vivos (vigentes, verificados contra código)
+
+| Documento | Qué cubre | Actualizado |
+|-----------|-----------|-------------|
+| [DESIGN-BLUEPRINT.md](DESIGN-BLUEPRINT.md) | Blueprint arquitectónico completo (14 secciones) | 2026-08-31 |
+| [domain-language.md](domain-language.md) | Términos canónicos (5) + reglas de uso | 2026-08-29 ✓ |
+| [dsl-design.md](dsl-design.md) | DSL 11 scopes tipados — firma real, no fantasma | 2026-08-29 ✓ |
+| [api-design.md](api-design.md) | Convenciones API, gaps, dual-write eliminado | 2026-08-31 actualizado |
+| [summaries-resident-chart-cube.md](summaries-resident-chart-cube.md) | Summaries, ficha residente, cubo OLAP | 2026-08-31 ✓ |
+| [insights-module.md](insights-module.md) | Módulo insights: rollups, KPIs, hallazgos, informes | 2026-08-31 ✓ |
+
+---
+
+## Archivo (decisiones históricas — obsoletas)
+
+Los ADRs 001-004 fueron escritos contra código que ya no refleja la realidad.
+Su contenido fue subsumido por `DESIGN-BLUEPRINT.md`. Conservados como
+referencia histórica.
+
+| Archivo | Por qué se archivó |
+|---------|-------------------|
+| [archive/ADR-001-domain-events-archived.md](archive/ADR-001-domain-events-archived.md) | Lista 3 events vs los 12+ reales. Blueprint los cubre §6. |
+| [archive/ADR-002-aggregate-roots-archived.md](archive/ADR-002-aggregate-roots-archived.md) | Lista 3 aggregates vs 21 reales. Blueprint los cubre §4. |
+| [archive/ADR-003-bounded-contexts-archived.md](archive/ADR-003-bounded-contexts-archived.md) | Lista 10 BCs vs 12 reales. Blueprint los cubre §2. |
+| [archive/ADR-004-client-dsl-archived.md](archive/ADR-004-client-dsl-archived.md) | Firma fantasma `ManaHubClient(session)`. Blueprint los cubre §8. |
+
+---
+
+## Regla de uso
+
+1. **Antes de crear un ADR nuevo**, leer `DESIGN-BLUEPRINT.md` — probablemente ya esté cubierto.
+2. **Si el blueprint no lo cubre**, crear `ADR-005-*.md` con status `Proposed` y actualizar este índice.
+3. **Si un documento se desactualiza**, marcarlo con ⚠️ y actualizarlo antes de merge.
+4. **El blueprint es el único documento que puede declarar "regla"**. Los demás son referencia.

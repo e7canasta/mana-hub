@@ -1,6 +1,7 @@
-# Domain Language — Destilado 2026-08-29
+# Domain Language — Términos canónicos
 
-> Redirige a fuente canónica `docs/vocabulario-unificado.md:53` (5 términos). Este archivo es cheat-sheet destilado.
+> **Fuente:** `docs/vocabulario-unificado.md:53` (5 términos).
+> **Estado:** ✓ Verificado 2026-08-31.
 
 ## Términos Canónicos — `vocabulario-unificado.md:53`
 
