@@ -2,6 +2,7 @@ package com.hub.admin
 
 import com.hub.integration.infrastructure.persistence.ResidentProfileEntityRepository
 import com.hub.observation.infrastructure.persistence.SceneEventEntityRepository
+import com.hub.observation.infrastructure.persistence.SentinelSignalEntityRepository
 import com.hub.surveillance.infrastructure.persistence.EpisodeEntityRepository
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*
 class CleanController(
     private val episodeJpa: EpisodeEntityRepository,
     private val sceneJpa: SceneEventEntityRepository,
+    private val signalJpa: SentinelSignalEntityRepository,
     private val profileJpa: ResidentProfileEntityRepository,
 ) {
     @PostMapping("/clean")
@@ -25,6 +27,8 @@ class CleanController(
         val scenes = if (bedId != null) sceneJpa.findByBedId(bedId) else sceneJpa.findAll().filter { it.residentId == residentId }
         val deletedScenes = scenes.size
         sceneJpa.deleteAll(scenes)
+        val signalsToDelete = if (bedId != null) signalJpa.findByBedId(bedId) else signalJpa.findByResidentId(residentId)
+        signalJpa.deleteAll(signalsToDelete)
         var deletedProfiles = 0
         if (cleanProfiles) {
             val profiles = profileJpa.findByResidentId(residentId)
@@ -62,5 +66,25 @@ class CleanController(
             (fromI == null || !ts.isBefore(fromI)) && (toI == null || ts.isBefore(toI.plusSeconds(1)))
         }
         return ResponseEntity.ok(filtered.map { mapOf("eventType" to it.eventType, "at" to it.timestamp.toString(), "bed" to it.bedId, "residentId" to (it.residentId ?: "")) })
+    }
+
+    @GetMapping("/signals")
+    fun listSignals(
+        @RequestParam residentId: String,
+        @RequestParam(required = false) from: String?,
+        @RequestParam(required = false) to: String?,
+        @RequestParam(required = false) bedId: String? = null,
+    ): ResponseEntity<List<Map<String, Any>>> {
+        val all = when {
+            bedId != null -> signalJpa.findByBedId(bedId)
+            else -> signalJpa.findByResidentId(residentId)
+        }
+        val fromI = from?.let { runCatching { java.time.Instant.parse(it) }.getOrNull() }
+        val toI = to?.let { runCatching { java.time.Instant.parse(it) }.getOrNull() }
+        val filtered = all.filter { e ->
+            val ts = e.timestamp
+            (fromI == null || !ts.isBefore(fromI)) && (toI == null || ts.isBefore(toI.plusSeconds(1)))
+        }
+        return ResponseEntity.ok(filtered.map { mapOf("type" to it.type, "at" to it.timestamp.toString(), "bed" to it.bedId, "residentId" to (it.residentId ?: ""), "episodeId" to (it.episodeId ?: ""), "severity" to (it.severity ?: "")) })
     }
 }

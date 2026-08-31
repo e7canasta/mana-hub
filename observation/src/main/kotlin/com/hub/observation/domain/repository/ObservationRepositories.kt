@@ -43,3 +43,9 @@ interface SceneEventRepository {
     fun findByBedId(bedId: BedId): List<SceneEvent>
     fun save(event: SceneEvent): SceneEvent
 }
+
+interface SentinelSignalRepository {
+    fun findByResidentId(residentId: ResidentId): List<SentinelSignal>
+    fun findByBedId(bedId: BedId): List<SentinelSignal>
+    fun save(signal: SentinelSignal): SentinelSignal
+}

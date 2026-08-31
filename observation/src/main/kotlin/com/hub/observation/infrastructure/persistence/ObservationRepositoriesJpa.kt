@@ -4,6 +4,7 @@ import com.hub.observation.domain.model.*
 import com.hub.observation.domain.repository.CurrentBedStateRepository
 import com.hub.observation.domain.repository.NotificationEventRepository
 import com.hub.observation.domain.repository.SceneEventRepository
+import com.hub.observation.domain.repository.SentinelSignalRepository
 import com.hub.observation.domain.repository.SensorEventRepository
 import com.hub.observation.domain.repository.SummaryRepository
 import com.hub.shared.domain.ResidentId
@@ -301,6 +302,45 @@ class SceneEventRepositoryAdapter(private val jpa: SceneEventEntityRepository) :
         id = id.value, eventId = eventId, bedId = bedId.value, residentId = residentId?.value,
         eventType = eventType, fromState = fromState, toState = toState, triggerType = triggerType,
         timestamp = timestamp, payloadJson = payloadJson, receivedAt = Instant.now()
+    )
+}
+
+@Entity
+@Table(name = "sentinel_signals")
+class SentinelSignalEntity(
+    @Id var id: String = "",
+    @Column(name = "signal_id") var signalId: String = "",
+    @Column(name = "bed_id") var bedId: String = "",
+    @Column(name = "resident_id") var residentId: String? = null,
+    @Column(name = "episode_id") var episodeId: String? = null,
+    @Column(name = "type") var type: String = "",
+    @Column(name = "severity") var severity: String? = null,
+    @Column(name = "trigger_type") var trigger: String? = null,
+    @Column(name = "timestamp") var timestamp: Instant = Instant.now(),
+    @Column(name = "payload_json") var payloadJson: String = "{}",
+    @Column(name = "received_at") var receivedAt: Instant = Instant.now(),
+)
+
+@Repository
+interface SentinelSignalEntityRepository : JpaRepository<SentinelSignalEntity, String> {
+    fun findByResidentId(residentId: String): List<SentinelSignalEntity>
+    fun findByBedId(bedId: String): List<SentinelSignalEntity>
+    fun findByEpisodeId(episodeId: String): List<SentinelSignalEntity>
+}
+
+@Repository
+class SentinelSignalRepositoryAdapter(private val jpa: SentinelSignalEntityRepository) : SentinelSignalRepository {
+    override fun findByResidentId(residentId: ResidentId): List<SentinelSignal> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
+    override fun findByBedId(bedId: BedId): List<SentinelSignal> = jpa.findByBedId(bedId.value).map { it.toDomain() }
+    override fun save(signal: SentinelSignal): SentinelSignal = jpa.save(signal.toEntity()).toDomain()
+
+    private fun SentinelSignalEntity.toDomain() = SentinelSignal(
+        id = Identifier(id), signalId = signalId, bedId = BedId(bedId), residentId = residentId?.let { ResidentId(it) },
+        episodeId = episodeId, type = type, severity = severity, trigger = trigger, timestamp = timestamp, payloadJson = payloadJson,
+    )
+    private fun SentinelSignal.toEntity() = SentinelSignalEntity(
+        id = id.value, signalId = signalId, bedId = bedId.value, residentId = residentId?.value,
+        episodeId = episodeId, type = type, severity = severity, trigger = trigger, timestamp = timestamp, payloadJson = payloadJson,
     )
 }
 
