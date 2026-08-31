@@ -12,6 +12,7 @@ import com.hub.shared.domain.BedId
 import com.hub.shared.domain.Identifier
 import jakarta.persistence.*
 import org.hibernate.annotations.ColumnTransformer
+import org.hibernate.annotations.Immutable
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import org.springframework.data.jpa.repository.JpaRepository
@@ -22,6 +23,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Entity
+@Immutable
 @Table(name = "sensor_events")
 class SensorEventEntity(
     @Id var id: String = "",
@@ -145,6 +147,7 @@ interface BathroomSummaryEntityRepository : JpaRepository<BathroomSummaryEntity,
 }
 
 @Entity
+@Immutable
 @Table(name = "scene_events")
 class SceneEventEntity(
     @Id var id: String = "",
@@ -179,6 +182,7 @@ interface SceneEventEntityRepository : JpaRepository<SceneEventEntity, String> {
 }
 
 @Entity
+@Immutable
 @Table(name = "notification_events")
 class NotificationEventEntity(
     @Id var id: String = "",
@@ -347,6 +351,7 @@ class SceneEventRepositoryAdapter(private val jpa: SceneEventEntityRepository) :
 }
 
 @Entity
+@Immutable
 @Table(name = "sentinel_signals")
 class SentinelSignalEntity(
     @Id var id: String = "",

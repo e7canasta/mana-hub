@@ -3,6 +3,7 @@ package com.hub.surveillance.domain.model
 import com.hub.shared.domain.AggregateRoot
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
+import com.hub.surveillance.domain.event.EpisodeEvent
 import java.time.Instant
 
 class Episode private constructor(
@@ -25,13 +26,17 @@ class Episode private constructor(
     override var version: Long
 ) : AggregateRoot<EpisodeId>() {
 
+    private val _domainEvents = mutableListOf<EpisodeEvent>()
+    val domainEvents: List<EpisodeEvent> get() = _domainEvents.toList()
+    fun clearEvents() = _domainEvents.clear()
+
     val isPending: Boolean get() = status == "pending"
     val isAcknowledged: Boolean get() = status == "acknowledged"
     val isResolved: Boolean get() = status == "resolved"
 
     fun acknowledge(actorId: String): Episode {
         require(isPending) { "Episode is not pending" }
-        return reconstitute(
+        val next = reconstitute(
             id = id, residentId = residentId, bedId = bedId, evidenceKind = evidenceKind,
             evidenceRef = evidenceRef, ruleId = ruleId, severity = severity,
             status = "acknowledged", statusActorId = actorId, statusAt = Instant.now(),
@@ -39,10 +44,14 @@ class Episode private constructor(
             escalationLevel = escalationLevel, escalatedAt = escalatedAt,
             escalatedTo = escalatedTo, version = version + 1
         )
+        next._domainEvents.add(
+            EpisodeEvent.Acknowledged(episodeId = id, actorId = actorId)
+        )
+        return next
     }
 
     fun resolve(actorId: String): Episode {
-        return reconstitute(
+        val next = reconstitute(
             id = id, residentId = residentId, bedId = bedId, evidenceKind = evidenceKind,
             evidenceRef = evidenceRef, ruleId = ruleId, severity = severity,
             status = "resolved", statusActorId = actorId, statusAt = Instant.now(),
@@ -50,10 +59,14 @@ class Episode private constructor(
             escalationLevel = escalationLevel, escalatedAt = escalatedAt,
             escalatedTo = escalatedTo, version = version + 1
         )
+        next._domainEvents.add(
+            EpisodeEvent.Resolved(episodeId = id, actorId = actorId)
+        )
+        return next
     }
 
     fun escalate(targetId: String): Episode {
-        return reconstitute(
+        val next = reconstitute(
             id = id, residentId = residentId, bedId = bedId, evidenceKind = evidenceKind,
             evidenceRef = evidenceRef, ruleId = ruleId, severity = severity, status = status,
             statusActorId = statusActorId, statusAt = statusAt,
@@ -61,6 +74,10 @@ class Episode private constructor(
             escalationLevel = escalationLevel + 1, escalatedAt = Instant.now(),
             escalatedTo = targetId, version = version + 1
         )
+        next._domainEvents.add(
+            EpisodeEvent.Escalated(episodeId = id, targetId = targetId, newLevel = next.escalationLevel)
+        )
+        return next
     }
 
     fun complicated(newSeverity: EpisodeSeverity, targetId: String, detail: String? = null): Episode {
@@ -68,7 +85,6 @@ class Episode private constructor(
         return elevated.escalate(targetId)
     }
 
-    /** Ventana: si llega señal más severa dentro del mismo episodio abierto, eleva severidad */
     fun elevateSeverity(newSeverity: EpisodeSeverity, newDetail: String?): Episode {
         if (!newSeverity.isMoreSevereThan(this.severity)) return this
         return reconstitute(
@@ -86,11 +102,50 @@ class Episode private constructor(
             residentId: ResidentId, bedId: BedId?, severity: EpisodeSeverity, title: String?,
             detail: String?, occurredAt: Instant, evidenceKind: String? = null, evidenceRef: String? = null,
             id: EpisodeId? = null,
-        ): Episode = Episode(
-            id = id ?: EpisodeId.random(), residentId = residentId, bedId = bedId, evidenceKind = evidenceKind,
-            evidenceRef = evidenceRef, ruleId = null, severity = severity, status = "pending",
-            statusActorId = null, statusAt = null, title = title, detail = detail,
-            occurredAt = occurredAt, escalationLevel = 0, escalatedAt = null, escalatedTo = null, version = 0
+        ): Episode {
+            val episode = Episode(
+                id = id ?: EpisodeId.random(), residentId = residentId, bedId = bedId, evidenceKind = evidenceKind,
+                evidenceRef = evidenceRef, ruleId = null, severity = severity, status = "pending",
+                statusActorId = null, statusAt = null, title = title, detail = detail,
+                occurredAt = occurredAt, escalationLevel = 0, escalatedAt = null, escalatedTo = null, version = 0
+            )
+            episode._domainEvents.add(
+                EpisodeEvent.Created(
+                    episodeId = episode.id, residentId = residentId.value,
+                    bedId = bedId?.value, severity = severity, title = title,
+                )
+            )
+            return episode
+        }
+
+        /**
+         * Factory richer: crea un episodio desde una señal de monitoreo.
+         *
+         * Vernon diría: "El aggregate debe saber cómo nace desde el contexto
+         * que lo dispara, no delegar esa lógica al servicio de aplicación".
+         *
+         * Esta factory encapsula la traducción señal → episodio, que antes
+         * vivía en IntegrationService como lógica procedimental.
+         */
+        fun fromSignal(
+            residentId: ResidentId,
+            bedId: BedId,
+            signalType: String,
+            severity: EpisodeSeverity,
+            title: String,
+            detail: String?,
+            occurredAt: Instant,
+            evidenceKind: String? = null,
+            evidenceRef: String? = null,
+        ): Episode = create(
+            residentId = residentId,
+            bedId = bedId,
+            severity = severity,
+            title = title,
+            detail = detail ?: "Signal: $signalType",
+            occurredAt = occurredAt,
+            evidenceKind = evidenceKind,
+            evidenceRef = evidenceRef,
         )
 
         fun reconstitute(

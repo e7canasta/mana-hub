@@ -8,11 +8,13 @@ import com.hub.shared.domain.StaffMemberId
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
 import jakarta.persistence.*
+import org.hibernate.annotations.Immutable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 import java.time.Instant
 
 @Entity
+@Immutable
 @Table(name = "history_episode_detections")
 class HistoryEpisodeEntity(
     @Id var id: String = "",
@@ -118,6 +120,7 @@ class HistoryEpisodeReviewRepositoryAdapter(private val jpa: HistoryEpisodeRevie
 }
 
 @Entity
+@Immutable
 @Table(name = "history_episode_interventions")
 class HistoryEpisodeInterventionEntity(
     @Id var id: String = "",

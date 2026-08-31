@@ -4,11 +4,13 @@ import com.hub.audit.domain.model.AuditLogEntry
 import com.hub.audit.domain.model.AuditLogId
 import com.hub.audit.domain.repository.AuditLogRepository
 import jakarta.persistence.*
+import org.hibernate.annotations.Immutable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 import java.time.Instant
 
 @Entity
+@Immutable
 @Table(name = "audit_log")
 class AuditLogEntity(
     @Id

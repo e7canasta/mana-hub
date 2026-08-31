@@ -7,12 +7,14 @@ import com.hub.evidence.domain.repository.TimelineRepository
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
 import jakarta.persistence.*
+import org.hibernate.annotations.Immutable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import java.time.Instant
 
 @Entity
+@Immutable
 @Table(name = "evidence")
 class EvidenceEntity(
     @Id var id: String = "",

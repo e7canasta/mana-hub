@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":policy"))
     implementation(project(":observation"))
     implementation(project(":history"))
+    implementation(project(":care"))
 
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.validation)

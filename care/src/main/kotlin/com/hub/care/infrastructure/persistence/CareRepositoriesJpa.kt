@@ -8,6 +8,7 @@ import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
 import com.hub.residence.domain.model.WingId
 import jakarta.persistence.*
+import org.hibernate.annotations.Immutable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
@@ -46,6 +47,7 @@ class RoundTaskEntity(
 )
 
 @Entity
+@Immutable
 @Table(name = "care_notes")
 class CareNoteEntity(
     @Id var id: String = "",

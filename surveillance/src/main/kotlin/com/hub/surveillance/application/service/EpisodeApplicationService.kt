@@ -3,6 +3,7 @@ package com.hub.surveillance.application.service
 import com.hub.surveillance.application.dto.*
 import com.hub.surveillance.domain.model.*
 import com.hub.surveillance.domain.repository.EpisodeRepository
+import com.hub.shared.domain.DomainEventPublisher
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
 import org.springframework.stereotype.Service
@@ -11,12 +12,12 @@ import java.time.Instant
 
 @Service
 class EpisodeApplicationService(
-    private val episodeRepository: EpisodeRepository
+    private val episodeRepository: EpisodeRepository,
+    private val eventPublisher: DomainEventPublisher
 ) {
 
     @Transactional
     fun createEpisode(request: CreateEpisodeRequest): EpisodeResponse {
-        // If ID provided and already exists, return existing
         if (request.id != null) {
             val existing = episodeRepository.findById(EpisodeId.from(request.id))
             if (existing != null) {
@@ -36,9 +37,10 @@ class EpisodeApplicationService(
                 evidenceRef = request.evidenceRef,
                 id = request.id?.let { EpisodeId.from(it) },
             )
-            episodeRepository.save(episode).toResponse()
+            val saved = episodeRepository.save(episode)
+            publishEvents(episode)
+            saved.toResponse()
         } catch (e: org.springframework.dao.DataIntegrityViolationException) {
-            // Race condition: another thread created it — fetch and return
             if (request.id != null) {
                 episodeRepository.findById(EpisodeId.from(request.id))?.toResponse()
                     ?: throw e
@@ -72,14 +74,25 @@ class EpisodeApplicationService(
     fun acknowledgeEpisode(episodeId: String, actorId: String): EpisodeResponse {
         val episode = episodeRepository.findById(EpisodeId(episodeId))
             ?: throw IllegalArgumentException("Episode not found: $episodeId")
-        return episodeRepository.save(episode.acknowledge(actorId)).toResponse()
+        val updated = episode.acknowledge(actorId)
+        val saved = episodeRepository.save(updated)
+        publishEvents(updated)
+        return saved.toResponse()
     }
 
     @Transactional
     fun updateEpisode(episodeId: String, request: UpdateEpisodeRequest): EpisodeResponse {
         val episode = episodeRepository.findById(EpisodeId(episodeId))
             ?: throw IllegalArgumentException("Episode not found: $episodeId")
-        return episodeRepository.save(episode.resolve(request.status ?: "resolved")).toResponse()
+        val updated = episode.resolve(request.status ?: "resolved")
+        val saved = episodeRepository.save(updated)
+        publishEvents(updated)
+        return saved.toResponse()
+    }
+
+    private fun publishEvents(episode: Episode) {
+        episode.domainEvents.forEach { eventPublisher.publish(it) }
+        episode.clearEvents()
     }
 
     private fun Episode.toResponse() = EpisodeResponse(
