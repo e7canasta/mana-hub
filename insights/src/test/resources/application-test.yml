@@ -1,0 +1,13 @@
+server:
+  port: 0
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+
+insights:
+  hub-url: http://localhost:1
+  timezone: America/Argentina/Buenos_Aires
+  baseline-min-days: 7
+  rollup:
+    enabled: false
