@@ -25,17 +25,14 @@ class ObservationQueryAdapter(
         return scenes.map { it.toSnapshot() }
     }
 
-    override fun findScenesByBedId(bedId: String): List<SceneEventSnapshot> {
-        return sceneEventRepo.findByBedId(BedId(bedId)).map { it.toSnapshot() }
-    }
+    override fun findScenesByBedId(bedId: String): List<SceneEventSnapshot> =
+        sceneEventRepo.findByBedId(BedId(bedId)).map { it.toSnapshot() }
 
-    override fun findSignalsByEpisodeId(episodeId: String): List<SentinelSignalSnapshot> {
-        return sentinelSignalRepo.findByEpisodeId(episodeId).map { it.toSnapshot() }
-    }
+    override fun findSignalsByEpisodeId(episodeId: String): List<SentinelSignalSnapshot> =
+        sentinelSignalRepo.findByEpisodeId(episodeId).map { it.toSnapshot() }
 
-    override fun findSignalsByResidentId(residentId: ResidentId, from: Instant?, to: Instant?): List<SentinelSignalSnapshot> {
-        return sentinelSignalRepo.findByResidentId(residentId).map { it.toSnapshot() }
-    }
+    override fun findSignalsByResidentId(residentId: ResidentId, from: Instant?, to: Instant?): List<SentinelSignalSnapshot> =
+        sentinelSignalRepo.findByResidentId(residentId).map { it.toSnapshot() }
 
     private fun com.hub.observation.domain.model.SceneEvent.toSnapshot() = SceneEventSnapshot(
         id = id.value,
@@ -47,6 +44,12 @@ class ObservationQueryAdapter(
         observedAt = timestamp,
         confidence = null,
         payloadJson = payloadJson,
+        twinSnapshotJson = twinSnapshotJson,
+        stateSince = stateSince,
+        sceneSince = sceneSince,
+        signalLost = signalLost,
+        monitorId = monitorId,
+        triggerType = triggerType?.name,
     )
 
     private fun com.hub.observation.domain.model.SentinelSignal.toSnapshot() = SentinelSignalSnapshot(
@@ -62,5 +65,18 @@ class ObservationQueryAdapter(
         state = state,
         triggerOn = triggerOn,
         payloadJson = payloadJson,
+        baseline = baseline,
+        rulesFingerprint = rulesFingerprint,
+        gapDuration = gapDuration,
+        previousSeverity = previousSeverity,
+        originalSeverity = originalSeverity,
+        reversible = reversible,
+        requiresNvr = requiresNvr,
+        confirmationWindow = confirmationWindow,
+        requiresConfirmation = requiresConfirmation,
+        elapsed = elapsed,
+        threshold = threshold,
+        ruleId = ruleId,
+        field = field,
     )
 }

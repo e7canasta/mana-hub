@@ -4,10 +4,10 @@ import java.time.Instant
 
 data class CurrentStateResponse(
     val residentId: String,
-    val bedId: String?,
-    val roomState: String?,
-    val state: String?,
-    val sleeping: Boolean?,
-    val stateSince: Instant?,
-    val staffPresent: Boolean? = null
+    val bedId: String? = null,
+    val roomState: String? = null,
+    val state: String? = null,
+    val sleeping: Boolean? = null,
+    val stateSince: Instant? = null,
+    val staffPresent: Boolean? = null,
 )

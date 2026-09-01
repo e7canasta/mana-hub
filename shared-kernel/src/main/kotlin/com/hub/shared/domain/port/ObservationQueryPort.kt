@@ -13,6 +13,12 @@ data class SceneEventSnapshot(
     val observedAt: Instant,
     val confidence: Double?,
     val payloadJson: String? = null,
+    val twinSnapshotJson: String = "{}",
+    val stateSince: Instant? = null,
+    val sceneSince: Instant? = null,
+    val signalLost: Boolean? = null,
+    val monitorId: String? = null,
+    val triggerType: String? = null,
 )
 
 data class SentinelSignalSnapshot(
@@ -28,6 +34,19 @@ data class SentinelSignalSnapshot(
     val state: String? = null,
     val triggerOn: String? = null,
     val payloadJson: String? = null,
+    val baseline: String? = null,
+    val rulesFingerprint: String? = null,
+    val gapDuration: String? = null,
+    val previousSeverity: String? = null,
+    val originalSeverity: String? = null,
+    val reversible: Boolean? = null,
+    val requiresNvr: Boolean? = null,
+    val confirmationWindow: String? = null,
+    val requiresConfirmation: Boolean? = null,
+    val elapsed: String? = null,
+    val threshold: String? = null,
+    val ruleId: String? = null,
+    val field: String? = null,
 )
 
 interface ObservationQueryPort {

@@ -4,7 +4,6 @@ plugins {
 
 dependencies {
     implementation(project(":shared-kernel"))
-    implementation(project(":population"))
     implementation("com.manahive:contracts:1.0.0")
 
     implementation(libs.spring.boot.starter.data.jpa)
