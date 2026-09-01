@@ -14,6 +14,7 @@ import com.hub.observation.domain.repository.SummaryRepository
 import com.hub.shared.domain.BedId
 import com.hub.shared.domain.Identifier
 import com.hub.shared.domain.ResidentId
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -179,15 +180,38 @@ class EventIngestionService(
 
     @Transactional
     fun ingestSceneEvent(request: IngestSceneEventRequest) {
+        val log = LoggerFactory.getLogger(EventIngestionService::class.java)
         val event = SceneEvent(
             id = Identifier(UUID.randomUUID().toString()),
             eventId = request.eventId ?: request.sourceEventId ?: UUID.randomUUID().toString(),
             bedId = BedId(request.bedId),
             residentId = request.residentId?.let { ResidentId(it) },
-            eventType = runCatching { SceneEventType.from(request.eventType) }.getOrNull(),
-            fromState = request.fromState?.let { runCatching { SceneState.from(it) }.getOrNull() },
-            toState = request.toState?.let { runCatching { SceneState.from(it) }.getOrNull() },
-            triggerType = request.triggerType?.let { runCatching { TriggerType.from(it) }.getOrNull() },
+            eventType = SceneEventType.entries.firstOrNull { it.name.equals(request.eventType, ignoreCase = true) }
+                ?: run {
+                    log.warn("Unknown SceneEventType: '{}', defaulting to STATE_CHANGED", request.eventType)
+                    SceneEventType.STATE_CHANGED
+                },
+            fromState = request.fromState?.let { value ->
+                SceneState.entries.firstOrNull { it.name.equals(value, ignoreCase = true) }
+                    ?: run {
+                        log.warn("Unknown SceneState: '{}', defaulting to UNKNOWN", value)
+                        SceneState.UNKNOWN
+                    }
+            },
+            toState = request.toState?.let { value ->
+                SceneState.entries.firstOrNull { it.name.equals(value, ignoreCase = true) }
+                    ?: run {
+                        log.warn("Unknown SceneState: '{}', defaulting to UNKNOWN", value)
+                        SceneState.UNKNOWN
+                    }
+            },
+            triggerType = request.triggerType?.let { value ->
+                TriggerType.entries.firstOrNull { it.name.equals(value, ignoreCase = true) }
+                    ?: run {
+                        log.warn("Unknown TriggerType: '{}', defaulting to SCHEDULED", value)
+                        TriggerType.SCHEDULED
+                    }
+            },
             timestamp = request.timestamp ?: request.occurredAt ?: Instant.now(),
             payloadJson = request.payloadJson
         )
