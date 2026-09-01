@@ -2,6 +2,11 @@ package com.hub.insights.rollup
 
 import com.hub.insights.config.InsightsProperties
 import com.hub.insights.config.ObservationWindow
+import com.hub.insights.domain.rollup.BathroomRollup
+import com.hub.insights.domain.rollup.CareRollup
+import com.hub.insights.domain.rollup.MobilityRollup
+import com.hub.insights.domain.rollup.SceneTimeline
+import com.hub.insights.domain.rollup.SleepRollup
 import com.hub.insights.inbound.BathroomSummaryData
 import com.hub.insights.inbound.CareSummaryData
 import com.hub.insights.inbound.HubClient

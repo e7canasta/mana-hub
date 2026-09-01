@@ -14,4 +14,6 @@ dependencies {
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.mockk)
     testImplementation(libs.assertj)
+    testImplementation(libs.kotest.runner.junit5)
+    testImplementation(libs.kotest.assertions.core)
 }

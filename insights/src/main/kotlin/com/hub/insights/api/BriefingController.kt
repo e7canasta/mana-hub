@@ -1,10 +1,10 @@
 package com.hub.insights.api
 
-import com.hub.insights.find.FacilityBriefing
-import com.hub.insights.find.FacilityReport
-import com.hub.insights.find.FindingService
-import com.hub.insights.find.ResidentBriefing
-import com.hub.insights.find.ResidentReport
+import com.hub.insights.domain.find.FacilityBriefing
+import com.hub.insights.domain.find.FacilityReport
+import com.hub.insights.application.FindingService
+import com.hub.insights.domain.find.ResidentBriefing
+import com.hub.insights.domain.find.ResidentReport
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping

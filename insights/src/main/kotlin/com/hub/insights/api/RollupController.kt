@@ -1,6 +1,6 @@
 package com.hub.insights.api
 
-import com.hub.insights.recommend.WellbeingRecommendations
+import com.hub.insights.domain.recommend.WellbeingRecommendations
 import com.hub.insights.rollup.RollupService
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity

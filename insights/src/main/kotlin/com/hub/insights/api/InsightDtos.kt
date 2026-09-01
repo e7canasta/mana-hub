@@ -1,13 +1,13 @@
 package com.hub.insights.api
 
-import com.hub.insights.derive.SleepDerived
-import com.hub.insights.find.Finding
-import com.hub.insights.find.KpiCard
+import com.hub.insights.domain.derive.SleepDerived
+import com.hub.insights.domain.find.Finding
+import com.hub.insights.domain.find.KpiCard
 import com.hub.insights.inbound.BathroomSummaryData
 import com.hub.insights.inbound.CareSummaryData
 import com.hub.insights.inbound.MobilitySummaryData
 import com.hub.insights.inbound.SleepSummaryData
-import com.hub.insights.recommend.Recommendation
+import com.hub.insights.domain.recommend.Recommendation
 import java.time.LocalTime
 
 data class SleepInsightResponse(
