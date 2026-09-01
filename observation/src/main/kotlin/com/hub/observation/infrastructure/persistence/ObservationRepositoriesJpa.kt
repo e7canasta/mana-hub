@@ -399,6 +399,7 @@ interface SentinelSignalEntityRepository : JpaRepository<SentinelSignalEntity, S
 class SentinelSignalRepositoryAdapter(private val jpa: SentinelSignalEntityRepository) : SentinelSignalRepository {
     override fun findByResidentId(residentId: ResidentId): List<SentinelSignal> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
     override fun findByBedId(bedId: BedId): List<SentinelSignal> = jpa.findByBedId(bedId.value).map { it.toDomain() }
+    override fun findByEpisodeId(episodeId: String): List<SentinelSignal> = jpa.findByEpisodeId(episodeId).map { it.toDomain() }
     override fun save(signal: SentinelSignal): SentinelSignal = jpa.save(signal.toEntity()).toDomain()
 
     private fun SentinelSignalEntity.toDomain() = SentinelSignal(

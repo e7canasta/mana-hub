@@ -1,7 +1,8 @@
-package com.hub.integration
+package com.hub.integration.application.service
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.manahive.contracts.scene.SceneEvent as HiveSceneEvent
+import com.hub.integration.IntegrationProperties
 import com.hub.observation.domain.model.SceneEvent
 import com.hub.observation.domain.model.SceneEventType
 import com.hub.observation.domain.model.SceneState

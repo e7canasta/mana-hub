@@ -3,10 +3,11 @@ package com.hub.history.application.service
 import com.hub.history.domain.model.timeline.EpisodeTimelineEvent
 import com.hub.history.domain.model.timeline.EpisodeTimelineEventId
 import com.hub.history.domain.model.timeline.EventType
-import com.hub.observation.infrastructure.persistence.SceneEventEntity
-import com.hub.observation.infrastructure.persistence.SceneEventEntityRepository
-import com.hub.observation.infrastructure.persistence.SentinelSignalEntity
-import com.hub.observation.infrastructure.persistence.SentinelSignalEntityRepository
+import com.hub.observation.domain.model.SceneEvent
+import com.hub.observation.domain.model.SentinelSignal
+import com.hub.observation.domain.repository.SceneEventRepository
+import com.hub.observation.domain.repository.SentinelSignalRepository
+import com.hub.shared.domain.BedId
 import com.hub.shared.domain.ResidentId
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -47,14 +48,14 @@ import java.time.Instant
  */
 @Service
 class EpisodeTimelineDeriver(
-    private val signals: SentinelSignalEntityRepository,
-    private val scenes: SceneEventEntityRepository,
+    private val signals: SentinelSignalRepository,
+    private val scenes: SceneEventRepository,
 
     /* El contexto alrededor del episodio, configurable.
      *
      * Media hora es lo que un turno noche considera "recien": mas atras —o mas
      * adelante— el contexto deja de explicar el episodio y empieza a ser otra
-     * historia. Pero es un juicio clinico, no una constante tecnica, asi que se
+     * cosa. Pero es un juicio clinico, no una constante tecnica, asi que se
      * configura: una residencia con rondas cada dos horas puede querer otra
      * cosa, y no deberia tener que recompilar para decirlo. */
     @Value("\${mana.timeline.lookback:PT30M}")
@@ -71,10 +72,9 @@ class EpisodeTimelineDeriver(
         val signalRows = signals.findByEpisodeId(episodeId).sortedBy { it.timestamp }
         if (signalRows.isEmpty()) return emptyList()
 
-        val residentId = ResidentId(
-            signalRows.firstOrNull { !it.residentId.isNullOrBlank() }?.residentId ?: "unknown",
-        )
-        val bedId = signalRows.first().bedId
+        val residentId = signalRows.firstOrNull { it.residentId != null }?.residentId
+            ?: ResidentId("unknown")
+        val bedId = signalRows.first().bedId.value
         val opened = signalRows.first().timestamp
         val closed = signalRows.last().timestamp
 
@@ -86,7 +86,7 @@ class EpisodeTimelineDeriver(
          * que un instante pertenece a lo sumo a uno. El dia que eso deje de
          * valer, esta funcion empieza a repartir eventos entre dos episodios y
          * hay que volver aca. */
-        val onBed = scenes.findByBedId(bedId).sortedBy { it.timestamp }
+        val onBed = scenes.findByBedId(BedId(bedId)).sortedBy { it.timestamp }
         val from = windowStart(onBed, opened)
         val to = windowEnd(onBed, closed)
 
@@ -112,7 +112,7 @@ class EpisodeTimelineDeriver(
              * disparador interno del motor, y la senal que producen ya narra el
              * mismo hecho. Emitir los dos contaba una cosa dos veces con palabras
              * distintas, que en una secuencia se lee como si hubieran pasado dos. */
-            .filter { it.eventType == "TransitionDetected" }
+            .filter { it.eventType?.name == "TransitionDetected" }
             .forEachIndexed { index, c ->
                 events += EpisodeTimelineEvent(
                     id = EpisodeTimelineEventId.from("derived-scene-$episodeId-$index"),
@@ -120,8 +120,8 @@ class EpisodeTimelineDeriver(
                     residentId = residentId,
                     at = c.timestamp,
                     type = EventType.UMBRELLA,
-                    fromState = c.fromState,
-                    toState = c.toState,
+                    fromState = c.fromState?.name,
+                    toState = c.toState?.name,
                     description = describe(c),
                 )
             }
@@ -154,10 +154,10 @@ class EpisodeTimelineDeriver(
      * ninguno dentro del tope se corta ahi: sin tope, un residente que no vuelve
      * a la cama en toda la noche arrastraria el turno entero adentro del episodio.
      */
-    private fun windowStart(onBed: List<SceneEventEntity>, openedAt: Instant): Instant {
+    private fun windowStart(onBed: List<SceneEvent>, openedAt: Instant): Instant {
         val floor = openedAt.minus(lookback)
         return onBed
-            .lastOrNull { it.toState == safeState && it.timestamp <= openedAt && it.timestamp >= floor }
+            .lastOrNull { it.toState?.name == safeState && it.timestamp <= openedAt && it.timestamp >= floor }
             ?.timestamp
             ?: floor
     }
@@ -175,10 +175,10 @@ class EpisodeTimelineDeriver(
      * causa, que puede estar lejos; hacia adelante el desenlace, que si tarda
      * mucho ya es otro episodio.
      */
-    private fun windowEnd(onBed: List<SceneEventEntity>, closedAt: Instant): Instant {
+    private fun windowEnd(onBed: List<SceneEvent>, closedAt: Instant): Instant {
         val ceiling = closedAt.plus(lookahead)
         return onBed
-            .firstOrNull { it.toState == safeState && it.timestamp >= closedAt && it.timestamp <= ceiling }
+            .firstOrNull { it.toState?.name == safeState && it.timestamp >= closedAt && it.timestamp <= ceiling }
             ?.timestamp
             ?: ceiling
     }
@@ -188,7 +188,7 @@ class EpisodeTimelineDeriver(
      * (`EPISODE_OPENED`) y no los del webhook (`EpisodeOpened`). Son dos
      * escrituras del mismo hecho y por ahora conviven; unificarlas es del lado
      * del motor, no de aca. */
-    private fun mapSignal(s: SentinelSignalEntity): EventType? = when (s.type) {
+    private fun mapSignal(s: SentinelSignal): EventType? = when (s.type?.name) {
         "EPISODE_OPENED" -> EventType.OPENED
         "EPISODE_ESCALATED", "SEVERITY_RAMP" -> EventType.ESCALATED
         "NOTICE_DISPATCHED", "ALARM_DISPATCHED" -> EventType.NOTIFIED
@@ -202,7 +202,7 @@ class EpisodeTimelineDeriver(
     /* Las frases se arman aca y no en el panel: si el relato se escribe en el
      * cliente, dos clientes cuentan el mismo episodio distinto, y este texto
      * termina citado en una discusion clinica. */
-    private fun describe(s: SentinelSignalEntity): String = when (s.type) {
+    private fun describe(s: SentinelSignal): String = when (s.type?.name) {
         "EPISODE_OPENED" ->
             "Se abrió el episodio" + (s.trigger?.let { " por ${humanState(it)}" } ?: "")
         "EPISODE_ESCALATED", "SEVERITY_RAMP" ->
@@ -217,14 +217,14 @@ class EpisodeTimelineDeriver(
             "STAFF", "STAFF_ASSIST" -> "Cerró cuando llegó el personal"
             else -> "El episodio cerró" + (s.cause?.let { " ($it)" } ?: "")
         }
-        else -> s.type
+        else -> s.type?.name ?: "UNKNOWN"
     }
 
-    private fun describe(c: SceneEventEntity): String = when (c.eventType) {
-        "TransitionDetected" -> "${humanState(c.fromState)} → ${humanState(c.toState)}"
+    private fun describe(c: SceneEvent): String = when (c.eventType?.name) {
+        "TransitionDetected" -> "${humanState(c.fromState?.name)} → ${humanState(c.toState?.name)}"
         "ComeBackExceeded" -> "No volvió al estado de referencia dentro del plazo"
         "DwellExceeded" -> "Se quedó más tiempo del tolerado"
-        else -> c.eventType
+        else -> c.eventType?.name ?: "UNKNOWN"
     }
 
     /* Los nombres del motor son del motor. Aca se traducen una vez, en el borde,

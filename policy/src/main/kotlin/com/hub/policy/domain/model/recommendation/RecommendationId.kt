@@ -1,4 +1,4 @@
-package com.hub.shared.domain.recommendation
+package com.hub.policy.domain.model.recommendation
 
 import java.util.UUID
 

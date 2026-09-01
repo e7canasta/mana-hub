@@ -3,7 +3,7 @@ package com.hub.panel.controller
 import com.hub.panel.command.PanelCommandService
 import com.hub.panel.projection.CatalogService
 import com.hub.panel.projection.PanelProjectionService
-import com.hub.shared.panel.*
+import com.hub.panel.dto.*
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 

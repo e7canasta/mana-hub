@@ -1,4 +1,4 @@
-package com.hub.integration
+package com.hub.integration.api.rest
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper

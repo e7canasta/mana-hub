@@ -1,7 +1,7 @@
 package com.hub.clients.panel
 
 import com.hub.clients.core.HttpApi
-import com.hub.shared.panel.*
+import com.hub.panel.dto.*
 import com.manahive.contracts.policy.MobilityAid
 import com.manahive.contracts.policy.PolicyMode
 import com.manahive.contracts.policy.RiskLevel

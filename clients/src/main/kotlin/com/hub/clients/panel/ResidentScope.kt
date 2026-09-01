@@ -1,7 +1,7 @@
 package com.hub.clients.panel
 
 import com.hub.clients.core.HttpApi
-import com.hub.shared.panel.*
+import com.hub.panel.dto.*
 
 class ResidentScope internal constructor(private val http: HttpApi) {
 

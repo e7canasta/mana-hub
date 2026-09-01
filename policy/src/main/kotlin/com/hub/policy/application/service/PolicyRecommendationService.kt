@@ -3,8 +3,8 @@ package com.hub.policy.application.service
 import com.hub.policy.domain.model.recommendation.PolicyRecommendation
 import com.hub.policy.domain.repository.PolicyRecommendationRepository
 import com.hub.shared.domain.ResidentId
-import com.hub.shared.domain.recommendation.RecommendationId
-import com.hub.shared.domain.recommendation.RecommendationState
+import com.hub.policy.domain.model.recommendation.RecommendationId
+import com.hub.policy.domain.model.recommendation.RecommendationState
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

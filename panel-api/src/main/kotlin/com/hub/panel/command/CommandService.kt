@@ -7,7 +7,7 @@ import com.hub.history.application.dto.ReviewHistoryEpisodeRequest
 import com.hub.history.application.service.HistoryEpisodeApplicationService
 import com.hub.policy.application.dto.UpdateAlarmProfileRequest
 import com.hub.policy.application.service.AlarmProfileApplicationService
-import com.hub.shared.panel.*
+import com.hub.panel.dto.*
 import com.manahive.contracts.policy.MobilityAid
 import com.manahive.contracts.policy.PolicyMode
 import com.manahive.contracts.policy.RiskLevel

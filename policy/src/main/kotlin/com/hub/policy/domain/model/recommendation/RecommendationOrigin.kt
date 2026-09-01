@@ -1,4 +1,4 @@
-package com.hub.shared.domain.recommendation
+package com.hub.policy.domain.model.recommendation
 
 enum class RecommendationOrigin {
     MANUAL,      // alguien lo hizo a mano

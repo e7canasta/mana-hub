@@ -1,4 +1,4 @@
-package com.hub.shared.panel
+package com.hub.panel.dto
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty

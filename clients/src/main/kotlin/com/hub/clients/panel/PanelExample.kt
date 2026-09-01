@@ -1,6 +1,6 @@
 package com.hub.clients.panel
 
-import com.hub.shared.panel.*
+import com.hub.panel.dto.*
 import com.manahive.contracts.policy.RiskLevel
 
 fun main() {

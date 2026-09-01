@@ -1,10 +1,6 @@
 package com.hub.policy.domain.model.recommendation
 
 import com.hub.shared.domain.ResidentId
-import com.hub.shared.domain.recommendation.Recommendation
-import com.hub.shared.domain.recommendation.RecommendationId
-import com.hub.shared.domain.recommendation.RecommendationOrigin
-import com.hub.shared.domain.recommendation.RecommendationState
 import java.time.Instant
 
 /**

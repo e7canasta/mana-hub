@@ -4,6 +4,10 @@ plugins {
 
 dependencies {
     implementation(project(":shared-kernel"))
+    implementation(project(":observation"))
+    implementation(project(":surveillance"))
+    implementation(project(":population"))
+    implementation(project(":policy"))
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.web)
     implementation(libs.postgresql)

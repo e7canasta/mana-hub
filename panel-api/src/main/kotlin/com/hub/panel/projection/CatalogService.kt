@@ -1,6 +1,6 @@
 package com.hub.panel.projection
 
-import com.hub.shared.panel.*
+import com.hub.panel.dto.*
 import com.manahive.contracts.policy.MobilityAid
 import com.manahive.contracts.policy.PolicyMode
 import com.manahive.contracts.policy.RiskLevel

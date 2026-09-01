@@ -1,4 +1,4 @@
-package com.hub.shared.domain.recommendation
+package com.hub.policy.domain.model.recommendation
 
 import com.hub.shared.domain.ResidentId
 import java.time.Instant

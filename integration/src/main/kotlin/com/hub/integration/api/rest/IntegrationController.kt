@@ -1,6 +1,7 @@
-package com.hub.integration
+package com.hub.integration.api.rest
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.hub.integration.application.service.IntegrationService
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
