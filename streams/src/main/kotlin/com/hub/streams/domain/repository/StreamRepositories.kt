@@ -1,7 +1,7 @@
 package com.hub.streams.domain.repository
 
 import com.hub.streams.domain.model.*
-import com.hub.residence.domain.model.RoomId
+import com.hub.shared.domain.RoomId
 
 interface StreamRepository {
     fun findById(id: StreamId): Stream?

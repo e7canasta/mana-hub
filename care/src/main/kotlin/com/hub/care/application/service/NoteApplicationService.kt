@@ -6,6 +6,8 @@ import com.hub.care.domain.repository.EpisodeNoteRepository
 import com.hub.care.domain.repository.ResidentNoteRepository
 import com.hub.care.domain.repository.ShiftNoteRepository
 import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.FacilityId
+import com.hub.shared.domain.WingId
 import com.hub.shared.domain.Identifier
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -38,7 +40,7 @@ class NoteApplicationService(
     @Transactional
     fun createEpisodeNote(request: CreateEpisodeNoteRequest): EpisodeNoteResponse {
         val note = EpisodeNote.create(
-            episodeId = request.episodeId,
+            episodeId = EpisodeId(request.episodeId),
             authorId = request.authorId,
             kind = request.kind,
             body = request.body,
@@ -49,14 +51,14 @@ class NoteApplicationService(
 
     @Transactional(readOnly = true)
     fun getEpisodeNotes(episodeId: String): List<EpisodeNoteResponse> {
-        return episodeNoteRepository.findByEpisodeId(episodeId).map { it.toResponse() }
+        return episodeNoteRepository.findByEpisodeId(EpisodeId(episodeId)).map { it.toResponse() }
     }
 
     @Transactional
     fun createShiftNote(request: CreateShiftNoteRequest): ShiftNoteResponse {
         val note = ShiftNote.create(
-            facilityId = request.facilityId,
-            wingId = request.wingId,
+            facilityId = FacilityId(request.facilityId),
+            wingId = request.wingId?.let { WingId(it) },
             shiftKey = request.shiftKey,
             shiftDate = request.shiftDate,
             authorId = request.authorId,
@@ -69,12 +71,12 @@ class NoteApplicationService(
 
     @Transactional(readOnly = true)
     fun getShiftNotes(facilityId: String, shiftDate: String): List<ShiftNoteResponse> {
-        return shiftNoteRepository.findByFacilityAndDate(facilityId, shiftDate).map { it.toResponse() }
+        return shiftNoteRepository.findByFacilityAndDate(FacilityId(facilityId), shiftDate).map { it.toResponse() }
     }
 
     @Transactional(readOnly = true)
     fun getWingShiftNotes(wingId: String, shiftDate: String): List<ShiftNoteResponse> {
-        return shiftNoteRepository.findByWingAndDate(wingId, shiftDate).map { it.toResponse() }
+        return shiftNoteRepository.findByWingAndDate(WingId(wingId), shiftDate).map { it.toResponse() }
     }
 
     private fun ResidentNote.toResponse() = ResidentNoteResponse(
@@ -84,12 +86,12 @@ class NoteApplicationService(
     )
 
     private fun EpisodeNote.toResponse() = EpisodeNoteResponse(
-        id = id.value, episodeId = episodeId, authorId = authorId,
+        id = id.value, episodeId = episodeId.value, authorId = authorId,
         kind = kind, body = body, timestamp = timestamp, createdAt = createdAt
     )
 
     private fun ShiftNote.toResponse() = ShiftNoteResponse(
-        id = id.value, facilityId = facilityId, wingId = wingId,
+        id = id.value, facilityId = facilityId.value, wingId = wingId?.value,
         shiftKey = shiftKey, shiftDate = shiftDate, authorId = authorId,
         kind = kind, body = body, timestamp = timestamp, createdAt = createdAt
     )

@@ -32,7 +32,7 @@ class EventIngestionService(
         val event = SensorEvent.create(
             sourceEventId = request.sourceEventId, monitorKey = request.monitorKey,
             bedId = request.bedId?.let { BedId(it) }, residentId = request.residentId?.let { ResidentId(it) },
-            kind = request.kind, roomState = request.roomState, state = request.state,
+            kind = SensorEventKind.from(request.kind), roomState = request.roomState, state = request.state,
             sleeping = request.sleeping, occurredAt = request.occurredAt
         )
         sensorEventRepository.save(event)
@@ -166,10 +166,10 @@ class EventIngestionService(
             eventId = request.eventId ?: request.sourceEventId ?: UUID.randomUUID().toString(),
             bedId = BedId(request.bedId),
             residentId = request.residentId?.let { ResidentId(it) },
-            eventType = request.eventType,
-            fromState = request.fromState,
-            toState = request.toState,
-            triggerType = request.triggerType,
+            eventType = runCatching { SceneEventType.from(request.eventType) }.getOrNull(),
+            fromState = request.fromState?.let { runCatching { SceneState.from(it) }.getOrNull() },
+            toState = request.toState?.let { runCatching { SceneState.from(it) }.getOrNull() },
+            triggerType = request.triggerType?.let { runCatching { TriggerType.from(it) }.getOrNull() },
             timestamp = request.timestamp ?: request.occurredAt ?: Instant.now(),
             payloadJson = request.payloadJson
         )

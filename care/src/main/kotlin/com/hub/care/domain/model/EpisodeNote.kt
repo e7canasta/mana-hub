@@ -2,6 +2,15 @@ package com.hub.care.domain.model
 
 import com.hub.shared.domain.Identifier
 import java.time.Instant
+import java.util.UUID
+
+@JvmInline
+value class EpisodeId(val value: String) {
+    companion object {
+        fun from(value: String): EpisodeId = EpisodeId(value)
+        fun random(): EpisodeId = EpisodeId(UUID.randomUUID().toString())
+    }
+}
 
 enum class EpisodeNoteKind {
     ACKNOWLEDGEMENT,
@@ -20,7 +29,7 @@ enum class EpisodeNoteKind {
 
 data class EpisodeNote(
     val id: Identifier,
-    val episodeId: String,
+    val episodeId: EpisodeId,
     val authorId: String,
     val kind: EpisodeNoteKind,
     val body: String,
@@ -29,7 +38,7 @@ data class EpisodeNote(
 ) {
     companion object {
         fun create(
-            episodeId: String,
+            episodeId: EpisodeId,
             authorId: String,
             kind: EpisodeNoteKind,
             body: String,

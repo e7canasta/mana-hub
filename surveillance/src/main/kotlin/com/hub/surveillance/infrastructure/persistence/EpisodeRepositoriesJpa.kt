@@ -23,7 +23,8 @@ class EpisodeEntity(
     @Column(name = "evidence_ref") var evidenceRef: String? = null,
     @Column(name = "rule_id") var ruleId: String? = null,
     @Column(name = "severity") var severity: String = "",
-    @Column(name = "status") var status: String = "pending",
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status") var status: EpisodeStatus = EpisodeStatus.PENDING,
     @Column(name = "status_actor_id") var statusActorId: String? = null,
     @Column(name = "status_at") var statusAt: Instant? = null,
     @Column(name = "title") var title: String? = null,
@@ -42,9 +43,9 @@ interface EpisodeEntityRepository :
     JpaRepository<EpisodeEntity, String>,
     JpaSpecificationExecutor<EpisodeEntity> {
     fun findByResidentId(residentId: String): List<EpisodeEntity>
-    @Query("SELECT e FROM EpisodeEntity e WHERE e.status = 'pending'")
+    @Query("SELECT e FROM EpisodeEntity e WHERE e.status = 'PENDING'")
     fun findPending(): List<EpisodeEntity>
-    @Query("SELECT e FROM EpisodeEntity e WHERE e.residentId = :residentId AND e.status IN ('pending','acknowledged') ORDER BY e.occurredAt DESC LIMIT 1")
+    @Query("SELECT e FROM EpisodeEntity e WHERE e.residentId = :residentId AND e.status IN ('PENDING','ACKNOWLEDGED') ORDER BY e.occurredAt DESC LIMIT 1")
     fun findOpenByResidentId(residentId: String): EpisodeEntity?
 }
 
@@ -73,7 +74,7 @@ class EpisodeRepositoryAdapter(private val jpa: EpisodeEntityRepository) : Episo
         val spec = Specification<EpisodeEntity> { root, _, cb ->
             val predicates = mutableListOf<Predicate>()
             residentId?.let { predicates += cb.equal(root.get<String>("residentId"), it.value) }
-            status?.let { predicates += cb.equal(root.get<String>("status"), it) }
+            status?.let { predicates += cb.equal(root.get<EpisodeStatus>("status"), EpisodeStatus.from(it)) }
             from?.let { predicates += cb.greaterThanOrEqualTo(root.get("occurredAt"), it) }
             to?.let { predicates += cb.lessThanOrEqualTo(root.get("occurredAt"), it) }
             if (predicates.isEmpty()) cb.conjunction() else cb.and(*predicates.toTypedArray())
@@ -94,9 +95,10 @@ class EpisodeRepositoryAdapter(private val jpa: EpisodeEntityRepository) : Episo
         evidenceRef, ruleId, EpisodeSeverity.from(severity), status, statusActorId, statusAt,
         title, detail, occurredAt, escalationLevel, escalatedAt, escalatedTo, version
     )
+
     private fun Episode.toEntity() = EpisodeEntity(
         id.value, residentId.value, bedId?.value, evidenceKind, evidenceRef, ruleId,
-        severity.name.lowercase(), status, statusActorId, statusAt, title, detail,
+        severity.name, status, statusActorId, statusAt, title, detail,
         occurredAt, escalationLevel, escalatedAt, escalatedTo, Instant.now(), Instant.now()
     )
 }

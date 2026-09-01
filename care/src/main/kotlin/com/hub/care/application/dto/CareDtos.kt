@@ -1,6 +1,8 @@
 package com.hub.care.application.dto
 
+import com.hub.care.domain.model.CareNoteKind
 import com.hub.care.domain.model.RoundStatus
+import com.hub.care.domain.model.RoundTaskStatus
 import java.time.Instant
 
 data class CreateRoundRequest(
@@ -24,7 +26,7 @@ data class RoundTaskResponse(
     val roundId: String,
     val residentId: String,
     val bedId: String?,
-    val status: String,
+    val status: RoundTaskStatus,
     val note: String?,
     val completedAt: Instant?,
     val completedBy: String?
@@ -38,7 +40,7 @@ data class UpdateRoundTaskRequest(
 data class CreateCareNoteRequest(
     val residentId: String,
     val authorId: String,
-    val kind: String = "general",
+    val kind: CareNoteKind = CareNoteKind.GENERAL,
     val body: String,
     val durationMin: Int? = null
 )
@@ -47,7 +49,7 @@ data class CareNoteResponse(
     val id: String,
     val residentId: String,
     val authorId: String,
-    val kind: String,
+    val kind: CareNoteKind,
     val body: String,
     val durationMin: Int?,
     val createdAt: Instant

@@ -10,7 +10,7 @@ abstract class BaseEntity(
     @Version open var version: Long = 0
 ) {
     override fun equals(other: Any?): Boolean =
-        this === other || (other::class == this::class && (other as BaseEntity).id == id)
+        this === other || (other != null && javaClass == other.javaClass && (other as BaseEntity).id == id)
 
     override fun hashCode(): Int = id.hashCode()
 }

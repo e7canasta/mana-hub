@@ -11,8 +11,6 @@ public class SpringDomainEventPublisher(
     private val applicationEventPublisher: ApplicationEventPublisher
 ) : DomainEventPublisher {
 
-    private val log = LoggerFactory.getLogger(javaClass)
-
     public override fun publish(event: DomainEvent) {
         log.debug("Publishing domain event: ${event.eventType} [${event.eventId}]")
         applicationEventPublisher.publishEvent(event)
@@ -20,5 +18,9 @@ public class SpringDomainEventPublisher(
 
     public override fun publishAll(events: List<DomainEvent>) {
         events.forEach { publish(it) }
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(SpringDomainEventPublisher::class.java)
     }
 }

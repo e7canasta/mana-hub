@@ -1,6 +1,7 @@
 package com.hub.observation.application.service
 
 import com.hub.observation.application.dto.*
+import com.hub.observation.domain.model.NotificationCategory
 import com.hub.observation.domain.model.NotificationEvent
 import com.hub.observation.domain.repository.CurrentBedStateRepository
 import com.hub.observation.domain.repository.NotificationEventRepository
@@ -18,7 +19,7 @@ class ObservationApplicationService(
     @Transactional
     fun ingestNotification(request: IngestNotificationRequest) {
         val event = NotificationEvent.create(
-            category = request.category,
+            category = NotificationCategory.from(request.category),
             bedId = request.bedId,
             residentId = request.residentId,
             eventType = request.eventType,
@@ -45,7 +46,7 @@ class ObservationApplicationService(
     }
 
     private fun NotificationEvent.toResponse() = NotificationResponse(
-        id = id.value, category = category, bedId = bedId?.value, residentId = residentId?.value,
+        id = id.value, category = category.name, bedId = bedId?.value, residentId = residentId?.value,
         eventType = eventType, timestamp = timestamp, ruleId = ruleId, riskLevel = riskLevel
     )
 }

@@ -1,6 +1,6 @@
 package com.hub.coverage.domain.model
 
-import com.hub.residence.domain.model.WingId
+import com.hub.shared.domain.WingId
 import java.time.Instant
 
 data class UnitShiftCoverage(

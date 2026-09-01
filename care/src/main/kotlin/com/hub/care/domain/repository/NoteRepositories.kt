@@ -2,6 +2,8 @@ package com.hub.care.domain.repository
 
 import com.hub.care.domain.model.*
 import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.FacilityId
+import com.hub.shared.domain.WingId
 import com.hub.shared.domain.Identifier
 
 interface ResidentNoteRepository {
@@ -12,13 +14,13 @@ interface ResidentNoteRepository {
 
 interface EpisodeNoteRepository {
     fun findById(id: Identifier): EpisodeNote?
-    fun findByEpisodeId(episodeId: String): List<EpisodeNote>
+    fun findByEpisodeId(episodeId: EpisodeId): List<EpisodeNote>
     fun save(note: EpisodeNote): EpisodeNote
 }
 
 interface ShiftNoteRepository {
     fun findById(id: Identifier): ShiftNote?
-    fun findByFacilityAndDate(facilityId: String, shiftDate: String): List<ShiftNote>
-    fun findByWingAndDate(wingId: String, shiftDate: String): List<ShiftNote>
+    fun findByFacilityAndDate(facilityId: FacilityId, shiftDate: String): List<ShiftNote>
+    fun findByWingAndDate(wingId: WingId, shiftDate: String): List<ShiftNote>
     fun save(note: ShiftNote): ShiftNote
 }

@@ -4,7 +4,7 @@ import com.hub.streams.application.dto.*
 import com.hub.streams.domain.model.*
 import com.hub.streams.domain.repository.StreamRegionRepository
 import com.hub.streams.domain.repository.StreamRepository
-import com.hub.residence.domain.model.RoomId
+import com.hub.shared.domain.RoomId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

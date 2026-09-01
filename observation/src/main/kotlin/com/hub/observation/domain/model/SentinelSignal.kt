@@ -16,7 +16,7 @@ data class SentinelSignal(
     val bedId: BedId,
     val residentId: ResidentId?,
     val episodeId: String?,
-    val type: String,
+    val type: SentinelSignalType?,
     val severity: String?,
     val trigger: String?,
     val timestamp: Instant,

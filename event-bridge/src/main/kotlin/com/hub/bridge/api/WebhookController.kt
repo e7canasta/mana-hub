@@ -20,7 +20,6 @@ class WebhookController(
     private val connection: Connection,
     private val objectMapper: ObjectMapper,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
 
     @PostMapping("/policy-change")
     fun onPolicyChange(@RequestBody payload: Map<String, Any>): ResponseEntity<Map<String, Any>> {
@@ -56,5 +55,9 @@ class WebhookController(
 
         log.info("Published policy change for resident {}", residentId)
         return ResponseEntity.ok(mapOf("status" to "published", "residentId" to residentId))
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(WebhookController::class.java)
     }
 }

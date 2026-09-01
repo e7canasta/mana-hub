@@ -1,19 +1,10 @@
 package com.hub.residence.domain.model
 
-import java.util.UUID
+import com.hub.shared.domain.RoomId
+import com.hub.shared.domain.WingId
 
-@JvmInline
-value class WingId(val value: String) {
-    companion object {
-        fun from(value: String): WingId = WingId(value)
-        fun random(): WingId = WingId(UUID.randomUUID().toString())
-    }
-}
+@Deprecated("Use com.hub.shared.domain.WingId", ReplaceWith("WingId", "com.hub.shared.domain.WingId"))
+typealias WingId = com.hub.shared.domain.WingId
 
-@JvmInline
-value class RoomId(val value: String) {
-    companion object {
-        fun from(value: String): RoomId = RoomId(value)
-        fun random(): RoomId = RoomId(UUID.randomUUID().toString())
-    }
-}
+@Deprecated("Use com.hub.shared.domain.RoomId", ReplaceWith("RoomId", "com.hub.shared.domain.RoomId"))
+typealias RoomId = com.hub.shared.domain.RoomId

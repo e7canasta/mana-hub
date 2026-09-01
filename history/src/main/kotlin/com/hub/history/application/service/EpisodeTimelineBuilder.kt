@@ -20,7 +20,6 @@ import java.time.Instant
 class EpisodeTimelineBuilder(
     private val timelineRepository: EpisodeTimelineRepository,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun onSentinelEvent(
@@ -148,5 +147,9 @@ class EpisodeTimelineBuilder(
         "AutoRecovery" -> EventType.RECOVERY
         "SeverityRamp", "EpisodeEscalated" -> EventType.ESCALATED
         else -> null
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(EpisodeTimelineBuilder::class.java)
     }
 }

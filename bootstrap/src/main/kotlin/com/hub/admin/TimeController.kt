@@ -29,7 +29,7 @@ class TimeController(
         data object UseSystem : Command
         data class UseManual(val startAt: Instant) : Command
         data class Advance(val duration: Duration) : Command
-        data object Unknown : Command
+        data class Unknown(val label: String? = null) : Command
     }
 
     @GetMapping
@@ -76,16 +76,16 @@ class TimeController(
         return when (action) {
             "useManual" -> {
                 val at = (body["startAt"] as? String)?.let { runCatching { Instant.parse(it) }.getOrNull() }
-                    ?: return Command.Unknown
+                    ?: return Command.Unknown(action)
                 Command.UseManual(at)
             }
             "advance" -> {
                 val d = (body["duration"] as? String)?.let { runCatching { Duration.parse(it) }.getOrNull() }
-                    ?: return Command.Unknown
+                    ?: return Command.Unknown(action)
                 Command.Advance(d)
             }
             "useSystem" -> Command.UseSystem
-            else -> Command.Unknown
+            else -> Command.Unknown(action)
         }
     }
 

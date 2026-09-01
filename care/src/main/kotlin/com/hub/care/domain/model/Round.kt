@@ -1,10 +1,11 @@
 package com.hub.care.domain.model
 
 import com.hub.shared.domain.AggregateRoot
-import com.hub.residence.domain.model.WingId
+import com.hub.shared.domain.WingId
 import java.time.Instant
 
-class Round private constructor(
+@ConsistentCopyVisibility
+data class Round private constructor(
     override val id: RoundId,
     val wingId: WingId,
     val status: RoundStatus,
@@ -21,28 +22,29 @@ class Round private constructor(
 
     fun start(actorId: String): Round {
         require(isInProgress) { "Round is not in progress" }
-        return reconstitute(
-            id = id, wingId = wingId, status = RoundStatus.IN_PROGRESS,
-            scheduledFor = scheduledFor, startedAt = Instant.now(), completedAt = completedAt,
-            startedBy = actorId, completedBy = completedBy, version = version + 1
+        return copy(
+            status = RoundStatus.IN_PROGRESS,
+            startedAt = Instant.now(),
+            startedBy = actorId,
+            version = version + 1
         )
     }
 
     fun complete(actorId: String): Round {
         require(isInProgress) { "Round is not in progress" }
-        return reconstitute(
-            id = id, wingId = wingId, status = RoundStatus.COMPLETED,
-            scheduledFor = scheduledFor, startedAt = startedAt, completedAt = Instant.now(),
-            startedBy = startedBy, completedBy = actorId, version = version + 1
+        return copy(
+            status = RoundStatus.COMPLETED,
+            completedAt = Instant.now(),
+            completedBy = actorId,
+            version = version + 1
         )
     }
 
     fun cancel(): Round {
         require(isInProgress) { "Round is not in progress" }
-        return reconstitute(
-            id = id, wingId = wingId, status = RoundStatus.CANCELLED,
-            scheduledFor = scheduledFor, startedAt = startedAt, completedAt = completedAt,
-            startedBy = startedBy, completedBy = completedBy, version = version + 1
+        return copy(
+            status = RoundStatus.CANCELLED,
+            version = version + 1
         )
     }
 

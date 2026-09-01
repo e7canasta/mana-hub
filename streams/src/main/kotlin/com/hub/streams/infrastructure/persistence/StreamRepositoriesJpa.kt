@@ -3,7 +3,7 @@ package com.hub.streams.infrastructure.persistence
 import com.hub.streams.domain.model.*
 import com.hub.streams.domain.repository.StreamRegionRepository
 import com.hub.streams.domain.repository.StreamRepository
-import com.hub.residence.domain.model.RoomId
+import com.hub.shared.domain.RoomId
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository

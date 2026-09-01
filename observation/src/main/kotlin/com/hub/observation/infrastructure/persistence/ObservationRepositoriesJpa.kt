@@ -212,10 +212,10 @@ class SensorEventRepositoryAdapter(private val jpa: SensorEventEntityRepository)
 
     private fun SensorEventEntity.toDomain() = SensorEvent.create(
         sourceEventId, monitorKey, bedId?.let { BedId(it) }, residentId?.let { ResidentId(it) },
-        kind, roomState, state, sleeping, occurredAt
+        SensorEventKind.from(kind), roomState, state, sleeping, occurredAt
     )
     private fun SensorEvent.toEntity() = SensorEventEntity(
-        id.value, sourceEventId, monitorKey, bedId?.value, residentId?.value, kind,
+        id.value, sourceEventId, monitorKey, bedId?.value, residentId?.value, kind.name,
         roomState, substate, zone, state, sleeping, occurredAt, receivedAt, payloadJson
     )
 }
@@ -335,15 +335,17 @@ class SceneEventRepositoryAdapter(private val jpa: SceneEventEntityRepository) :
 
     private fun SceneEventEntity.toDomain() = SceneEvent(
         id = Identifier(id), eventId = eventId, bedId = BedId(bedId),
-        residentId = residentId?.let { ResidentId(it) }, eventType = eventType,
-        fromState = fromState, toState = toState, triggerType = triggerType,
+        residentId = residentId?.let { ResidentId(it) }, eventType = eventType.let { runCatching { SceneEventType.from(it) }.getOrNull() },
+        fromState = fromState?.let { runCatching { SceneState.from(it) }.getOrNull() },
+        toState = toState?.let { runCatching { SceneState.from(it) }.getOrNull() },
+        triggerType = triggerType?.let { runCatching { TriggerType.from(it) }.getOrNull() },
         timestamp = timestamp, payloadJson = payloadJson,
         twinSnapshotJson = twinSnapshotJson, stateSince = stateSince, sceneSince = sceneSince,
         signalLost = signalLost, monitorId = monitorId
     )
     private fun SceneEvent.toEntity() = SceneEventEntity(
         id = id.value, eventId = eventId, bedId = bedId.value, residentId = residentId?.value,
-        eventType = eventType, fromState = fromState, toState = toState, triggerType = triggerType,
+        eventType = eventType?.name ?: "", fromState = fromState?.name, toState = toState?.name, triggerType = triggerType?.name,
         timestamp = timestamp, payloadJson = payloadJson, receivedAt = Instant.now(),
         twinSnapshotJson = twinSnapshotJson, stateSince = stateSince, sceneSince = sceneSince,
         signalLost = signalLost, monitorId = monitorId
@@ -401,7 +403,7 @@ class SentinelSignalRepositoryAdapter(private val jpa: SentinelSignalEntityRepos
 
     private fun SentinelSignalEntity.toDomain() = SentinelSignal(
         id = Identifier(id), signalId = signalId, bedId = BedId(bedId), residentId = residentId?.let { ResidentId(it) },
-        episodeId = episodeId, type = type, severity = severity, trigger = trigger, timestamp = timestamp, payloadJson = payloadJson,
+        episodeId = episodeId, type = type.let { runCatching { SentinelSignalType.from(it) }.getOrNull() }, severity = severity, trigger = trigger, timestamp = timestamp, payloadJson = payloadJson,
         ruleId = ruleId, field = field, triggerOn = triggerOn, cause = cause, state = state, baseline = baseline,
         rulesFingerprint = rulesFingerprint, gapDuration = gapDuration, previousSeverity = previousSeverity, originalSeverity = originalSeverity,
         reversible = reversible, requiresNvr = requiresNvr, confirmationWindow = confirmationWindow, requiresConfirmation = requiresConfirmation,
@@ -409,7 +411,7 @@ class SentinelSignalRepositoryAdapter(private val jpa: SentinelSignalEntityRepos
     )
     private fun SentinelSignal.toEntity() = SentinelSignalEntity(
         id = id.value, signalId = signalId, bedId = bedId.value, residentId = residentId?.value,
-        episodeId = episodeId, type = type, severity = severity, trigger = trigger, timestamp = timestamp, payloadJson = payloadJson,
+        episodeId = episodeId, type = type?.name ?: "", severity = severity, trigger = trigger, timestamp = timestamp, payloadJson = payloadJson,
         ruleId = ruleId, field = field, triggerOn = triggerOn, cause = cause, state = state, baseline = baseline,
         rulesFingerprint = rulesFingerprint, gapDuration = gapDuration, previousSeverity = previousSeverity, originalSeverity = originalSeverity,
         payloadJsonb = payloadJson,
@@ -429,13 +431,13 @@ class NotificationEventRepositoryAdapter(private val jpa: NotificationEventEntit
     override fun save(event: NotificationEvent): NotificationEvent = jpa.save(event.toEntity()).toDomain()
 
     private fun NotificationEventEntity.toDomain() = NotificationEvent(
-        id = Identifier(id), category = category, bedId = bedId?.let { BedId(it) },
+        id = Identifier(id), category = NotificationCategory.from(category), bedId = bedId?.let { BedId(it) },
         residentId = residentId?.let { ResidentId(it) }, eventType = eventType,
         timestamp = timestamp, ruleId = ruleId, riskLevel = riskLevel,
         payloadJson = payloadJson, receivedAt = receivedAt
     )
     private fun NotificationEvent.toEntity() = NotificationEventEntity(
-        id.value, category, bedId?.value, residentId?.value, eventType,
+        id.value, category.name, bedId?.value, residentId?.value, eventType,
         timestamp, ruleId, riskLevel, payloadJson, receivedAt
     )
 }

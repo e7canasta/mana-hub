@@ -1,7 +1,7 @@
 package com.hub.streams.domain.model
 
 import com.hub.shared.domain.AggregateRoot
-import com.hub.residence.domain.model.RoomId
+import com.hub.shared.domain.RoomId
 import java.time.Instant
 
 class Stream private constructor(

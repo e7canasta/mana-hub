@@ -22,7 +22,7 @@ class EpisodeLifecycleTest : IntegrationTestBase() {
             "occurredAt" to "2026-08-31T02:30:00Z"
         )) as Map<String, Any>
         val episodeId = created["id"] as String
-        assertThat(created["status"]).isEqualTo("pending")
+        assertThat(created["status"]).isEqualTo("PENDING")
 
         val acked = post("/api/v1/episodes/$episodeId/acknowledge", mapOf("actorId" to "nurse_1"))
         assertThat(acked).isNotNull

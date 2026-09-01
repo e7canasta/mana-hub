@@ -16,7 +16,6 @@ class ResidentProfileService(
     private val repository: ResidentProfileRepository,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun ingestProfile(rawJson: String): ResidentProfile {
@@ -57,6 +56,10 @@ class ResidentProfileService(
     @Transactional(readOnly = true)
     fun getActiveProfiles(): List<ResidentProfile> =
         repository.findActiveProfiles()
+
+    companion object {
+        private val log = LoggerFactory.getLogger(ResidentProfileService::class.java)
+    }
 }
 
 data class ProfileChangedEvent(

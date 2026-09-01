@@ -18,7 +18,7 @@ class StaffGroupEntity(
     @Id var id: String = "",
     @Column(name = "facility_id") var facilityId: String = "",
     @Column(name = "name") var name: String = "",
-    @Column(name = "retired_at") var retiredAt: String? = null,
+    @Column(name = "retired_at") var retiredAt: Instant? = null,
     @Column(name = "retired_by") var retiredBy: String? = null,
     @Column(name = "created_at") var createdAt: Instant = Instant.now(),
     @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
@@ -34,7 +34,7 @@ class FacilityShiftEntity(
     @Column(name = "label") var label: String = "",
     @Column(name = "start_minute") var startMinute: Int = 0,
     @Column(name = "sort_order") var sortOrder: Int = 0,
-    @Column(name = "retired_at") var retiredAt: String? = null,
+    @Column(name = "retired_at") var retiredAt: Instant? = null,
     @Column(name = "retired_by") var retiredBy: String? = null,
     @Column(name = "created_at") var createdAt: Instant = Instant.now(),
     @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
@@ -62,7 +62,7 @@ class StaffMemberEntity(
     @Column(name = "full_name") var fullName: String = "",
     @Column(name = "role") var role: String = "",
     @Column(name = "user_id") var userId: String? = null,
-    @Column(name = "retired_at") var retiredAt: String? = null,
+    @Column(name = "retired_at") var retiredAt: Instant? = null,
     @Column(name = "retired_by") var retiredBy: String? = null,
     @Column(name = "created_at") var createdAt: Instant = Instant.now(),
     @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
@@ -100,11 +100,11 @@ class StaffGroupRepositoryAdapter(private val jpa: StaffGroupEntityRepository) :
 
     private fun StaffGroupEntity.toDomain() = StaffGroup.reconstitute(
         StaffGroupId(id), FacilityId(facilityId), name,
-        retiredAt?.let { Instant.parse(it) }, retiredBy, version
+        retiredAt, retiredBy, version
     )
     private fun StaffGroup.toEntity() = StaffGroupEntity(
         id.value, facilityId.value, name,
-        retiredAt?.toString(), retiredBy, Instant.now(), Instant.now(), version
+        retiredAt, retiredBy, Instant.now(), Instant.now(), version
     )
 }
 
@@ -116,11 +116,11 @@ class ShiftRepositoryAdapter(private val jpa: FacilityShiftEntityRepository) : S
 
     private fun FacilityShiftEntity.toDomain() = FacilityShift.reconstitute(
         StaffGroupId(id), FacilityId(facilityId), key, label, startMinute, sortOrder,
-        retiredAt?.let { Instant.parse(it) }, retiredBy, version
+        retiredAt, retiredBy, version
     )
     private fun FacilityShift.toEntity() = FacilityShiftEntity(
         id.value, facilityId.value, key, label, startMinute, sortOrder,
-        retiredAt?.toString(), retiredBy, Instant.now(), Instant.now(), version
+        retiredAt, retiredBy, Instant.now(), Instant.now(), version
     )
 }
 

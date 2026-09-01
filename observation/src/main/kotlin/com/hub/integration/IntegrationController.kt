@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*
 class IntegrationController(
     private val integrationService: IntegrationService,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
     private val objectMapper = ObjectMapper()
 
     @PostMapping("/scene-events")
@@ -36,5 +35,9 @@ class IntegrationController(
         log.info("SentinelSignal received: {} body.length={}", type, body.length)
         integrationService.ingestSignalEvent(tree)
         return ResponseEntity.status(HttpStatus.CREATED).build()
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(IntegrationController::class.java)
     }
 }

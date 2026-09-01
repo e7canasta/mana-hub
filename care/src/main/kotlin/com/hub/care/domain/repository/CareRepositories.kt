@@ -2,7 +2,7 @@ package com.hub.care.domain.repository
 
 import com.hub.care.domain.model.*
 import com.hub.shared.domain.ResidentId
-import com.hub.residence.domain.model.WingId
+import com.hub.shared.domain.WingId
 
 interface RoundRepository {
     fun findById(id: RoundId): Round?
@@ -13,7 +13,7 @@ interface RoundRepository {
 
 interface RoundTaskRepository {
     fun findByRoundId(roundId: RoundId): List<RoundTask>
-    fun findById(id: RoundId): RoundTask?
+    fun findById(id: RoundTaskId): RoundTask?
     fun save(task: RoundTask): RoundTask
 }
 

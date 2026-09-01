@@ -20,7 +20,6 @@ class FindingService(
     private val hub: HubClient,
     private val properties: InsightsProperties,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
     private val window = ObservationWindow.from(properties)
 
     fun residentBriefing(residentId: String, from: LocalDate, to: LocalDate): ResidentBriefing? {
@@ -210,6 +209,7 @@ class FindingService(
     }
 
     companion object {
+        private val log = LoggerFactory.getLogger(FindingService::class.java)
         private val LOOKBACK: Duration = Duration.ofHours(12)
         private val EPISODE_NEAR: Duration = Duration.ofMinutes(30)
     }

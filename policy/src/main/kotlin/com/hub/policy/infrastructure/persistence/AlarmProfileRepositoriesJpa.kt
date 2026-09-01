@@ -47,13 +47,13 @@ class AlarmProfileRepositoryAdapter(private val jpa: AlarmProfileVersionEntityRe
     }
 
     private fun AlarmProfileVersionEntity.toDomain() = AlarmProfileVersion.reconstitute(
-        AlarmProfileId(id), ResidentId(residentId), validFrom, validTo,
-        mobilityAid?.let { MobilityAid.from(it) },
-        autopilot,
-        mode?.let { PolicyMode.from(it) },
-        templateId?.let { TemplateId.from(it) },
-        catalogVersion, updatedBy,
-        RiskLevel.from(riskLevel), version
+        id = AlarmProfileId(id), residentId = ResidentId(residentId), validFrom = validFrom, validTo = validTo,
+        mobilityAid = mobilityAid?.let { MobilityAid.from(it) },
+        autopilot = autopilot,
+        mode = mode?.let { PolicyMode.from(it) },
+        templateId = templateId?.let { TemplateId.from(it) },
+        catalogVersion = catalogVersion, updatedBy = updatedBy,
+        riskLevel = RiskLevel.from(riskLevel), version = version
     )
     private fun AlarmProfileVersion.toEntity() = AlarmProfileVersionEntity(
         id.value, residentId.value, validFrom, validTo,

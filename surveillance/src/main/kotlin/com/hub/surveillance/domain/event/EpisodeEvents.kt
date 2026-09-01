@@ -1,6 +1,8 @@
 package com.hub.surveillance.domain.event
 
+import com.hub.shared.domain.BedId
 import com.hub.shared.domain.DomainEvent
+import com.hub.shared.domain.ResidentId
 import com.hub.surveillance.domain.model.EpisodeId
 import com.hub.surveillance.domain.model.EpisodeSeverity
 import java.time.Instant
@@ -12,8 +14,8 @@ sealed interface EpisodeEvent : DomainEvent {
         override val eventId: String = UUID.randomUUID().toString(),
         override val occurredAt: Instant = Instant.now(),
         val episodeId: EpisodeId,
-        val residentId: String,
-        val bedId: String?,
+        val residentId: ResidentId,
+        val bedId: BedId?,
         val severity: EpisodeSeverity,
         val title: String?,
     ) : EpisodeEvent {

@@ -4,7 +4,7 @@ import com.hub.care.application.dto.*
 import com.hub.care.domain.model.*
 import com.hub.care.domain.repository.RoundRepository
 import com.hub.care.domain.repository.RoundTaskRepository
-import com.hub.residence.domain.model.WingId
+import com.hub.shared.domain.WingId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -48,7 +48,7 @@ class RoundApplicationService(
 
     @Transactional
     fun updateRoundTask(taskId: String, request: UpdateRoundTaskRequest): RoundTaskResponse {
-        val task = roundTaskRepository.findById(RoundId(taskId))
+        val task = roundTaskRepository.findById(RoundTaskId(taskId))
             ?: throw IllegalArgumentException("Task not found: $taskId")
         return roundTaskRepository.save(task.complete(request.note, request.completedBy ?: "system")).toTaskResponse()
     }

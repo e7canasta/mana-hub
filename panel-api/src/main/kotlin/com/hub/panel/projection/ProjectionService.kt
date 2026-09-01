@@ -21,8 +21,6 @@ private fun policyModeOf(v: String?): PolicyMode =
 @Service("panelProjectionService")
 class PanelProjectionService(private val jdbc: JdbcTemplate) {
 
-    private val log = LoggerFactory.getLogger(javaClass)
-
     // ─── Residentes ─────────────────────────────────────────────
 
     fun residentRail(): List<ResidentRailDto> = jdbc.query(
@@ -371,5 +369,9 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
         },
         episodeId,
     )
+
+    companion object {
+        private val log = LoggerFactory.getLogger(PanelProjectionService::class.java)
+    }
 
 }

@@ -4,7 +4,7 @@ import com.hub.shared.domain.AggregateRoot
 import com.hub.shared.domain.ResidentId
 import java.time.Instant
 
-class AlarmProfileVersion private constructor(
+data class AlarmProfileVersion private constructor(
     override val id: AlarmProfileId,
     val residentId: ResidentId,
     val validFrom: Instant,
@@ -23,12 +23,7 @@ class AlarmProfileVersion private constructor(
 
     fun expire(): AlarmProfileVersion {
         require(isCurrent) { "Profile is not current" }
-        return reconstitute(
-            id = id, residentId = residentId, validFrom = validFrom, validTo = Instant.now(),
-            mobilityAid = mobilityAid, autopilot = autopilot, mode = mode, templateId = templateId,
-            catalogVersion = catalogVersion, updatedBy = updatedBy,
-            riskLevel = riskLevel, version = version + 1
-        )
+        return copy(validTo = Instant.now(), version = version + 1)
     }
 
     fun update(
@@ -36,13 +31,11 @@ class AlarmProfileVersion private constructor(
         riskLevel: RiskLevel?, updatedBy: String?
     ): AlarmProfileVersion {
         require(isCurrent) { "Profile is not current" }
-        return reconstitute(
-            id = id, residentId = residentId, validFrom = validFrom, validTo = validTo,
+        return copy(
             mobilityAid = mobilityAid ?: this.mobilityAid,
             autopilot = autopilot ?: this.autopilot,
             mode = mode ?: this.mode,
             templateId = templateId ?: this.templateId,
-            catalogVersion = catalogVersion,
             updatedBy = updatedBy ?: this.updatedBy,
             riskLevel = riskLevel ?: this.riskLevel,
             version = version + 1
@@ -59,11 +52,11 @@ class AlarmProfileVersion private constructor(
         fun reconstitute(
             id: AlarmProfileId, residentId: ResidentId, validFrom: Instant, validTo: Instant?,
             mobilityAid: MobilityAid?, autopilot: Boolean, mode: PolicyMode?, templateId: TemplateId?,
-            catalogVersion: String?, updatedBy: String?,
-            riskLevel: RiskLevel, version: Long
-        ): AlarmProfileVersion = AlarmProfileVersion(
-            id, residentId, validFrom, validTo, mobilityAid, autopilot, mode, templateId,
-            catalogVersion, updatedBy, riskLevel, version
+            catalogVersion: String?, updatedBy: String?, riskLevel: RiskLevel, version: Long
+        ) = AlarmProfileVersion(
+            id = id, residentId = residentId, validFrom = validFrom, validTo = validTo,
+            mobilityAid = mobilityAid, autopilot = autopilot, mode = mode, templateId = templateId,
+            catalogVersion = catalogVersion, updatedBy = updatedBy, riskLevel = riskLevel, version = version
         )
     }
 }

@@ -3,8 +3,12 @@ package com.hub.integration
 import com.fasterxml.jackson.databind.JsonNode
 import com.manahive.contracts.scene.SceneEvent as HiveSceneEvent
 import com.hub.observation.domain.model.SceneEvent
+import com.hub.observation.domain.model.SceneEventType
+import com.hub.observation.domain.model.SceneState
 import com.hub.observation.domain.model.SignalType
 import com.hub.observation.domain.model.SentinelSignal
+import com.hub.observation.domain.model.SentinelSignalType
+import com.hub.observation.domain.model.TriggerType
 import com.hub.observation.domain.repository.SceneEventRepository
 import com.hub.observation.domain.repository.SentinelSignalRepository
 import com.hub.population.domain.repository.BedAssignmentRepository
@@ -41,7 +45,6 @@ class IntegrationService(
     private val bedAssignmentRepository: BedAssignmentRepository,
     private val integrationProperties: IntegrationProperties,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
 
     // ── Scene Events ────────────────────────────────────────────────
 
@@ -73,10 +76,10 @@ class IntegrationService(
                 eventId = payload.eventId,
                 bedId = BedId(payload.bedId),
                 residentId = residentId,
-                eventType = payload.type,
-                fromState = hiveFromState(payload.type, body),
-                toState = hiveToState(payload.type, body, twinNode),
-                triggerType = body.path("trigger").asText(null),
+                eventType = runCatching { SceneEventType.from(payload.type) }.getOrNull(),
+                fromState = hiveFromState(payload.type, body)?.let { SceneState.from(it) },
+                toState = hiveToState(payload.type, body, twinNode)?.let { SceneState.from(it) },
+                triggerType = body.path("trigger").asText(null)?.let { TriggerType.from(it) },
                 timestamp = payload.timestamp,
                 payloadJson = "{}", // no payload persistido — columnas + twinSnapshot son la fuente (V15/V17)
                 twinSnapshotJson = twinJson,
@@ -137,7 +140,7 @@ class IntegrationService(
                 bedId = BedId(payload.bedId),
                 residentId = residentId,
                 episodeId = payload.episodeId,
-                type = payload.type?.name ?: raw.path("type").asText("unknown"),
+                type = SentinelSignalType.from(payload.type?.name ?: raw.path("type").asText("unknown")),
                 severity = payload.severity ?: textOrNull(raw, "originalSeverity") ?: textOrNull(raw, "severity"),
                 trigger = payload.trigger ?: state ?: baseline,
                 timestamp = payload.timestamp,
@@ -334,5 +337,9 @@ class IntegrationService(
                 )
             }
         }
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(IntegrationService::class.java)
     }
 }

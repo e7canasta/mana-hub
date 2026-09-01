@@ -15,8 +15,6 @@ import org.springframework.web.client.RestClient
 class EventRouter(
     private val client: RestClient,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
-
     fun route(envelope: EventEnvelope, subject: String) {
         val type = envelope.type
         val payload = envelope.payloadJson
@@ -66,5 +64,9 @@ class EventRouter(
         } catch (e: Exception) {
             log.error("FORWARD FAIL #{} type={} path={}: {}", callId, type, path, e.message)
         }
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(EventRouter::class.java)
     }
 }

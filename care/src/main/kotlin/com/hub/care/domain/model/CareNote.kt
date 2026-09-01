@@ -16,13 +16,13 @@ data class CareNote(
     val id: CareNoteId,
     val residentId: ResidentId,
     val authorId: String,
-    val kind: String,
+    val kind: CareNoteKind,
     val body: String,
     val durationMin: Int?,
     val createdAt: Instant = Instant.now()
 ) {
     companion object {
-        fun create(residentId: ResidentId, authorId: String, kind: String, body: String, durationMin: Int?): CareNote = CareNote(
+        fun create(residentId: ResidentId, authorId: String, kind: CareNoteKind, body: String, durationMin: Int?): CareNote = CareNote(
             id = CareNoteId.random(), residentId = residentId, authorId = authorId,
             kind = kind, body = body, durationMin = durationMin
         )

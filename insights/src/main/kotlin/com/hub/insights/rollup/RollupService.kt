@@ -19,7 +19,6 @@ class RollupService(
     private val hub: HubClient,
     private val properties: InsightsProperties,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
     private val window = ObservationWindow.from(properties)
 
     fun rollupResident(residentId: String, observedOn: LocalDate, publish: Boolean): RollupOutcome {
@@ -103,6 +102,7 @@ class RollupService(
     private fun max(a: Instant, b: Instant) = if (a.isAfter(b)) a else b
 
     companion object {
+        private val log = LoggerFactory.getLogger(RollupService::class.java)
         private val LOOKBACK: Duration = Duration.ofHours(12)
     }
 }

@@ -6,7 +6,8 @@ import com.hub.shared.domain.BedId
 import com.hub.surveillance.domain.event.EpisodeEvent
 import java.time.Instant
 
-class Episode private constructor(
+@ConsistentCopyVisibility
+data class Episode private constructor(
     override val id: EpisodeId,
     val residentId: ResidentId,
     val bedId: BedId?,
@@ -14,7 +15,7 @@ class Episode private constructor(
     val evidenceRef: String?,
     val ruleId: String?,
     val severity: EpisodeSeverity,
-    val status: String,
+    val status: EpisodeStatus,
     val statusActorId: String?,
     val statusAt: Instant?,
     val title: String?,
@@ -30,19 +31,11 @@ class Episode private constructor(
     val domainEvents: List<EpisodeEvent> get() = _domainEvents.toList()
     fun clearEvents() = _domainEvents.clear()
 
-    val isPending: Boolean get() = status == "pending"
-    val isAcknowledged: Boolean get() = status == "acknowledged"
-    val isResolved: Boolean get() = status == "resolved"
-
     fun acknowledge(actorId: String): Episode {
-        require(isPending) { "Episode is not pending" }
-        val next = reconstitute(
-            id = id, residentId = residentId, bedId = bedId, evidenceKind = evidenceKind,
-            evidenceRef = evidenceRef, ruleId = ruleId, severity = severity,
-            status = "acknowledged", statusActorId = actorId, statusAt = Instant.now(),
-            title = title, detail = detail, occurredAt = occurredAt,
-            escalationLevel = escalationLevel, escalatedAt = escalatedAt,
-            escalatedTo = escalatedTo, version = version + 1
+        require(status == EpisodeStatus.PENDING) { "Episode is not pending" }
+        val next = copy(
+            status = EpisodeStatus.ACKNOWLEDGED, statusActorId = actorId, statusAt = Instant.now(),
+            version = version + 1
         )
         next._domainEvents.add(
             EpisodeEvent.Acknowledged(episodeId = id, actorId = actorId)
@@ -51,13 +44,9 @@ class Episode private constructor(
     }
 
     fun resolve(actorId: String): Episode {
-        val next = reconstitute(
-            id = id, residentId = residentId, bedId = bedId, evidenceKind = evidenceKind,
-            evidenceRef = evidenceRef, ruleId = ruleId, severity = severity,
-            status = "resolved", statusActorId = actorId, statusAt = Instant.now(),
-            title = title, detail = detail, occurredAt = occurredAt,
-            escalationLevel = escalationLevel, escalatedAt = escalatedAt,
-            escalatedTo = escalatedTo, version = version + 1
+        val next = copy(
+            status = EpisodeStatus.RESOLVED, statusActorId = actorId, statusAt = Instant.now(),
+            version = version + 1
         )
         next._domainEvents.add(
             EpisodeEvent.Resolved(episodeId = id, actorId = actorId)
@@ -66,11 +55,7 @@ class Episode private constructor(
     }
 
     fun escalate(targetId: String): Episode {
-        val next = reconstitute(
-            id = id, residentId = residentId, bedId = bedId, evidenceKind = evidenceKind,
-            evidenceRef = evidenceRef, ruleId = ruleId, severity = severity, status = status,
-            statusActorId = statusActorId, statusAt = statusAt,
-            title = title, detail = detail, occurredAt = occurredAt,
+        val next = copy(
             escalationLevel = escalationLevel + 1, escalatedAt = Instant.now(),
             escalatedTo = targetId, version = version + 1
         )
@@ -87,13 +72,8 @@ class Episode private constructor(
 
     fun elevateSeverity(newSeverity: EpisodeSeverity, newDetail: String?): Episode {
         if (!newSeverity.isMoreSevereThan(this.severity)) return this
-        return reconstitute(
-            id = id, residentId = residentId, bedId = bedId, evidenceKind = evidenceKind,
-            evidenceRef = evidenceRef, ruleId = ruleId, severity = newSeverity, status = status,
-            statusActorId = statusActorId, statusAt = statusAt,
-            title = title, detail = newDetail ?: detail, occurredAt = occurredAt,
-            escalationLevel = escalationLevel, escalatedAt = escalatedAt,
-            escalatedTo = escalatedTo, version = version + 1
+        return copy(
+            severity = newSeverity, detail = newDetail ?: detail, version = version + 1
         )
     }
 
@@ -105,14 +85,14 @@ class Episode private constructor(
         ): Episode {
             val episode = Episode(
                 id = id ?: EpisodeId.random(), residentId = residentId, bedId = bedId, evidenceKind = evidenceKind,
-                evidenceRef = evidenceRef, ruleId = null, severity = severity, status = "pending",
+                evidenceRef = evidenceRef, ruleId = null, severity = severity, status = EpisodeStatus.PENDING,
                 statusActorId = null, statusAt = null, title = title, detail = detail,
                 occurredAt = occurredAt, escalationLevel = 0, escalatedAt = null, escalatedTo = null, version = 0
             )
             episode._domainEvents.add(
                 EpisodeEvent.Created(
-                    episodeId = episode.id, residentId = residentId.value,
-                    bedId = bedId?.value, severity = severity, title = title,
+                    episodeId = episode.id, residentId = residentId,
+                    bedId = bedId, severity = severity, title = title,
                 )
             )
             return episode
@@ -150,7 +130,7 @@ class Episode private constructor(
 
         fun reconstitute(
             id: EpisodeId, residentId: ResidentId, bedId: BedId?, evidenceKind: String?,
-            evidenceRef: String?, ruleId: String?, severity: EpisodeSeverity, status: String,
+            evidenceRef: String?, ruleId: String?, severity: EpisodeSeverity, status: EpisodeStatus,
             statusActorId: String?, statusAt: Instant?, title: String?, detail: String?,
             occurredAt: Instant, escalationLevel: Int, escalatedAt: Instant?,
             escalatedTo: String?, version: Long

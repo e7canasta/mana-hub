@@ -7,7 +7,7 @@ import java.time.Instant
 
 data class NotificationEvent(
     val id: Identifier,
-    val category: String,
+    val category: NotificationCategory,
     val bedId: BedId?,
     val residentId: ResidentId?,
     val eventType: String,
@@ -19,7 +19,7 @@ data class NotificationEvent(
 ) {
     companion object {
         fun create(
-            category: String,
+            category: NotificationCategory,
             bedId: String?,
             residentId: String?,
             eventType: String,

@@ -15,7 +15,6 @@ import org.springframework.web.client.RestClient
 class BridgeProfileNotifier(
     @Value("\${bridge.target.url:http://localhost:8090}") private val bridgeUrl: String,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
     private val client: RestClient = RestClient.builder().baseUrl(bridgeUrl).build()
 
     @EventListener
@@ -31,5 +30,9 @@ class BridgeProfileNotifier(
         } catch (e: Exception) {
             log.error("Failed to notify bridge for {}: {}", event.residentId, e.message)
         }
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(BridgeProfileNotifier::class.java)
     }
 }

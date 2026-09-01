@@ -25,7 +25,6 @@ import java.util.UUID
 class ProfileChangeWebhook(
     private val connection: Connection,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
     private val mapper = ObjectMapper().apply {
         registerModule(JavaTimeModule())
         registerModule(KotlinModule.Builder().build())
@@ -60,5 +59,9 @@ class ProfileChangeWebhook(
             log.error("Failed to publish profile change: {}", e.message)
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(ProfileChangeWebhook::class.java)
     }
 }

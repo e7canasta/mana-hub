@@ -19,7 +19,6 @@ import java.util.UUID
 class HubPolicyPublisher(
     @Value("\${bridge.webhook.url:http://localhost:8090/webhooks/policy-change}") private val webhookUrl: String,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
     private val client = RestClient.builder().build()
 
     @Transactional
@@ -50,5 +49,9 @@ class HubPolicyPublisher(
         } catch (e: Exception) {
             log.error("Webhook failed for resident {}: {}", version.residentId.value, e.message)
         }
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(HubPolicyPublisher::class.java)
     }
 }

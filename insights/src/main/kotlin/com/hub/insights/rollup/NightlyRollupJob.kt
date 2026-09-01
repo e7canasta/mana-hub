@@ -11,7 +11,6 @@ class NightlyRollupJob(
     private val rollupService: RollupService,
     private val properties: InsightsProperties,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
 
     @Scheduled(cron = "\${insights.rollup.cron:0 0 6 * * *}", zone = "\${insights.timezone:America/Argentina/Buenos_Aires}")
     fun run() {
@@ -25,5 +24,9 @@ class NightlyRollupJob(
         val done = results.count { !it.skipped }
         val skipped = results.count { it.skipped }
         log.info("nightly rollup done residents={} skipped={}", done, skipped)
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(NightlyRollupJob::class.java)
     }
 }

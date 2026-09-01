@@ -2,6 +2,7 @@ package com.hub.surveillance.application.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.hub.surveillance.domain.model.EpisodeSeverity
+import com.hub.surveillance.domain.model.EpisodeStatus
 import java.time.Instant
 
 data class CreateEpisodeRequest(
@@ -21,7 +22,7 @@ data class EpisodeResponse(
     val residentId: String,
     val bedId: String?,
     val severity: EpisodeSeverity,
-    val status: String,
+    val status: EpisodeStatus,
     val title: String?,
     val detail: String?,
     val occurredAt: Instant,
@@ -36,7 +37,8 @@ data class AcknowledgeEpisodeRequest(
 data class UpdateEpisodeRequest(
     val status: String? = null,
     val title: String? = null,
-    val detail: String? = null
+    val detail: String? = null,
+    val actorId: String? = null
 )
 
 data class CreateDeliveryRequest(

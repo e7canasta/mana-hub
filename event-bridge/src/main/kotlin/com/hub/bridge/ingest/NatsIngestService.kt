@@ -28,7 +28,6 @@ class NatsIngestService(
     private val objectMapper: ObjectMapper,
     private val eventRouter: EventRouter,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
     private val dispatchers = mutableListOf<Dispatcher>()
     private lateinit var jetStream: JetStream
     private val busMapper = ObjectMapper().apply {
@@ -38,6 +37,8 @@ class NatsIngestService(
     }
 
     companion object {
+        private val log = LoggerFactory.getLogger(NatsIngestService::class.java)
+
         const val PERCEPTION = "perception.observation.v1.>"
         const val SCENE = "scene.fact.v1.>"
         const val SENTINEL = "sentinel.signal.v1.>"

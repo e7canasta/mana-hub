@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.*
 class PolicyIntegrationController(
     private val alarmProfileService: AlarmProfileApplicationService,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
     private val objectMapper = ObjectMapper()
 
     /**
@@ -54,5 +53,9 @@ class PolicyIntegrationController(
         log.info("Profile updated for resident {} from PolicyChangeDetected", residentId)
 
         return ResponseEntity.status(HttpStatus.CREATED).build()
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(PolicyIntegrationController::class.java)
     }
 }

@@ -1,6 +1,8 @@
 package com.hub.care.domain.model
 
 import com.hub.shared.domain.Identifier
+import com.hub.shared.domain.FacilityId
+import com.hub.shared.domain.WingId
 import java.time.Instant
 
 enum class ShiftNoteKind {
@@ -20,8 +22,8 @@ enum class ShiftNoteKind {
 
 data class ShiftNote(
     val id: Identifier,
-    val facilityId: String,
-    val wingId: String?,
+    val facilityId: FacilityId,
+    val wingId: WingId?,
     val shiftKey: String,
     val shiftDate: String,
     val authorId: String,
@@ -32,8 +34,8 @@ data class ShiftNote(
 ) {
     companion object {
         fun create(
-            facilityId: String,
-            wingId: String?,
+            facilityId: FacilityId,
+            wingId: WingId?,
             shiftKey: String,
             shiftDate: String,
             authorId: String,

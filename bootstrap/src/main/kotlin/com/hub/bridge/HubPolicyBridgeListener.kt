@@ -21,7 +21,6 @@ class HubPolicyBridgeListener(
     private val alarmProfileRepository: AlarmProfileRepository,
     private val hubPolicyPublisher: HubPolicyPublisher
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun onProfileChanged(event: AlarmProfileChangedEvent) {
@@ -40,5 +39,9 @@ class HubPolicyBridgeListener(
         } catch (e: Exception) {
             log.error("Failed to bridge policy change for {}: {}", event.residentId, e.message)
         }
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(HubPolicyBridgeListener::class.java)
     }
 }

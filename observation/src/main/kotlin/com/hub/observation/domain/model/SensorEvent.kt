@@ -11,7 +11,7 @@ class SensorEvent private constructor(
     val monitorKey: String,
     val bedId: BedId?,
     val residentId: ResidentId?,
-    val kind: String,
+    val kind: SensorEventKind,
     val roomState: String?,
     val substate: String?,
     val zone: String?,
@@ -26,7 +26,7 @@ class SensorEvent private constructor(
     companion object {
         fun create(
             sourceEventId: String, monitorKey: String, bedId: BedId?, residentId: ResidentId?,
-            kind: String, roomState: String?, state: String?, sleeping: Boolean?, occurredAt: Instant
+            kind: SensorEventKind, roomState: String?, state: String?, sleeping: Boolean?, occurredAt: Instant
         ): SensorEvent = SensorEvent(
             id = com.hub.shared.domain.Identifier.random(), sourceEventId = sourceEventId,
             monitorKey = monitorKey, bedId = bedId, residentId = residentId, kind = kind,

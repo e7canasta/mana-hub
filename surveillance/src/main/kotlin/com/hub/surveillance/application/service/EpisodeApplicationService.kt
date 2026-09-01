@@ -84,7 +84,7 @@ class EpisodeApplicationService(
     fun updateEpisode(episodeId: String, request: UpdateEpisodeRequest): EpisodeResponse {
         val episode = episodeRepository.findById(EpisodeId(episodeId))
             ?: throw IllegalArgumentException("Episode not found: $episodeId")
-        val updated = episode.resolve(request.status ?: "resolved")
+        val updated = episode.resolve(request.actorId ?: "system")
         val saved = episodeRepository.save(updated)
         publishEvents(updated)
         return saved.toResponse()
@@ -98,6 +98,6 @@ class EpisodeApplicationService(
     private fun Episode.toResponse() = EpisodeResponse(
         id = id.value, residentId = residentId.value, bedId = bedId?.value, severity = severity,
         status = status, title = title, detail = detail, occurredAt = occurredAt,
-        escalationLevel = escalationLevel, isPending = isPending
+        escalationLevel = escalationLevel, isPending = status == EpisodeStatus.PENDING
     )
 }

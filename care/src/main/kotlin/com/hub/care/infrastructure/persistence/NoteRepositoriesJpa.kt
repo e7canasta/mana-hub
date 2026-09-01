@@ -5,6 +5,8 @@ import com.hub.care.domain.repository.EpisodeNoteRepository
 import com.hub.care.domain.repository.ResidentNoteRepository
 import com.hub.care.domain.repository.ShiftNoteRepository
 import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.FacilityId
+import com.hub.shared.domain.WingId
 import com.hub.shared.domain.Identifier
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
@@ -87,31 +89,32 @@ class ResidentNoteRepositoryAdapter(private val jpa: ResidentNoteEntityRepositor
 @Repository
 class EpisodeNoteRepositoryAdapter(private val jpa: EpisodeNoteEntityRepository) : EpisodeNoteRepository {
     override fun findById(id: Identifier): EpisodeNote? = jpa.findById(id.value).orElse(null)?.toDomain()
-    override fun findByEpisodeId(episodeId: String): List<EpisodeNote> = jpa.findByEpisodeId(episodeId).map { it.toDomain() }
+    override fun findByEpisodeId(episodeId: EpisodeId): List<EpisodeNote> = jpa.findByEpisodeId(episodeId.value).map { it.toDomain() }
     override fun save(note: EpisodeNote): EpisodeNote = jpa.save(note.toEntity()).toDomain()
 
     private fun EpisodeNoteEntity.toDomain() = EpisodeNote(
-        id = Identifier(id), episodeId = episodeId, authorId = authorId,
+        id = Identifier(id), episodeId = EpisodeId(episodeId), authorId = authorId,
         kind = EpisodeNoteKind.from(kind), body = body, timestamp = timestamp, createdAt = createdAt
     )
     private fun EpisodeNote.toEntity() = EpisodeNoteEntity(
-        id.value, episodeId, authorId, kind.name, body, timestamp, createdAt
+        id.value, episodeId.value, authorId, kind.name, body, timestamp, createdAt
     )
 }
 
 @Repository
 class ShiftNoteRepositoryAdapter(private val jpa: ShiftNoteEntityRepository) : ShiftNoteRepository {
     override fun findById(id: Identifier): ShiftNote? = jpa.findById(id.value).orElse(null)?.toDomain()
-    override fun findByFacilityAndDate(facilityId: String, shiftDate: String): List<ShiftNote> = jpa.findByFacilityIdAndShiftDate(facilityId, shiftDate).map { it.toDomain() }
-    override fun findByWingAndDate(wingId: String, shiftDate: String): List<ShiftNote> = jpa.findByWingIdAndShiftDate(wingId, shiftDate).map { it.toDomain() }
+    override fun findByFacilityAndDate(facilityId: FacilityId, shiftDate: String): List<ShiftNote> = jpa.findByFacilityIdAndShiftDate(facilityId.value, shiftDate).map { it.toDomain() }
+    override fun findByWingAndDate(wingId: WingId, shiftDate: String): List<ShiftNote> = jpa.findByWingIdAndShiftDate(wingId.value, shiftDate).map { it.toDomain() }
     override fun save(note: ShiftNote): ShiftNote = jpa.save(note.toEntity()).toDomain()
 
     private fun ShiftNoteEntity.toDomain() = ShiftNote(
-        id = Identifier(id), facilityId = facilityId, wingId = wingId, shiftKey = shiftKey,
+        id = Identifier(id), facilityId = FacilityId(facilityId),
+        wingId = wingId?.let { WingId(it) }, shiftKey = shiftKey,
         shiftDate = shiftDate, authorId = authorId, kind = ShiftNoteKind.from(kind),
         body = body, timestamp = timestamp, createdAt = createdAt
     )
     private fun ShiftNote.toEntity() = ShiftNoteEntity(
-        id.value, facilityId, wingId, shiftKey, shiftDate, authorId, kind.name, body, timestamp, createdAt
+        id.value, facilityId.value, wingId?.value, shiftKey, shiftDate, authorId, kind.name, body, timestamp, createdAt
     )
 }

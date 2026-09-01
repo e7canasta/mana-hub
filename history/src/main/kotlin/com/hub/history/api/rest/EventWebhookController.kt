@@ -17,7 +17,6 @@ import java.time.Instant
 class EventWebhookController(
     private val timelineBuilder: EpisodeTimelineBuilder,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
 
     @PostMapping("/events")
     fun onEvent(@RequestBody payload: Map<String, Any>): ResponseEntity<Map<String, Any>> {
@@ -45,6 +44,10 @@ class EventWebhookController(
         }
 
         return ResponseEntity.ok(mapOf("status" to "processed", "eventId" to eventId))
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(EventWebhookController::class.java)
     }
 
     private fun processSentinelEvent(eventId: String, type: String, payloadJson: String, occurredAt: String) {

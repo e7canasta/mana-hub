@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*
 class ResidentProfileController(
     private val profileService: ResidentProfileService,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
 
     /**
      * Publish a full ResidentProfileDto.
@@ -57,5 +56,9 @@ class ResidentProfileController(
     ): ResponseEntity<List<String>> {
         val profiles = profileService.getActiveProfiles()
         return ResponseEntity.ok(profiles.map { it.rawJson })
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(ResidentProfileController::class.java)
     }
 }
