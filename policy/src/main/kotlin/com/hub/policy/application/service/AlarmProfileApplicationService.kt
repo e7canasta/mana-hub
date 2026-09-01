@@ -58,45 +58,54 @@ class AlarmProfileApplicationService(
     @Transactional
     fun updateResidentProfile(residentId: String, request: UpdateAlarmProfileRequest): AlarmProfileResponse {
         val rid = ResidentId(residentId)
-
-        /*
-         * La version nueva parte de la que estaba vigente, no de cero.
-         *
-         * Antes se hacia AlarmProfileVersion.create(...) y se le aplicaba solo
-         * lo que venia en el request, asi que todo campo omitido volvia a su
-         * default: mandar unicamente {"autopilot": true} reseteaba el riskLevel
-         * a MEDIUM, el mobilityAid a NONE y el mode a preset.
-         *
-         * Eso hace que el verbo mienta. PATCH es una actualizacion parcial -el
-         * cliente manda lo que cambia- y el que escribe la pantalla hace
-         * exactamente eso, y sin querer borra los otros dos campos. Con la
-         * version actual como base, omitir un campo significa "dejalo como
-         * esta", que es lo que PATCH promete.
-         */
         val current = alarmProfileRepository.findCurrentByResidentId(rid)
         alarmProfileRepository.expireCurrentByResidentId(rid)
 
+        val (riskLevel, templateId) = resolveEffectiveFields(request, current)
+        val newProfile = createNewProfile(rid, request, current, riskLevel, templateId)
+
+        alarmProfileRepository.save(newProfile)
+        eventPublisher.publishAndClear(newProfile)
+
+        migrateOverrides(request, current, newProfile)
+        publishChangedEvent(residentId, newProfile, riskLevel, templateId)
+
+        return getResidentProfile(residentId)!!
+    }
+
+    private fun resolveEffectiveFields(
+        request: UpdateAlarmProfileRequest,
+        current: AlarmProfileVersion?,
+    ): Pair<RiskLevel, TemplateId?> {
         val riskLevel = request.riskLevel?.let { RiskLevel.from(it) }
             ?: current?.riskLevel
             ?: RiskLevel.MEDIUM
         val templateId = request.templateId?.let { TemplateId.from(it) }
             ?: current?.templateId
             ?: TemplateId.from(responseBuilder.resolveWatchLevel(riskLevel, null).name.lowercase())
+        return riskLevel to templateId
+    }
 
-        val newProfile = AlarmProfileVersion.create(rid, request.updatedBy).update(
-            mobilityAid = request.mobilityAid?.let { MobilityAid.from(it) } ?: current?.mobilityAid,
-            autopilot = request.autopilot ?: current?.autopilot,
-            mode = request.mode?.let { PolicyMode.from(it) } ?: current?.mode,
-            templateId = templateId,
-            riskLevel = riskLevel,
-            updatedBy = request.updatedBy,
-        )
+    private fun createNewProfile(
+        rid: ResidentId,
+        request: UpdateAlarmProfileRequest,
+        current: AlarmProfileVersion?,
+        riskLevel: RiskLevel,
+        templateId: TemplateId?,
+    ) = AlarmProfileVersion.create(rid, request.updatedBy).update(
+        mobilityAid = request.mobilityAid?.let { MobilityAid.from(it) } ?: current?.mobilityAid,
+        autopilot = request.autopilot ?: current?.autopilot,
+        mode = request.mode?.let { PolicyMode.from(it) } ?: current?.mode,
+        templateId = templateId,
+        riskLevel = riskLevel,
+        updatedBy = request.updatedBy,
+    )
 
-        alarmProfileRepository.save(newProfile)
-        eventPublisher.publishAndClear(newProfile)
-
-        /* Los overrides siguen la misma regla: si el request no los menciona, se
-         * conservan los de la version anterior. Omitir no es borrar. */
+    private fun migrateOverrides(
+        request: UpdateAlarmProfileRequest,
+        current: AlarmProfileVersion?,
+        newProfile: AlarmProfileVersion,
+    ) {
         if (request.overridesJson == null && current != null) {
             val carried = alarmProfileOverrideRepository.findByProfileVersionId(current.id.value)
             if (carried.isNotEmpty()) {
@@ -113,18 +122,22 @@ class AlarmProfileApplicationService(
                 }
             }
         }
+    }
 
-        // Publish domain event for hub→hive bridge (outbox pattern)
+    private fun publishChangedEvent(
+        residentId: String,
+        newProfile: AlarmProfileVersion,
+        riskLevel: RiskLevel,
+        templateId: TemplateId?,
+    ) {
         eventPublisher.publish(
             AlarmProfileChangedEvent(
                 residentId = residentId,
                 versionId = newProfile.id.value,
                 riskLevel = riskLevel.name,
-                templateId = templateId?.value
+                templateId = templateId?.value,
             )
         )
-
-        return getResidentProfile(residentId)!!
     }
 
     @Transactional(readOnly = true)

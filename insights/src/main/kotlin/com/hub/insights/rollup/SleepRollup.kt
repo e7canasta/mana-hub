@@ -42,52 +42,64 @@ object SleepRollup {
         zone: ZoneId,
         sleepOnsetMinutes: Int = 10,
     ): SleepRollupResult {
-        var calmSec = 0L
-        var restlessSec = 0L
-        var awakeSec = 0L
-        var outSec = 0L
-        var exits = 0
-        var wakes = 0
-        var firstInBed: Instant? = null
-        var lastInBed: Instant? = null
-        var onsetApplied = false
+        val acc = SleepAccumulator()
+        for (d in dwells) acc.accumulate(d, sleepOnsetMinutes)
+        return acc.result(observedOn, zone)
+    }
 
-        for (d in dwells) {
+    private class SleepAccumulator {
+        private var calmSec = 0L
+        private var restlessSec = 0L
+        private var awakeSec = 0L
+        private var outSec = 0L
+        private var exits = 0
+        private var wakes = 0
+        private var firstInBed: Instant? = null
+        private var lastInBed: Instant? = null
+        private var onsetApplied = false
+
+        fun accumulate(d: Dwell, sleepOnsetMinutes: Int) {
             when (d.kind) {
-                StateKind.LYING -> {
-                    if (!onsetApplied) {
-                        val (pre, deep) = splitOnset(d.seconds, sleepOnsetMinutes)
-                        restlessSec += pre
-                        calmSec += deep
-                        onsetApplied = true
-                    } else {
-                        calmSec += d.seconds
-                    }
-                    firstInBed = firstInBed ?: d.start
-                    lastInBed = d.end
-                }
-                StateKind.ATTEMPTING_EXIT -> {
-                    restlessSec += d.seconds
-                    firstInBed = firstInBed ?: d.start
-                    lastInBed = d.end
-                    if (d.fromKind == StateKind.LYING) wakes += 1
-                }
-                StateKind.SITTING_IN_BED, StateKind.BED_EDGE -> {
-                    awakeSec += d.seconds
-                    firstInBed = firstInBed ?: d.start
-                    lastInBed = d.end
-                    if (d.fromKind == StateKind.LYING) wakes += 1
-                }
-                StateKind.STANDING, StateKind.ON_FLOOR, StateKind.IN_BATHROOM, StateKind.IN_ROOM,
-                StateKind.IN_HALLWAY, StateKind.OUTDOOR, StateKind.ABSENT,
-                StateKind.IN_CHAIR, StateKind.IN_WHEELCHAIR, StateKind.UNKNOWN -> {
-                    outSec += d.seconds
-                    if (d.fromKind?.inBed == true) exits += 1
-                }
+                StateKind.LYING -> handleLying(d, sleepOnsetMinutes)
+                StateKind.ATTEMPTING_EXIT -> handleRestless(d)
+                StateKind.SITTING_IN_BED, StateKind.BED_EDGE -> handleAwake(d)
+                else -> handleOut(d)
             }
         }
 
-        return SleepRollupResult(
+        private fun handleLying(d: Dwell, sleepOnsetMinutes: Int) {
+            if (!onsetApplied) {
+                val (pre, deep) = splitOnset(d.seconds, sleepOnsetMinutes)
+                restlessSec += pre; calmSec += deep; onsetApplied = true
+            } else {
+                calmSec += d.seconds
+            }
+            trackInBed(d)
+        }
+
+        private fun handleRestless(d: Dwell) {
+            restlessSec += d.seconds
+            if (d.fromKind == StateKind.LYING) wakes += 1
+            trackInBed(d)
+        }
+
+        private fun handleAwake(d: Dwell) {
+            awakeSec += d.seconds
+            if (d.fromKind == StateKind.LYING) wakes += 1
+            trackInBed(d)
+        }
+
+        private fun handleOut(d: Dwell) {
+            outSec += d.seconds
+            if (d.fromKind?.inBed == true) exits += 1
+        }
+
+        private fun trackInBed(d: Dwell) {
+            firstInBed = firstInBed ?: d.start
+            lastInBed = d.end
+        }
+
+        fun result(observedOn: LocalDate, zone: ZoneId) = SleepRollupResult(
             observedOn = observedOn,
             calmMinutes = minutesFromSeconds(calmSec),
             restlessMinutes = minutesFromSeconds(restlessSec),
