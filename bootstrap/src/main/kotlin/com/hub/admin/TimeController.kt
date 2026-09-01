@@ -25,7 +25,12 @@ import java.time.Instant
 class TimeController(
     private val clock: SwitchableHubClock,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
+    private sealed interface Command {
+        data object UseSystem : Command
+        data class UseManual(val startAt: Instant) : Command
+        data class Advance(val duration: Duration) : Command
+        data object Unknown : Command
+    }
 
     @GetMapping
     fun show(): Map<String, Any> = mapOf(
@@ -35,24 +40,18 @@ class TimeController(
 
     @PostMapping
     fun control(@RequestBody body: Map<String, Any>): ResponseEntity<Map<String, Any>> =
-        when (val action = body["action"] as? String) {
-            "useManual" -> {
-                val at = (body["startAt"] as? String)?.let { runCatching { Instant.parse(it) }.getOrNull() }
-                    ?: return ResponseEntity.badRequest()
-                        .body(mapOf("error" to "useManual necesita startAt en ISO-8601"))
-                clock.useManual(at)
-                log.info("Reloj del Hub en manual desde {}", at)
+        when (val cmd = parseCommand(body)) {
+            is Command.UseManual -> {
+                clock.useManual(cmd.startAt)
+                log.info("Reloj del Hub en manual desde {}", cmd.startAt)
                 ResponseEntity.ok(show())
             }
 
-            "advance" -> {
-                val d = (body["duration"] as? String)?.let { runCatching { Duration.parse(it) }.getOrNull() }
-                    ?: return ResponseEntity.badRequest()
-                        .body(mapOf("error" to "advance necesita duration en ISO-8601, p.ej. PT17M"))
-                runCatching { clock.advance(d) }
+            is Command.Advance -> {
+                runCatching { clock.advance(cmd.duration) }
                     .fold(
                         onSuccess = {
-                            log.info("Reloj del Hub adelantado {} → {}", d, it)
+                            log.info("Reloj del Hub adelantado {} → {}", cmd.duration, it)
                             ResponseEntity.ok(show())
                         },
                         /* En modo sistema esto es un error y no un no-op: un
@@ -62,13 +61,35 @@ class TimeController(
                     )
             }
 
-            "useSystem" -> {
+            is Command.UseSystem -> {
                 clock.useSystem()
                 log.info("Reloj del Hub de vuelta en modo sistema")
                 ResponseEntity.ok(show())
             }
 
-            else -> ResponseEntity.badRequest()
-                .body(mapOf("error" to "action desconocida: ${action ?: "(ausente)"} — useManual | advance | useSystem"))
+            is Command.Unknown -> ResponseEntity.badRequest()
+                .body(mapOf("error" to "action desconocida: ${cmd.label ?: "(ausente)"} — useManual | advance | useSystem"))
         }
+
+    private fun parseCommand(body: Map<String, Any>): Command {
+        val action = body["action"] as? String
+        return when (action) {
+            "useManual" -> {
+                val at = (body["startAt"] as? String)?.let { runCatching { Instant.parse(it) }.getOrNull() }
+                    ?: return Command.Unknown
+                Command.UseManual(at)
+            }
+            "advance" -> {
+                val d = (body["duration"] as? String)?.let { runCatching { Duration.parse(it) }.getOrNull() }
+                    ?: return Command.Unknown
+                Command.Advance(d)
+            }
+            "useSystem" -> Command.UseSystem
+            else -> Command.Unknown
+        }
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(TimeController::class.java)
+    }
 }
