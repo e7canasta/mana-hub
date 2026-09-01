@@ -3,6 +3,13 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":shared-kernel"))
+    implementation(project(":population"))
+    implementation(project(":observation"))
+    implementation(project(":care"))
+    implementation(project(":history"))
+    implementation(project(":policy"))
+
     implementation("com.manahive:contracts:1.0.0")
     implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.boot.starter.validation)
