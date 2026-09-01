@@ -15,4 +15,8 @@ public abstract class Entity<T : Any> {
 public abstract class AggregateRoot<T : Any> : Entity<T>() {
     public open var version: Long = 0L
         protected set
+
+    protected val _domainEvents = mutableListOf<DomainEvent>()
+    val domainEvents: List<DomainEvent> get() = _domainEvents.toList()
+    open fun clearEvents() = _domainEvents.clear()
 }

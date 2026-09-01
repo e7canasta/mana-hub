@@ -12,5 +12,6 @@ package com.hub.shared.domain
  */
 interface LocationResolver {
     fun resolve(bedId: BedId): BedLocation?
+    fun resolveAll(bedIds: Set<BedId>): Map<BedId, BedLocation>
     fun zone(bedId: BedId): java.time.ZoneId
 }

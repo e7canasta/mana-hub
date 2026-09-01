@@ -20,10 +20,6 @@ data class AlarmProfileVersion private constructor(
     override var version: Long
 ) : AggregateRoot<AlarmProfileId>() {
 
-    private val _domainEvents = mutableListOf<AlarmProfileEvent>()
-    val domainEvents: List<AlarmProfileEvent> get() = _domainEvents.toList()
-    fun clearEvents() = _domainEvents.clear()
-
     val isCurrent: Boolean get() = validTo == null
 
     fun expire(): AlarmProfileVersion {

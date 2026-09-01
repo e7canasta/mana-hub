@@ -4,13 +4,12 @@ import com.hub.population.application.dto.*
 import com.hub.population.domain.model.*
 import com.hub.population.domain.repository.BedAssignmentRepository
 import com.hub.population.domain.repository.ResidentRepository
-import com.hub.residence.domain.repository.BedRepository
-import com.hub.residence.domain.repository.RoomRepository
-import com.hub.residence.domain.repository.WingRepository
 import com.hub.shared.domain.BedId
 import com.hub.shared.domain.BedLocation
 import com.hub.shared.domain.DomainEventPublisher
+import com.hub.shared.domain.LocationResolver
 import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.publishAndClear
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -18,9 +17,7 @@ import org.springframework.transaction.annotation.Transactional
 class ResidentApplicationService(
     private val residentRepository: ResidentRepository,
     private val assignmentRepository: BedAssignmentRepository,
-    private val bedRepository: com.hub.residence.domain.repository.BedRepository,
-    private val roomRepository: com.hub.residence.domain.repository.RoomRepository,
-    private val wingRepository: com.hub.residence.domain.repository.WingRepository,
+    private val locationResolver: LocationResolver,
     private val eventPublisher: DomainEventPublisher
 ) {
 
@@ -38,23 +35,30 @@ class ResidentApplicationService(
             externalId = request.externalId
         )
         val saved = residentRepository.save(resident)
-        publishEvents(resident)
+        eventPublisher.publishAndClear(resident)
         return saved.toResponse()
     }
 
     @Transactional(readOnly = true)
     fun getResident(id: ResidentId): ResidentResponse {
-        return residentRepository.findById(id)?.toResponse()
+        val resident = residentRepository.findById(id)
             ?: throw IllegalArgumentException("Resident not found: $id")
+        val assignment = assignmentRepository.findOpenByResidentId(id)
+        val location = assignment?.let { locationResolver.resolve(it.bedId) }
+        return resident.toResponse(location)
     }
 
     @Transactional(readOnly = true)
     fun listResidents(): List<ResidentResponse> {
         val residents = residentRepository.findAll()
         val openAssignments = assignmentRepository.findAllOpen().associateBy { it.residentId }
+        val bedIds = openAssignments.values.map { it.bedId }.toSet()
+        val locations = locationResolver.resolveAll(bedIds)
+
         return residents.map { resident ->
             val assignment = openAssignments[resident.id]
-            resident.toResponse(assignment)
+            val location = assignment?.let { locations[it.bedId] }
+            resident.toResponse(location)
         }
     }
 
@@ -64,7 +68,7 @@ class ResidentApplicationService(
             ?: throw IllegalArgumentException("Resident not found: $id")
         val updated = resident.updateProfile(request.fullName, request.birthDate)
         val saved = residentRepository.save(updated)
-        publishEvents(updated)
+        eventPublisher.publishAndClear(updated)
         return saved.toResponse()
     }
 
@@ -74,7 +78,7 @@ class ResidentApplicationService(
             ?: throw IllegalArgumentException("Resident not found: $id")
         val discharged = resident.discharge(actorId ?: "system")
         val saved = residentRepository.save(discharged)
-        publishEvents(discharged)
+        eventPublisher.publishAndClear(discharged)
         return saved.toResponse()
     }
 
@@ -95,7 +99,7 @@ class ResidentApplicationService(
 
         val assignment = BedAssignment.create(residentId = residentId, bedId = bedId, createdBy = null)
         val saved = assignmentRepository.save(assignment)
-        publishAssignmentEvents(assignment)
+        eventPublisher.publishAndClear(assignment)
         return saved.toResponse()
     }
 
@@ -105,7 +109,7 @@ class ResidentApplicationService(
             ?: throw IllegalArgumentException("No open assignment for bed: $bedId")
         val closed = assignment.close()
         assignmentRepository.closeAssignment(closed)
-        publishAssignmentEvents(closed)
+        eventPublisher.publishAndClear(closed)
     }
 
     @Transactional(readOnly = true)
@@ -127,15 +131,7 @@ class ResidentApplicationService(
         }
     }
 
-    private fun Resident.toResponse(prefetchedAssignment: BedAssignment? = null): ResidentResponse {
-        val assignment = prefetchedAssignment ?: assignmentRepository.findOpenByResidentId(id)
-        val location = if (assignment != null) {
-            val bed = bedRepository.findById(assignment.bedId)
-            val room = bed?.let { roomRepository.findById(it.roomId) }
-            val wing = room?.let { wingRepository.findById(it.wingId) }
-            BedLocation.of(wing?.name, room?.number, bed?.label)
-        } else null
-
+    private fun Resident.toResponse(location: BedLocation? = null): ResidentResponse {
         return ResidentResponse(
             id = id.value, externalId = externalId, fullName = fullName, birthDate = birthDate,
             admissionDate = admissionDate, status = status, isDischarged = !isActive,
@@ -147,14 +143,4 @@ class ResidentApplicationService(
         id = id.value, residentId = residentId.value, bedId = bedId.value,
         startsAt = startsAt, endsAt = endsAt, isOpen = isOpen
     )
-
-    private fun publishEvents(resident: Resident) {
-        resident.domainEvents.forEach { eventPublisher.publish(it) }
-        resident.clearEvents()
-    }
-
-    private fun publishAssignmentEvents(assignment: BedAssignment) {
-        assignment.domainEvents.forEach { eventPublisher.publish(it) }
-        assignment.clearEvents()
-    }
 }

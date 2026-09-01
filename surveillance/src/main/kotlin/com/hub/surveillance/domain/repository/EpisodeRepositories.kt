@@ -1,7 +1,7 @@
 package com.hub.surveillance.domain.repository
 
 import com.hub.surveillance.domain.model.Episode
-import com.hub.surveillance.domain.model.EpisodeId
+import com.hub.shared.domain.EpisodeId
 import com.hub.shared.domain.ResidentId
 import java.time.Instant
 

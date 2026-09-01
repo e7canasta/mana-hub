@@ -31,6 +31,17 @@ class JpaLocationResolver(
         return BedLocation.of(wing?.name, room?.number, bed.label)
     }
 
+    override fun resolveAll(bedIds: Set<BedId>): Map<BedId, BedLocation> {
+        val result = mutableMapOf<BedId, BedLocation>()
+        for (bedId in bedIds) {
+            val resolved = resolve(bedId)
+            if (resolved != null) {
+                result[bedId] = resolved
+            }
+        }
+        return result
+    }
+
     override fun zone(bedId: BedId): ZoneId {
         val bed = bedRepository.findById(bedId) ?: return DEFAULT_ZONE
         val room = rooms.getOrPut(bed.roomId.value) { roomRepository.findById(bed.roomId) }

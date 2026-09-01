@@ -2,6 +2,7 @@ package com.hub.surveillance.infrastructure.persistence
 
 import com.hub.surveillance.domain.model.*
 import com.hub.surveillance.domain.repository.EpisodeRepository
+import com.hub.shared.domain.EpisodeId
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
 import com.hub.shared.domain.BaseEntity

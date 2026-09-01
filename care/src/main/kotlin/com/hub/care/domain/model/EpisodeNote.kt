@@ -1,16 +1,8 @@
 package com.hub.care.domain.model
 
+import com.hub.shared.domain.EpisodeId
 import com.hub.shared.domain.Identifier
 import java.time.Instant
-import java.util.UUID
-
-@JvmInline
-value class EpisodeId(val value: String) {
-    companion object {
-        fun from(value: String): EpisodeId = EpisodeId(value)
-        fun random(): EpisodeId = EpisodeId(UUID.randomUUID().toString())
-    }
-}
 
 enum class EpisodeNoteKind {
     ACKNOWLEDGEMENT,

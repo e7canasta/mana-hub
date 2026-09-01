@@ -18,10 +18,6 @@ data class Round private constructor(
     override var version: Long
 ) : AggregateRoot<RoundId>() {
 
-    private val _domainEvents = mutableListOf<RoundEvent>()
-    val domainEvents: List<RoundEvent> get() = _domainEvents.toList()
-    fun clearEvents() = _domainEvents.clear()
-
     val isInProgress: Boolean get() = status == RoundStatus.IN_PROGRESS
     val isCompleted: Boolean get() = status == RoundStatus.COMPLETED
 

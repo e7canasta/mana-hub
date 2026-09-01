@@ -31,10 +31,6 @@ class Resident private constructor(
     override var version: Long
 ) : AggregateRoot<ResidentId>() {
 
-    private val _domainEvents = mutableListOf<ResidentEvent>()
-    val domainEvents: List<ResidentEvent> get() = _domainEvents.toList()
-    fun clearEvents() = _domainEvents.clear()
-
     val isActive: Boolean get() = status == ResidentStatus.ACTIVE
 
     fun discharge(actorId: String): Resident {

@@ -4,8 +4,10 @@ import com.hub.surveillance.application.dto.*
 import com.hub.surveillance.domain.model.*
 import com.hub.surveillance.domain.repository.EpisodeRepository
 import com.hub.shared.domain.DomainEventPublisher
+import com.hub.shared.domain.EpisodeId
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
+import com.hub.shared.domain.publishAndClear
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -38,7 +40,7 @@ class EpisodeApplicationService(
                 id = request.id?.let { EpisodeId.from(it) },
             )
             val saved = episodeRepository.save(episode)
-            publishEvents(episode)
+            eventPublisher.publishAndClear(episode)
             saved.toResponse()
         } catch (e: org.springframework.dao.DataIntegrityViolationException) {
             if (request.id != null) {
@@ -76,7 +78,7 @@ class EpisodeApplicationService(
             ?: throw IllegalArgumentException("Episode not found: $episodeId")
         val updated = episode.acknowledge(actorId)
         val saved = episodeRepository.save(updated)
-        publishEvents(updated)
+        eventPublisher.publishAndClear(updated)
         return saved.toResponse()
     }
 
@@ -86,13 +88,8 @@ class EpisodeApplicationService(
             ?: throw IllegalArgumentException("Episode not found: $episodeId")
         val updated = episode.resolve(request.actorId ?: "system")
         val saved = episodeRepository.save(updated)
-        publishEvents(updated)
+        eventPublisher.publishAndClear(updated)
         return saved.toResponse()
-    }
-
-    private fun publishEvents(episode: Episode) {
-        episode.domainEvents.forEach { eventPublisher.publish(it) }
-        episode.clearEvents()
     }
 
     private fun Episode.toResponse() = EpisodeResponse(

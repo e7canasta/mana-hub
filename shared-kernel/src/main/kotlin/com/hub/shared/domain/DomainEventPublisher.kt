@@ -10,3 +10,8 @@ public interface DomainEventPublisher {
 public inline fun <reified T : DomainEvent> DomainEventPublisher.publishTyped(event: T) {
     publish(event)
 }
+
+fun DomainEventPublisher.publishAndClear(aggregate: AggregateRoot<*>) {
+    aggregate.domainEvents.forEach { publish(it) }
+    aggregate.clearEvents()
+}

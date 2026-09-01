@@ -6,6 +6,7 @@ import com.hub.care.domain.repository.RoundRepository
 import com.hub.care.domain.repository.RoundTaskRepository
 import com.hub.shared.domain.DomainEventPublisher
 import com.hub.shared.domain.WingId
+import com.hub.shared.domain.publishAndClear
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -23,7 +24,7 @@ class RoundApplicationService(
         require(existing == null) { "There is already an in-progress round for this wing" }
         val round = Round.create(wingId = wingId, scheduledFor = request.scheduledFor)
         val saved = roundRepository.save(round)
-        publishEvents(round)
+        eventPublisher.publishAndClear(round)
         return saved.toResponse()
     }
 
@@ -49,7 +50,7 @@ class RoundApplicationService(
             ?: throw IllegalArgumentException("Round not found: $id")
         val completed = round.complete(actorId)
         val saved = roundRepository.save(completed)
-        publishEvents(completed)
+        eventPublisher.publishAndClear(completed)
         return saved.toResponse()
     }
 
@@ -69,9 +70,4 @@ class RoundApplicationService(
         id = id.value, roundId = roundId.value, residentId = residentId.value,
         bedId = bedId?.value, status = status, note = note, completedAt = completedAt, completedBy = completedBy
     )
-
-    private fun publishEvents(round: Round) {
-        round.domainEvents.forEach { eventPublisher.publish(it) }
-        round.clearEvents()
-    }
 }

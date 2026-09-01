@@ -3,7 +3,7 @@ package com.hub.surveillance.domain.event
 import com.hub.shared.domain.BedId
 import com.hub.shared.domain.DomainEvent
 import com.hub.shared.domain.ResidentId
-import com.hub.surveillance.domain.model.EpisodeId
+import com.hub.shared.domain.EpisodeId
 import com.hub.surveillance.domain.model.EpisodeSeverity
 import java.time.Instant
 import java.util.UUID

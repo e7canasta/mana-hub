@@ -1,6 +1,7 @@
 package com.hub.surveillance.domain.model
 
 import com.hub.shared.domain.AggregateRoot
+import com.hub.shared.domain.EpisodeId
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
 import com.hub.surveillance.domain.event.EpisodeEvent
@@ -26,10 +27,6 @@ data class Episode private constructor(
     val escalatedTo: String?,
     override var version: Long
 ) : AggregateRoot<EpisodeId>() {
-
-    private val _domainEvents = mutableListOf<EpisodeEvent>()
-    val domainEvents: List<EpisodeEvent> get() = _domainEvents.toList()
-    fun clearEvents() = _domainEvents.clear()
 
     fun acknowledge(actorId: String): Episode {
         require(status == EpisodeStatus.PENDING) { "Episode is not pending" }

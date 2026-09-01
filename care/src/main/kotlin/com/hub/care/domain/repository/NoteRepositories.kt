@@ -1,6 +1,7 @@
 package com.hub.care.domain.repository
 
 import com.hub.care.domain.model.*
+import com.hub.shared.domain.EpisodeId
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.FacilityId
 import com.hub.shared.domain.WingId

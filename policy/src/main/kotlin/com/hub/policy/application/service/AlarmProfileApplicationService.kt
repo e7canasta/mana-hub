@@ -7,6 +7,7 @@ import com.hub.policy.domain.repository.AlarmProfileRepository
 import com.hub.shared.domain.DomainEvent
 import com.hub.shared.domain.DomainEventPublisher
 import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.publishAndClear
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -26,7 +27,6 @@ data class AlarmProfileChangedEvent(
 class AlarmProfileApplicationService(
     private val alarmProfileRepository: AlarmProfileRepository,
     private val alarmProfileOverrideRepository: AlarmProfileOverrideRepository,
-    private val auditService: com.hub.audit.domain.service.AuditService,
     private val eventPublisher: DomainEventPublisher,
     private val responseBuilder: AlarmProfileResponseBuilder,
     private val catalogService: AlarmCatalogService,
@@ -93,7 +93,7 @@ class AlarmProfileApplicationService(
         )
 
         alarmProfileRepository.save(newProfile)
-        publishAggregateEvents(newProfile)
+        eventPublisher.publishAndClear(newProfile)
 
         /* Los overrides siguen la misma regla: si el request no los menciona, se
          * conservan los de la version anterior. Omitir no es borrar. */
@@ -112,16 +112,6 @@ class AlarmProfileApplicationService(
                     alarmProfileOverrideRepository.saveAll(typedOverrides, newProfile.id.value)
                 }
             }
-        }
-
-        if (request.reason != null) {
-            auditService.recordAction(
-                actorId = request.updatedBy ?: "system",
-                action = "alarm_profile.update",
-                entityType = "AlarmProfileVersion",
-                entityId = residentId,
-                metadataJson = """{"reason":"${request.reason.replace("\"", "\\\"")}","riskLevel":"${riskLevel.name}"}"""
-            )
         }
 
         // Publish domain event for hub→hive bridge (outbox pattern)
@@ -277,10 +267,5 @@ class AlarmProfileApplicationService(
         if (raw.containsKey("baselineState") || raw.containsKey("severity") || raw.containsKey("closureCondition")) return "comeback"
         if (raw.containsKey("warningAfterMinutes") || raw.containsKey("alertAfterMinutes")) return "dwell"
         return "dwell"
-    }
-
-    private fun publishAggregateEvents(profile: AlarmProfileVersion) {
-        profile.domainEvents.forEach { eventPublisher.publish(it) }
-        profile.clearEvents()
     }
 }

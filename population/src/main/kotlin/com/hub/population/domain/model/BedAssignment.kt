@@ -16,10 +16,6 @@ class BedAssignment private constructor(
     override var version: Long
 ) : AggregateRoot<AssignmentId>() {
 
-    private val _domainEvents = mutableListOf<BedAssignmentEvent>()
-    val domainEvents: List<BedAssignmentEvent> get() = _domainEvents.toList()
-    fun clearEvents() = _domainEvents.clear()
-
     val isOpen: Boolean get() = endsAt == null
 
     fun close(): BedAssignment {

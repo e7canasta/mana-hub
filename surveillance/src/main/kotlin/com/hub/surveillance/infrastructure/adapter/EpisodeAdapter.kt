@@ -4,7 +4,7 @@ import com.hub.shared.domain.port.*
 import com.hub.surveillance.application.dto.CreateEpisodeRequest
 import com.hub.surveillance.application.dto.UpdateEpisodeRequest
 import com.hub.surveillance.application.service.EpisodeApplicationService
-import com.hub.surveillance.domain.model.EpisodeId
+import com.hub.shared.domain.EpisodeId
 import com.hub.surveillance.domain.model.EpisodeSeverity
 import com.hub.surveillance.domain.repository.EpisodeRepository
 import org.springframework.stereotype.Component

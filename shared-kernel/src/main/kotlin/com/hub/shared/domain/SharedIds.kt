@@ -62,3 +62,11 @@ value class RoomId(val value: String) {
         fun random(): RoomId = RoomId(UUID.randomUUID().toString())
     }
 }
+
+@JvmInline
+value class EpisodeId(val value: String) {
+    companion object {
+        fun from(value: String): EpisodeId = EpisodeId(value)
+        fun random(): EpisodeId = EpisodeId(UUID.randomUUID().toString())
+    }
+}

@@ -5,6 +5,7 @@ import com.hub.care.domain.repository.EpisodeNoteRepository
 import com.hub.care.domain.repository.ResidentNoteRepository
 import com.hub.care.domain.repository.ShiftNoteRepository
 import com.hub.shared.domain.BaseEntity
+import com.hub.shared.domain.EpisodeId
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.FacilityId
 import com.hub.shared.domain.WingId

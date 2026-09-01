@@ -5,7 +5,6 @@ plugins {
 dependencies {
     implementation(project(":shared-kernel"))
     implementation(project(":population"))
-    implementation(project(":audit"))
 
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.validation)
