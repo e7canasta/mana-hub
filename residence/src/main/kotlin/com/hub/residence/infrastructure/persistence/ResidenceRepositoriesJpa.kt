@@ -18,7 +18,9 @@ class FacilityEntity(
     @Column(name = "name") var name: String = "",
     @Column(name = "timezone") var timezone: String = "UTC",
     @Column(name = "retired_at") var retiredAt: Instant? = null,
-    @Column(name = "retired_by") var retiredBy: String? = null
+    @Column(name = "retired_by") var retiredBy: String? = null,
+    @Version var version: Long = 0,
+    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
 ) : BaseEntity()
 
 @Entity
@@ -30,7 +32,9 @@ class WingEntity(
     @Column(name = "floor") var floor: String? = null,
     @Column(name = "sort_order") var sortOrder: Int = 0,
     @Column(name = "retired_at") var retiredAt: Instant? = null,
-    @Column(name = "retired_by") var retiredBy: String? = null
+    @Column(name = "retired_by") var retiredBy: String? = null,
+    @Version var version: Long = 0,
+    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
 ) : BaseEntity()
 
 @Entity
@@ -42,7 +46,9 @@ class RoomEntity(
     @Column(name = "room_type") var roomType: String? = null,
     @Column(name = "stream_key") var streamKey: String? = null,
     @Column(name = "retired_at") var retiredAt: Instant? = null,
-    @Column(name = "retired_by") var retiredBy: String? = null
+    @Column(name = "retired_by") var retiredBy: String? = null,
+    @Version var version: Long = 0,
+    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
 ) : BaseEntity()
 
 @Entity
@@ -53,7 +59,9 @@ class BedEntity(
     @Column(name = "label") var label: String = "",
     @Column(name = "monitor_key") var monitorKey: String? = null,
     @Column(name = "retired_at") var retiredAt: Instant? = null,
-    @Column(name = "retired_by") var retiredBy: String? = null
+    @Column(name = "retired_by") var retiredBy: String? = null,
+    @Version var version: Long = 0,
+    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
 ) : BaseEntity()
 
 @Entity

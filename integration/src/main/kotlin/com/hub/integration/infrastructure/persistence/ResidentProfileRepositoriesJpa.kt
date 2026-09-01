@@ -2,7 +2,6 @@ package com.hub.integration.infrastructure.persistence
 
 import com.hub.integration.domain.model.ResidentProfile
 import com.hub.integration.domain.repository.ResidentProfileRepository
-import com.hub.shared.domain.BaseEntity
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
@@ -22,10 +21,11 @@ class ResidentProfileEntity(
     @Column(columnDefinition = "TEXT") val windowsJson: String,
     @Column(columnDefinition = "TEXT") val subjectsJson: String,
     @Column(columnDefinition = "TEXT") val rawJson: String,
-) : BaseEntity()
+    val createdAt: Instant? = null,
+)
 
 interface ResidentProfileEntityRepository : JpaRepository<ResidentProfileEntity, String> {
-    fun findTopByResidentIdOrderByVersionDesc(residentId: String): ResidentProfileEntity?
+    fun findTopByResidentIdOrderByProfileVersionDesc(residentId: String): ResidentProfileEntity?
 
     fun findByResidentId(residentId: String): List<ResidentProfileEntity>
 
@@ -39,7 +39,7 @@ class ResidentProfileRepositoryAdapter(
 ) : ResidentProfileRepository {
 
     override fun findCurrentByResidentId(residentId: String): ResidentProfile? =
-        jpa.findTopByResidentIdOrderByVersionDesc(residentId)?.toDomain()
+        jpa.findTopByResidentIdOrderByProfileVersionDesc(residentId)?.toDomain()
 
     override fun findByResidentId(residentId: String): List<ResidentProfile> =
         jpa.findByResidentId(residentId).map { it.toDomain() }
@@ -60,14 +60,10 @@ class ResidentProfileRepositoryAdapter(
         subjectsJson = subjectsJson, rawJson = rawJson, createdAt = createdAt!!,
     )
 
-    private fun ResidentProfile.toEntity(): ResidentProfileEntity {
-        val entity = ResidentProfileEntity(
-            id = id, residentId = residentId, profileId = profileId,
-            profileVersion = version, supersedes = supersedes, validFrom = validFrom,
-            provenanceJson = provenanceJson, windowsJson = windowsJson,
-            subjectsJson = subjectsJson, rawJson = rawJson,
-        )
-        entity.createdAt = createdAt
-        return entity
-    }
+    private fun ResidentProfile.toEntity(): ResidentProfileEntity = ResidentProfileEntity(
+        id = id, residentId = residentId, profileId = profileId,
+        profileVersion = version, supersedes = supersedes, validFrom = validFrom,
+        provenanceJson = provenanceJson, windowsJson = windowsJson,
+        subjectsJson = subjectsJson, rawJson = rawJson, createdAt = createdAt,
+    )
 }

@@ -25,7 +25,9 @@ class CareSummaryEntity(
     @Column(name = "notes_count") var notesCount: Int = 0,
     @Column(name = "source") var source: String? = null,
     @Column(name = "model_version") var modelVersion: String? = null,
-    @Column(name = "confidence") var confidence: Double? = null
+    @Column(name = "confidence") var confidence: Double? = null,
+    @Version var version: Long = 0,
+    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
 ) : BaseEntity()
 
 @Repository

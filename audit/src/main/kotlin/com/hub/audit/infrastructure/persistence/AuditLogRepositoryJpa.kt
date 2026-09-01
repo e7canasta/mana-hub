@@ -3,7 +3,6 @@ package com.hub.audit.infrastructure.persistence
 import com.hub.audit.domain.model.AuditLogEntry
 import com.hub.audit.domain.model.AuditLogId
 import com.hub.audit.domain.repository.AuditLogRepository
-import com.hub.shared.domain.BaseEntity
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
@@ -30,7 +29,10 @@ class AuditLogEntity(
 
     @Column(name = "metadata_json")
     var metadataJson: String = "{}",
-) : BaseEntity()
+
+    @Column(name = "created_at")
+    var createdAt: Instant = Instant.now(),
+)
 
 @Repository
 interface AuditLogEntityRepository : JpaRepository<AuditLogEntity, String> {

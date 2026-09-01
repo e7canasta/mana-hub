@@ -35,6 +35,7 @@ class EpisodeEntity(
     @Column(name = "escalation_level") var escalationLevel: Int = 0,
     @Column(name = "escalated_at") var escalatedAt: Instant? = null,
     @Column(name = "escalated_to") var escalatedTo: String? = null,
+    @Version var version: Long = 0,
 ) : BaseEntity()
 
 @Repository

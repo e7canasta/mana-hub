@@ -29,7 +29,8 @@ class EvidenceEntity(
     @Column(name = "rule_id") var ruleId: String? = null,
     @Column(name = "shift") var shift: String? = null,
     @Column(name = "risk_level") var riskLevel: String? = null,
-    @Column(name = "timestamp") var timestamp: Instant = Instant.now()
+    @Column(name = "timestamp") var timestamp: Instant = Instant.now(),
+    @Version var version: Long = 0,
 ) : BaseEntity()
 
 @Entity
@@ -44,7 +45,8 @@ class TimelineEntity(
     @Column(name = "after_events_json") var afterEventsJson: String = "[]",
     @Column(name = "window_start") var windowStart: Instant = Instant.now(),
     @Column(name = "window_end") var windowEnd: Instant? = null,
-    @Column(name = "closed_at") var closedAt: Instant? = null
+    @Column(name = "closed_at") var closedAt: Instant? = null,
+    @Version var version: Long = 0,
 ) : BaseEntity()
 
 @Entity
@@ -59,7 +61,8 @@ class ClipWindowEntity(
     @Column(name = "events_json") var eventsJson: String = "[]",
     @Column(name = "state") var state: String = "open",
     @Column(name = "close_condition_json") var closeConditionJson: String? = null,
-    @Column(name = "closed_at") var closedAt: Instant? = null
+    @Column(name = "closed_at") var closedAt: Instant? = null,
+    @Version var version: Long = 0,
 ) : BaseEntity()
 
 @Repository

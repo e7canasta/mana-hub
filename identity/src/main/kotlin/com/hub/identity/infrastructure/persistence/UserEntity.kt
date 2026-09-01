@@ -31,4 +31,9 @@ class UserEntity(
 
     @Column(name = "retired_by")
     var retiredBy: String? = null,
+
+    @Version var version: Long = 0,
+
+    @Column(name = "updated_at")
+    var updatedAt: Instant = Instant.now(),
 ) : BaseEntity()

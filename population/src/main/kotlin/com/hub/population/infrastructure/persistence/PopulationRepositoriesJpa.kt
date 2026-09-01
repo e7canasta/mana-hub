@@ -25,6 +25,8 @@ class ResidentEntity(
     @Column(name = "status") var status: String = "active",
     @Column(name = "discharged_at") var dischargedAt: Instant? = null,
     @Column(name = "discharged_by") var dischargedBy: String? = null,
+    @Version var version: Long = 0,
+    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
 ) : BaseEntity()
 
 @Entity
@@ -36,6 +38,7 @@ class BedAssignmentEntity(
     @Column(name = "starts_at") var startsAt: Instant = Instant.now(),
     @Column(name = "ends_at") var endsAt: Instant? = null,
     @Column(name = "created_by") var createdBy: String? = null,
+    @Version var version: Long = 0,
 ) : BaseEntity()
 
 @Repository

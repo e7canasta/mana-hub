@@ -46,7 +46,7 @@ class PolicyOutboxRepositoryAdapter(
     private fun PolicyOutboxEntity.toDomain() = PolicyOutboxEntry.reconstitute(
         id = OutboxEntryId(id), aggregateId = aggregateId, type = type,
         payloadJson = payloadJson, occurredAt = occurredAt, published = published,
-        attempts = attempts, lastError = lastError, version = version
+        attempts = attempts, lastError = lastError, version = 0L
     )
 
     private fun PolicyOutboxEntry.toEntity() = PolicyOutboxEntity(

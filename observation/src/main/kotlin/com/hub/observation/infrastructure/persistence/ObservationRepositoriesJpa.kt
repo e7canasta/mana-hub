@@ -56,7 +56,8 @@ class CurrentBedStateEntity(
     @Column(name = "state_since") var stateSince: Instant = Instant.now(),
     @Column(name = "source") var source: String? = null,
     @Column(name = "source_event_id") var sourceEventId: String? = null,
-    @Column(name = "staff_present") var staffPresent: Boolean? = null
+    @Column(name = "staff_present") var staffPresent: Boolean? = null,
+    @Column(name = "updated_at") var updatedAt: Instant? = null,
 ) : BaseEntity()
 
 @Entity
@@ -76,7 +77,8 @@ class SleepSummaryEntity(
     @Column(name = "model_version") var modelVersion: String? = null,
     @Column(name = "confidence") var confidence: Double? = null,
     @Column(name = "started_at") var startedAt: LocalDateTime? = null,
-    @Column(name = "ended_at") var endedAt: LocalDateTime? = null
+    @Column(name = "ended_at") var endedAt: LocalDateTime? = null,
+    @Column(name = "updated_at") var updatedAt: Instant? = null,
 ) : BaseEntity()
 
 @Entity
@@ -94,7 +96,8 @@ class MobilitySummaryEntity(
     @Column(name = "transfer_count") var transferCount: Int = 0,
     @Column(name = "source") var source: String? = null,
     @Column(name = "model_version") var modelVersion: String? = null,
-    @Column(name = "confidence") var confidence: Double? = null
+    @Column(name = "confidence") var confidence: Double? = null,
+    @Column(name = "updated_at") var updatedAt: Instant? = null,
 ) : BaseEntity()
 
 @Entity
@@ -110,7 +113,8 @@ class BathroomSummaryEntity(
     @Column(name = "total_minutes") var totalMinutes: Int = 0,
     @Column(name = "source") var source: String? = null,
     @Column(name = "model_version") var modelVersion: String? = null,
-    @Column(name = "confidence") var confidence: Double? = null
+    @Column(name = "confidence") var confidence: Double? = null,
+    @Column(name = "updated_at") var updatedAt: Instant? = null,
 ) : BaseEntity()
 
 @Repository

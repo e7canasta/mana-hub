@@ -19,7 +19,8 @@ class StreamEntity(
     @Column(name = "stream_key") var streamKey: String = "",
     @Column(name = "name") var name: String? = null,
     @Column(name = "active") var active: Boolean = true,
-    @Column(name = "updated_at") override var updatedAt: Instant? = Instant.now()
+    @Column(name = "updated_at") var updatedAt: Instant? = Instant.now(),
+    @Version var version: Long = 0,
 ) : BaseEntity()
 
 @Entity
@@ -32,7 +33,8 @@ class StreamRegionEntity(
     @Column(name = "label") var label: String? = null,
     @Column(name = "is_static") var isStatic: Boolean = true,
     @Column(name = "updated_by") var updatedBy: String? = null,
-    @Column(name = "updated_at") override var updatedAt: Instant? = Instant.now()
+    @Column(name = "updated_at") var updatedAt: Instant? = Instant.now(),
+    @Version var version: Long = 0,
 ) : BaseEntity()
 
 @Repository

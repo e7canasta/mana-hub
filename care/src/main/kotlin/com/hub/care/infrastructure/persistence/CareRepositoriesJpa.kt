@@ -26,7 +26,9 @@ class RoundEntity(
     @Column(name = "started_at") var startedAt: Instant? = null,
     @Column(name = "completed_at") var completedAt: Instant? = null,
     @Column(name = "started_by") var startedBy: String? = null,
-    @Column(name = "completed_by") var completedBy: String? = null
+    @Column(name = "completed_by") var completedBy: String? = null,
+    @Version var version: Long = 0,
+    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
 ) : BaseEntity()
 
 @Entity
@@ -39,7 +41,9 @@ class RoundTaskEntity(
     @Column(name = "status") var status: String = "PENDING",
     @Column(name = "note") var note: String? = null,
     @Column(name = "completed_at") var completedAt: Instant? = null,
-    @Column(name = "completed_by") var completedBy: String? = null
+    @Column(name = "completed_by") var completedBy: String? = null,
+    @Version var version: Long = 0,
+    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
 ) : BaseEntity()
 
 @Entity
@@ -51,7 +55,9 @@ class CareNoteEntity(
     @Column(name = "author_id") var authorId: String = "",
     @Column(name = "kind") var kind: String = "GENERAL",
     @Column(name = "body") var body: String = "",
-    @Column(name = "duration_min") var durationMin: Int? = null
+    @Column(name = "duration_min") var durationMin: Int? = null,
+    @Version var version: Long = 0,
+    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
 ) : BaseEntity()
 
 @Repository

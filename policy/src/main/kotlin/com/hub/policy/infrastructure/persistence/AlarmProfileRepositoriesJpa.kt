@@ -24,6 +24,7 @@ class AlarmProfileVersionEntity(
     @Column(name = "catalog_version") var catalogVersion: String? = null,
     @Column(name = "updated_by") var updatedBy: String? = null,
     @Column(name = "risk_level") var riskLevel: String = "medium",
+    @Version var version: Long = 0,
 ) : BaseEntity()
 
 @Repository

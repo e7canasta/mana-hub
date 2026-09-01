@@ -36,6 +36,7 @@ class HistoryEpisodeEntity(
     @Column(name = "model_version") var modelVersion: String? = null,
     @Column(name = "confidence") var confidence: Double? = null,
     @Column(name = "provenance_json") var provenanceJson: String = "{}",
+    @Version var version: Long = 0,
 ) : BaseEntity()
 
 @Entity
@@ -49,6 +50,7 @@ class HistoryEpisodeReviewEntity(
     @Column(name = "resolved_at") var resolvedAt: Instant? = null,
     @Column(name = "actor_id") var actorId: String = "",
     @Column(name = "recorded_at") var recordedAt: Instant = Instant.now(),
+    @Version var version: Long = 0,
 ) : BaseEntity()
 
 @Repository

@@ -1,6 +1,5 @@
 package com.hub.identity.infrastructure.persistence
 
-import com.hub.shared.domain.BaseEntity
 import jakarta.persistence.*
 import java.time.Instant
 
@@ -18,8 +17,11 @@ class SessionEntity(
     var expiresAt: Instant = Instant.now(),
 
     @Column(name = "last_seen_at")
-    var lastSeenAt: Instant? = null
-) : BaseEntity() {
+    var lastSeenAt: Instant? = null,
+
+    @Column(name = "created_at")
+    var createdAt: Instant? = null,
+) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is SessionEntity) return false
