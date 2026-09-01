@@ -147,47 +147,52 @@ class EpisodeTimelineDeriver(
         else -> null
     }
 
-    private fun describeSignal(s: SentinelSignalSnapshot): String = when (s.signalType) {
-        "EPISODE_OPENED" ->
-            "Se abrió el episodio" + (s.trigger?.let { " por ${humanState(it)}" } ?: "")
-        "EPISODE_ESCALATED", "SEVERITY_RAMP" ->
-            "Subió de severidad" + (s.severity?.let { " a ${it.lowercase()}" } ?: "")
-        "UMBRELLA_EVENT" ->
+    private fun describeSignal(s: SentinelSignalSnapshot): String = signalDescriptions[s.signalType]?.invoke(s)
+        ?: s.signalType ?: "UNKNOWN"
+
+    private fun describeScene(c: SceneEventSnapshot): String = sceneDescriptions[c.eventType]?.invoke(c)
+        ?: c.eventType ?: "UNKNOWN"
+
+    private val signalDescriptions: Map<String, (SentinelSignalSnapshot) -> String> = mapOf(
+        "EPISODE_OPENED" to { s -> "Se abrió el episodio" + (s.trigger?.let { " por ${humanState(it)}" } ?: "") },
+        "EPISODE_ESCALATED" to { s -> "Subió de severidad" + (s.severity?.let { " a ${it.lowercase()}" } ?: "") },
+        "SEVERITY_RAMP" to { s -> "Subió de severidad" + (s.severity?.let { " a ${it.lowercase()}" } ?: "") },
+        "UMBRELLA_EVENT" to { s ->
             if (s.triggerOn == "COME_BACK")
                 "Venció el plazo de retorno" + (s.state?.let { " a ${humanState(it)}" } ?: "")
             else
                 "Movimiento dentro del episodio" + (s.state?.let { " (${humanState(it)})" } ?: "")
-        "EPISODE_CLOSED" -> when (s.cause) {
+        },
+        "EPISODE_CLOSED" to { s -> when (s.cause) {
             "AUTO_RECOVERY" -> "Volvió sola a una posición segura y el episodio cerró"
             "STAFF", "STAFF_ASSIST" -> "Cerró cuando llegó el personal"
             else -> "El episodio cerró" + (s.cause?.let { " ($it)" } ?: "")
-        }
-        else -> s.signalType ?: "UNKNOWN"
-    }
+        }},
+    )
 
-    private fun describeScene(c: SceneEventSnapshot): String = when (c.eventType) {
-        "TransitionDetected" -> "${humanState(c.fromState)} → ${humanState(c.toState)}"
-        "ComeBackExceeded" -> "No volvió al estado de referencia dentro del plazo"
-        "DwellExceeded" -> "Se quedó más tiempo del tolerado"
-        else -> c.eventType ?: "UNKNOWN"
-    }
+    private val sceneDescriptions: Map<String, (SceneEventSnapshot) -> String> = mapOf(
+        "TransitionDetected" to { c -> "${humanState(c.fromState)} → ${humanState(c.toState)}" },
+        "ComeBackExceeded" to { _ -> "No volvió al estado de referencia dentro del plazo" },
+        "DwellExceeded" to { _ -> "Se quedó más tiempo del tolerado" },
+    )
 
-    private fun humanState(raw: String?): String = when (raw?.uppercase()) {
-        null -> "sin determinar"
-        "LYING" -> "acostado"
-        "SITTINGINBED", "SITTING_IN_BED" -> "incorporado en la cama"
-        "ATTEMPTINGEXIT", "ATTEMPTING_EXIT" -> "intentando salir"
-        "BEDEDGE", "BED_EDGE" -> "al borde de la cama"
-        "STANDING" -> "de pie"
-        "ONFLOOR", "ON_FLOOR" -> "en el piso"
-        "INBATHROOM", "IN_BATHROOM" -> "en el baño"
-        "INROOM", "IN_ROOM" -> "en la habitación"
-        "INHALLWAY", "IN_HALLWAY" -> "en el pasillo"
-        "OUTDOOR" -> "afuera"
-        "ABSENT" -> "fuera de la habitación"
-        "INCHAIR", "IN_CHAIR" -> "en una silla"
-        "INWHEELCHAIR", "IN_WHEELCHAIR" -> "en la silla de ruedas"
-        "UNKNOWN" -> "sin determinar"
-        else -> raw.lowercase()
-    }
+    private val stateLabels: Map<String, String> = mapOf(
+        "LYING" to "acostado",
+        "SITTINGINBED" to "incorporado en la cama", "SITTING_IN_BED" to "incorporado en la cama",
+        "ATTEMPTINGEXIT" to "intentando salir", "ATTEMPTING_EXIT" to "intentando salir",
+        "BEDEDGE" to "al borde de la cama", "BED_EDGE" to "al borde de la cama",
+        "STANDING" to "de pie",
+        "ONFLOOR" to "en el piso", "ON_FLOOR" to "en el piso",
+        "INBATHROOM" to "en el baño", "IN_BATHROOM" to "en el baño",
+        "INROOM" to "en la habitación", "IN_ROOM" to "en la habitación",
+        "INHALLWAY" to "en el pasillo", "IN_HALLWAY" to "en el pasillo",
+        "OUTDOOR" to "afuera",
+        "ABSENT" to "fuera de la habitación",
+        "INCHAIR" to "en una silla", "IN_CHAIR" to "en una silla",
+        "INWHEELCHAIR" to "en la silla de ruedas", "IN_WHEELCHAIR" to "en la silla de ruedas",
+        "UNKNOWN" to "sin determinar",
+    )
+
+    private fun humanState(raw: String?): String =
+        raw?.uppercase()?.let { stateLabels[it] } ?: raw?.lowercase() ?: "sin determinar"
 }

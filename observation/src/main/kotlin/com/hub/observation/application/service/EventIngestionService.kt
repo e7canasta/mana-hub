@@ -186,35 +186,17 @@ class EventIngestionService(
             eventId = request.eventId ?: request.sourceEventId ?: UUID.randomUUID().toString(),
             bedId = BedId(request.bedId),
             residentId = request.residentId?.let { ResidentId(it) },
-            eventType = SceneEventType.entries.firstOrNull { it.name.equals(request.eventType, ignoreCase = true) }
-                ?: run {
-                    log.warn("Unknown SceneEventType: '{}', defaulting to STATE_CHANGED", request.eventType)
-                    SceneEventType.STATE_CHANGED
-                },
-            fromState = request.fromState?.let { value ->
-                SceneState.entries.firstOrNull { it.name.equals(value, ignoreCase = true) }
-                    ?: run {
-                        log.warn("Unknown SceneState: '{}', defaulting to UNKNOWN", value)
-                        SceneState.UNKNOWN
-                    }
-            },
-            toState = request.toState?.let { value ->
-                SceneState.entries.firstOrNull { it.name.equals(value, ignoreCase = true) }
-                    ?: run {
-                        log.warn("Unknown SceneState: '{}', defaulting to UNKNOWN", value)
-                        SceneState.UNKNOWN
-                    }
-            },
-            triggerType = request.triggerType?.let { value ->
-                TriggerType.entries.firstOrNull { it.name.equals(value, ignoreCase = true) }
-                    ?: run {
-                        log.warn("Unknown TriggerType: '{}', defaulting to SCHEDULED", value)
-                        TriggerType.SCHEDULED
-                    }
-            },
+            eventType = parseEnum<SceneEventType>(request.eventType, SceneEventType.STATE_CHANGED, log),
+            fromState = request.fromState?.let { parseEnum<SceneState>(it, SceneState.UNKNOWN, log) },
+            toState = request.toState?.let { parseEnum<SceneState>(it, SceneState.UNKNOWN, log) },
+            triggerType = request.triggerType?.let { parseEnum<TriggerType>(it, TriggerType.SCHEDULED, log) },
             timestamp = request.timestamp ?: request.occurredAt ?: Instant.now(),
-            payloadJson = request.payloadJson
+            payloadJson = request.payloadJson,
         )
         sceneEventRepository.save(event)
     }
+
+    private inline fun <reified E : Enum<E>> parseEnum(value: String, default: E, log: org.slf4j.Logger): E =
+        enumValues<E>().firstOrNull { it.name.equals(value, ignoreCase = true) }
+            ?: run { log.warn("Unknown {}: '{}', defaulting to {}", E::class.simpleName, value, default.name); default }
 }

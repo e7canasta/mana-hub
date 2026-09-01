@@ -49,18 +49,7 @@ class IntegrationService(
         try {
             val envelope = objectMapper.treeToValue(body, SignalEnvelope::class.java)
             val residentId = resolveResidentId(envelope.resident ?: envelope.residentId, payload.bedId)
-            val twinNode = body.path("twinSnapshot")
-            val twinJson = if (twinNode.isMissingNode || twinNode.isNull) "{}" else twinNode.toString()
-            val stateSince = twinNode.path("stateSince").asText(null)?.let { runCatching { Instant.parse(it) }.getOrNull() }
-            val sceneSince = twinNode.path("sceneSince").asText(null)?.let { runCatching { Instant.parse(it) }.getOrNull() }
-            val signalLost = twinNode.path("signalLost").let { if (it.isMissingNode || it.isNull) null else it.asBoolean() }
-            val monitorId = twinNode.path("monitor").let { n ->
-                when {
-                    n.isMissingNode || n.isNull -> null
-                    n.isObject -> n.path("value").asText(null)
-                    else -> n.asText(null)
-                }
-            } ?: twinNode.path("monitorId").asText(null)
+            val twin = TwinSnapshot.parse(body)
             val eventModel = SceneEventModel(
                 id = Identifier(UUID.randomUUID().toString()),
                 eventId = payload.eventId,
@@ -68,20 +57,50 @@ class IntegrationService(
                 residentId = residentId,
                 eventType = payload.type,
                 fromState = hiveFromState(payload.type, body),
-                toState = hiveToState(payload.type, body, twinNode),
+                toState = hiveToState(payload.type, body, twin.node),
                 triggerType = body.path("trigger").asText(null),
                 timestamp = payload.timestamp,
                 payloadJson = "{}",
-                twinSnapshotJson = twinJson,
-                stateSince = stateSince,
-                sceneSince = sceneSince,
-                signalLost = signalLost,
-                monitorId = monitorId,
+                twinSnapshotJson = twin.json,
+                stateSince = twin.stateSince,
+                sceneSince = twin.sceneSince,
+                signalLost = twin.signalLost,
+                monitorId = twin.monitorId,
             )
             sceneEventPort.save(eventModel)
-            log.info("SceneEvent persisted: {} {} resident={} twinSnapshot={}", payload.type, payload.eventId, residentId?.value ?: "null", twinJson != "{}")
+            log.info("SceneEvent persisted: {} {} resident={} twinSnapshot={}", payload.type, payload.eventId, residentId?.value ?: "null", twin.json != "{}")
         } catch (e: Exception) {
             log.warn("Failed to persist SceneEvent {}: {}", payload.type, e.message)
+        }
+    }
+
+    private data class TwinSnapshot(
+        val node: JsonNode,
+        val json: String,
+        val stateSince: Instant?,
+        val sceneSince: Instant?,
+        val signalLost: Boolean?,
+        val monitorId: String?,
+    ) {
+        companion object {
+            fun parse(body: JsonNode): TwinSnapshot {
+                val node = body.path("twinSnapshot")
+                val json = if (node.isMissingNode || node.isNull) "{}" else node.toString()
+                return TwinSnapshot(
+                    node = node,
+                    json = json,
+                    stateSince = node.path("stateSince").asText(null)?.let { runCatching { Instant.parse(it) }.getOrNull() },
+                    sceneSince = node.path("sceneSince").asText(null)?.let { runCatching { Instant.parse(it) }.getOrNull() },
+                    signalLost = node.path("signalLost").let { if (it.isMissingNode || it.isNull) null else it.asBoolean() },
+                    monitorId = node.path("monitor").let { n ->
+                        when {
+                            n.isMissingNode || n.isNull -> null
+                            n.isObject -> n.path("value").asText(null)
+                            else -> n.asText(null)
+                        }
+                    } ?: node.path("monitorId").asText(null),
+                )
+            }
         }
     }
 
