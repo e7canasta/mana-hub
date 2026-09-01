@@ -2,6 +2,7 @@ package com.hub.insights.domain.recommend
 
 import com.hub.insights.domain.derive.Baseline
 import com.hub.insights.domain.derive.SleepDerived
+import com.hub.insights.domain.find.SleepPolicy
 
 data class Recommendation(
     val code: String,
@@ -11,7 +12,7 @@ data class Recommendation(
 
 object WellbeingRecommendations {
 
-    fun forSleep(baseline: Baseline, derived: SleepDerived): List<Recommendation> {
+    fun forSleep(baseline: Baseline, derived: SleepDerived, policy: SleepPolicy = SleepPolicy()): List<Recommendation> {
         val out = mutableListOf<Recommendation>()
         if (!baseline.ready) {
             out += Recommendation(
@@ -25,19 +26,19 @@ object WellbeingRecommendations {
         val share = derived.restlessShare
         when {
             share == null -> Unit
-            share <= 0.20 -> out += Recommendation(
+            share <= policy.sleepInRangeThreshold && policy.sleepInRangeEnabled -> out += Recommendation(
                 code = "SLEEP_IN_RANGE",
                 severity = "info",
                 text = "Comparado contra su propia línea base, no contra un estándar: en su rango. " +
                     "Un promedio de sueño sólo significa algo al lado de cuánto duerme habitualmente esta persona.",
             )
-            share <= 0.35 -> out += Recommendation(
+            share <= policy.restlessFragmentedThreshold && policy.restlessFragmentedEnabled -> out += Recommendation(
                 code = "SLEEP_RESTLESS",
                 severity = "warning",
                 text = "El sueño inquieto está por encima de su rango habitual. " +
                     "Conviene mirar salidas de cama y ventanas cortadas antes de cambiar alarmas.",
             )
-            else -> out += Recommendation(
+            policy.restlessFragmentedEnabled -> out += Recommendation(
                 code = "SLEEP_FRAGMENTED",
                 severity = "warning",
                 text = "Noche muy fragmentada respecto de su línea base. Revisar perfil ComeBack y rondas de madrugada.",
@@ -45,7 +46,7 @@ object WellbeingRecommendations {
         }
 
         val delta = derived.deltaCalmMinutesWoW
-        if (delta != null && delta <= -45) {
+        if (delta != null && delta <= -policy.dropWoWMinutes && policy.dropWoWEnabled) {
             out += Recommendation(
                 code = "SLEEP_DROP_WOW",
                 severity = "warning",

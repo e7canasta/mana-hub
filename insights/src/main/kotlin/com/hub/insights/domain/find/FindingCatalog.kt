@@ -4,22 +4,29 @@ import java.time.Instant
 
 object FindingCatalog {
 
-    fun evaluate(ctx: FindingContext): List<Finding> {
+    fun evaluate(
+        ctx: FindingContext,
+        sleepPolicy: SleepPolicy = SleepPolicy(),
+        carePolicy: CarePolicy = CarePolicy(),
+        bathroomPolicy: BathroomPolicy = BathroomPolicy(),
+    ): List<Finding> {
         if (!ctx.baseline.ready) {
             return listOf(baselineForming(ctx))
         }
         val out = mutableListOf<Finding>()
-        val cluster = dawnCluster(ctx)
-        when {
-            cluster != null && policyGap(ctx) -> out += policyDawn(ctx, cluster)
-            cluster != null -> out += clusterOnly(ctx, cluster)
+        if (sleepPolicy.dawnClusterEnabled) {
+            val cluster = dawnCluster(ctx, sleepPolicy)
+            when {
+                cluster != null && policyGap(ctx) -> out += policyDawn(ctx, cluster)
+                cluster != null -> out += clusterOnly(ctx, cluster)
+            }
         }
-        exitsRising(ctx)?.let { out += it }
-        restlessHigh(ctx)?.let { out += it }
-        bathroomNight(ctx)?.let { out += it }
-        careThin(ctx)?.let { out += it }
+        if (sleepPolicy.exitsRisingEnabled) exitsRising(ctx, sleepPolicy)?.let { out += it }
+        if (sleepPolicy.restlessHighEnabled) restlessHigh(ctx, sleepPolicy)?.let { out += it }
+        if (bathroomPolicy.bathroomNightEnabled) bathroomNight(ctx, bathroomPolicy)?.let { out += it }
+        if (carePolicy.careThinEnabled) careThin(ctx, carePolicy)?.let { out += it }
         briefing(ctx)?.let { out += it }
-        sleepInRange(ctx)?.let { out += it }
+        if (sleepPolicy.sleepInRangeEnabled) sleepInRange(ctx, sleepPolicy)?.let { out += it }
         return out
     }
 
@@ -43,11 +50,11 @@ object FindingCatalog {
         val alwaysDawn: Boolean get() = exits.isNotEmpty() && dawn.size == exits.size
     }
 
-    private fun dawnCluster(ctx: FindingContext): DawnStats? {
+    private fun dawnCluster(ctx: FindingContext, policy: SleepPolicy): DawnStats? {
         val exits = ctx.exitsLast7d
-        if (exits.size < 3) return null
-        val dawn = exits.filter { BedExits.isDawn(it, ctx.zone) }
-        if (dawn.size * 3 < exits.size * 2) return null
+        if (exits.size < policy.dawnMinCount) return null
+        val dawn = exits.filter { BedExits.isDawn(it, ctx.zone, policy) }
+        if (dawn.size.toDouble() / exits.size < policy.dawnRatio) return null
         return DawnStats(exits, dawn)
     }
 
@@ -131,8 +138,8 @@ object FindingCatalog {
         "exitAt" to stats.exits.map { it.toString() },
     )
 
-    private fun exitsRising(ctx: FindingContext): Finding? {
-        if (!SleepBriefing.exitsRising(ctx.sleepDays)) return null
+    private fun exitsRising(ctx: FindingContext, policy: SleepPolicy): Finding? {
+        if (!SleepBriefing.exitsRising(ctx.sleepDays, policy)) return null
         val (last7, prev7) = SleepBriefing.weeks(ctx.sleepDays)
         val last = last7.map { it.bedExitCount }.average()
         val prev = prev7.map { it.bedExitCount }.average()
@@ -151,9 +158,9 @@ object FindingCatalog {
         )
     }
 
-    private fun restlessHigh(ctx: FindingContext): Finding? {
+    private fun restlessHigh(ctx: FindingContext, policy: SleepPolicy): Finding? {
         val share = ctx.sleep.restlessShare ?: return null
-        if (share <= 0.25) return null
+        if (share <= policy.restlessHighThreshold) return null
         val minutes = ctx.sleep.avgRestlessMinutes7d?.let { CopyFormat.clock(it) } ?: return null
         return Finding(
             code = "SLEEP_RESTLESS_HIGH",
@@ -170,9 +177,9 @@ object FindingCatalog {
         )
     }
 
-    private fun sleepInRange(ctx: FindingContext): Finding? {
+    private fun sleepInRange(ctx: FindingContext, policy: SleepPolicy): Finding? {
         val share = ctx.sleep.restlessShare ?: return null
-        if (share > 0.20) return null
+        if (share > policy.sleepInRangeThreshold) return null
         return Finding(
             code = "SLEEP_IN_RANGE",
             kind = FindingKind.WATCH,
@@ -202,14 +209,14 @@ object FindingCatalog {
         )
     }
 
-    private fun bathroomNight(ctx: FindingContext): Finding? {
+    private fun bathroomNight(ctx: FindingContext, policy: BathroomPolicy): Finding? {
         val ordered = ctx.bathroomDays.filter { it.measured }.sortedBy { it.day }
         val last7 = ordered.takeLast(7)
         val prev7 = ordered.dropLast(7).takeLast(7)
         if (last7.isEmpty() || prev7.isEmpty()) return null
         val last = last7.map { it.nightVisitCount }.average()
         val prev = prev7.map { it.nightVisitCount }.average()
-        if (last < 1.0 || last < prev * 1.5) return null
+        if (last < policy.nightMinAvg || last < prev * policy.nightRiseFactor) return null
         return Finding(
             code = "BATHROOM_NIGHT_UP",
             kind = FindingKind.TREND,
@@ -225,9 +232,9 @@ object FindingCatalog {
         )
     }
 
-    private fun careThin(ctx: FindingContext): Finding? {
+    private fun careThin(ctx: FindingContext, policy: CarePolicy): Finding? {
         val avg = ctx.careAvgMinutes ?: return null
-        if (avg >= 20.0) return null
+        if (avg >= policy.careThinMinutes) return null
         return Finding(
             code = "CARE_THIN",
             kind = FindingKind.WATCH,

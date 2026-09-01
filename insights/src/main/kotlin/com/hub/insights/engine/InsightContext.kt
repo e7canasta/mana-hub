@@ -2,7 +2,10 @@ package com.hub.insights.engine
 
 import com.hub.insights.domain.derive.Baseline
 import com.hub.insights.domain.derive.SleepDerived
+import com.hub.insights.domain.find.BathroomPolicy
+import com.hub.insights.domain.find.CarePolicy
 import com.hub.insights.domain.find.Finding
+import com.hub.insights.domain.find.SleepPolicy
 import com.hub.insights.domain.recommend.Recommendation
 import java.time.Instant
 import java.time.LocalDate
@@ -36,6 +39,9 @@ data class InsightContext(
     val episodes: List<EpisodeData>,
     val zone: java.time.ZoneId,
     val windowDays: Int,
+    val sleepPolicy: SleepPolicy = SleepPolicy(),
+    val carePolicy: CarePolicy = CarePolicy(),
+    val bathroomPolicy: BathroomPolicy = BathroomPolicy(),
 )
 
 // ─── Modelos del pipeline (dominio, no infra) ───

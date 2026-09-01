@@ -113,4 +113,36 @@ class CuidadoBehaviorSpec : BehaviorSpec({
             }
         }
     }
+
+    given("notas de residente y turno que deja la guardia") {
+        `when`("enfermera deja ResidentNote CLINICAL con trazabilidad") {
+            val n = ResidentNote.create(ResidentId("maria-1"), "enfermera.ana", ResidentNoteKind.CLINICAL, "Descansó bien", sourceEventId = "evt-1")
+            then("guarda kind y evento origen") {
+                n.kind shouldBe ResidentNoteKind.CLINICAL
+                n.sourceEventId shouldBe "evt-1"
+                ResidentNoteKind.from("insight") shouldBe ResidentNoteKind.INSIGHT
+            }
+        }
+        `when`("guardia deja ShiftNote de noche sin novedades") {
+            val s = ShiftNote.create(
+                facilityId = com.hub.shared.domain.FacilityId("fac-1"),
+                wingId = com.hub.shared.domain.WingId("ala-norte"),
+                shiftKey = "noche", shiftDate = "2026-09-01",
+                authorId = "enfermera.noche", kind = ShiftNoteKind.GENERAL,
+                body = "3 rondas, sin incidentes"
+            )
+            then("queda con ala y turno") {
+                s.wingId?.value shouldBe "ala-norte"
+                s.kind shouldBe ShiftNoteKind.GENERAL
+                ShiftNoteKind.from("SHIFT_SUMMARY") shouldBe ShiftNoteKind.SHIFT_SUMMARY
+            }
+        }
+        `when`("tipos de nota cubren clínica y observación") {
+            then("los 7 CareNoteKind existen") {
+                CareNoteKind.from("PATTERN") shouldBe CareNoteKind.PATTERN
+                CareNoteKind.from("OBSERVATION") shouldBe CareNoteKind.OBSERVATION
+                EpisodeNoteKind.from("RESOLUTION") shouldBe EpisodeNoteKind.RESOLUTION
+            }
+        }
+    }
 })

@@ -33,6 +33,7 @@ dependencies {
     implementation(project(":observation"))
     implementation(project(":integration"))
     implementation(project(":panel-api"))
+    implementation(project(":insights"))
     // event-bridge runs as standalone process, not embedded in mana-hub
     // implementation(project(":event-bridge"))
 

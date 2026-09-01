@@ -113,4 +113,52 @@ class FlujoObservacionBehaviorSpec : BehaviorSpec({
             }
         }
     }
+
+    given("señales centinela que originan episodios") {
+        `when`("SignalType reconoce los 8 tipos del contrato mana-hive") {
+            then("no explota con tipo inventado") {
+                SignalType.from("EPISODE_OPENED") shouldBe SignalType.EPISODE_OPENED
+                SignalType.from("DWELL_PRE_WARNING") shouldBe SignalType.DWELL_PRE_WARNING
+                SignalType.from("INVENTADO") shouldBe null
+            }
+        }
+        `when`("SentinelSignalType mapea FALL_RISK y tolera guiones") {
+            then("FALL_RISK y default NO_MOVEMENT") {
+                SentinelSignalType.from("FALL_RISK") shouldBe SentinelSignalType.FALL_RISK
+                SentinelSignalType.from("fall-risk") shouldBe SentinelSignalType.FALL_RISK
+                SentinelSignalType.from("inventado") shouldBe SentinelSignalType.NO_MOVEMENT
+            }
+        }
+        `when`("se persiste señal centinela con enriquecimiento V16") {
+            val s = SentinelSignal(
+                id = com.hub.shared.domain.Identifier.random(), signalId = "sig-1",
+                bedId = com.hub.shared.domain.BedId("cama-12"),
+                residentId = com.hub.shared.domain.ResidentId("maria-1"),
+                episodeId = "ep-99", type = SentinelSignalType.FALL_RISK, severity = "CRITICAL",
+                trigger = "DWELL", timestamp = java.time.Instant.now(), payloadJson = """{"rule":"BED_EDGE"}""",
+                ruleId = "BED_EDGE", triggerOn = "DWELL", requiresNvr = true
+            )
+            then("guarda trazabilidad sin re-parsear JSON") {
+                s.ruleId shouldBe "BED_EDGE"
+                s.requiresNvr shouldBe true
+            }
+        }
+    }
+
+    given("escena con valores desconocidos del motor") {
+        `when`("el motor manda SceneState inventado") {
+            then("cae a UNKNOWN, no explota — SOR tolerante") {
+                SceneState.from("inventado") shouldBe SceneState.UNKNOWN
+                SceneState.from("no-existe") shouldBe SceneState.UNKNOWN
+                SceneState.from("SLEEPING") shouldBe SceneState.SLEEPING
+            }
+        }
+        `when`("el motor manda SceneEventType inventado") {
+            then("falla rápido — contrato estricto") {
+                io.kotest.assertions.throwables.shouldThrow<IllegalArgumentException> {
+                    SceneEventType.from("inventado")
+                }
+            }
+        }
+    }
 })

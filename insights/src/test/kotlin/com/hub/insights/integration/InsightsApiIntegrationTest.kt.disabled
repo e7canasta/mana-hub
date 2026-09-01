@@ -1,0 +1,105 @@
+package com.hub.insights.integration
+
+import com.hub.integration.IntegrationTestBase
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+
+/**
+ * Insights API — integración punta a punta con PostgreSQL real.
+ *
+ * Patrón: IntegrationTestBase (Testcontainers) + seed-test.sql
+ * Cada dominio tiene su seed, se componen al inicio del test.
+ */
+class InsightsApiIntegrationTest : IntegrationTestBase() {
+
+    @BeforeEach
+    fun setUp() {
+        cleanDatabase()
+    }
+
+    @Nested
+    inner class `POST episodes resolved` {
+
+        @Test
+        fun `auto-recovery returns EPISODE_SELF_RECOVERY`() {
+            val result = post("/internal/v1/insights/episodes/resolved", mapOf(
+                "residentId" to "jose",
+                "episodeId" to "ep-001",
+                "selfRecovery" to true,
+                "durationMinutes" to 17,
+            )) as Map<*, *>
+
+            assertThat(result["residentId"]).isEqualTo("jose")
+            assertThat(result["episodeId"]).isEqualTo("ep-001")
+            @Suppress("UNCHECKED_CAST")
+            val recs = result["recommendations"] as List<Map<String, Any>>
+            assertThat(recs[0]["code"]).isEqualTo("EPISODE_SELF_RECOVERY")
+        }
+
+        @Test
+        fun `staff closure returns EPISODE_STAFF_CLOSED`() {
+            val result = post("/internal/v1/insights/episodes/resolved", mapOf(
+                "residentId" to "maria",
+                "selfRecovery" to false,
+                "durationMinutes" to 25,
+            )) as Map<*, *>
+
+            @Suppress("UNCHECKED_CAST")
+            val recs = result["recommendations"] as List<Map<String, Any>>
+            assertThat(recs[0]["code"]).isEqualTo("EPISODE_STAFF_CLOSED")
+        }
+
+        @Test
+        fun `missing episodeId defaults to empty string`() {
+            val result = post("/internal/v1/insights/episodes/resolved", mapOf(
+                "residentId" to "jose",
+                "selfRecovery" to true,
+            )) as Map<*, *>
+
+            assertThat(result["episodeId"]).isEqualTo("")
+        }
+    }
+
+    @Nested
+    inner class `GET sleep endpoint` {
+
+        @Test
+        fun `returns sleep insight for seeded resident`() {
+            val result = get("/api/v1/insights/resident-chart/jose/sleep?from=2026-08-01&to=2026-08-30") as Map<*, *>
+            assertThat(result["residentId"]).isEqualTo("jose")
+            assertThat(result["baselineReady"]).isNotNull()
+        }
+
+        @Test
+        fun `returns 404 for nonexistent resident`() {
+            try {
+                get("/api/v1/insights/resident-chart/nonexistent/sleep?from=2026-08-01&to=2026-08-30")
+            } catch (ex: AssertionError) {
+                assertThat(ex.message).contains("404")
+            }
+        }
+    }
+
+    @Nested
+    inner class `GET care endpoint` {
+
+        @Test
+        fun `returns care insight for seeded resident`() {
+            val result = get("/api/v1/insights/resident-chart/jose/care?from=2026-08-01&to=2026-08-30") as Map<*, *>
+            assertThat(result["residentId"]).isEqualTo("jose")
+        }
+    }
+
+    @Nested
+    inner class `GET briefing endpoint` {
+
+        @Test
+        fun `returns resident briefing`() {
+            val result = get("/api/v1/insights/resident-chart/jose/briefing?from=2026-08-01&to=2026-08-30") as Map<*, *>
+            assertThat(result["residentId"]).isEqualTo("jose")
+            assertThat(result["findings"]).isNotNull()
+        }
+    }
+}

@@ -13,6 +13,7 @@ data class InsightsProperties(
     val walkingMetersPerMinute: Double = 50.0,
     /** Latencia de sueño: minutos del primer Lying de la noche (no de cada vuelta a la cama). */
     val deepSleepAfterMinutes: Int = 10,
+    val defaultFacilityId: String = "default",
     val rollup: RollupProperties = RollupProperties(),
 ) {
     val zoneId: ZoneId get() = ZoneId.of(timezone)

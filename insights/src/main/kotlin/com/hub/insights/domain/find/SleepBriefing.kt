@@ -71,6 +71,14 @@ object SleepBriefing {
         return last >= prev * 1.15 && last - prev >= 0.3
     }
 
+    fun exitsRising(sleepDays: List<HubSleepDay>, policy: SleepPolicy): Boolean {
+        val (last7, prev7) = weeks(sleepDays)
+        if (last7.isEmpty() || prev7.isEmpty()) return false
+        val last = last7.map { it.bedExitCount }.average()
+        val prev = prev7.map { it.bedExitCount }.average()
+        return last >= prev * policy.exitsRisingFactor && last - prev >= policy.exitsRisingMinDelta
+    }
+
     fun weeks(sleepDays: List<HubSleepDay>): Pair<List<HubSleepDay>, List<HubSleepDay>> {
         val ordered = sleepDays.filter { it.measured }.sortedBy { it.day }
         val last7 = ordered.takeLast(7)

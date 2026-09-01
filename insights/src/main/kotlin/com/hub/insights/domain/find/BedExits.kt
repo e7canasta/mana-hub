@@ -27,6 +27,13 @@ object BedExits {
         return !time.isBefore(DAWN_FROM) && !time.isAfter(DAWN_TO)
     }
 
+    fun isDawn(at: Instant, zone: ZoneId, policy: SleepPolicy): Boolean {
+        val from = LocalTime.parse(policy.dawnFrom)
+        val to = LocalTime.parse(policy.dawnTo)
+        val time = at.atZone(zone).toLocalTime()
+        return !time.isBefore(from) && !time.isAfter(to)
+    }
+
     fun staffAfter(exits: List<Instant>, visits: List<StaffVisit>): Int =
         exits.count { exit ->
             visits.any { visit ->

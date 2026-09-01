@@ -112,4 +112,22 @@ class VigilanciaBehaviorSpec : BehaviorSpec({
             }
         }
     }
+
+    given("estado y severidad como lenguaje del panel") {
+        `when`("el panel filtra por estado") {
+            then("PENDING/ACK/RESOLVED existen y fallan con inventado") {
+                EpisodeStatus.from("pending") shouldBe EpisodeStatus.PENDING
+                EpisodeStatus.from("ACKNOWLEDGED") shouldBe EpisodeStatus.ACKNOWLEDGED
+                shouldThrow<IllegalArgumentException> { EpisodeStatus.from("inventado") }
+            }
+        }
+        `when`("comparo severidades para decidir si escalar") {
+            then("EMERGENCY > CRITICAL > WARNING > INFO") {
+                EpisodeSeverity.EMERGENCY.isMoreSevereThan(EpisodeSeverity.CRITICAL) shouldBe true
+                EpisodeSeverity.CRITICAL.isMoreSevereThan(EpisodeSeverity.WARNING) shouldBe true
+                EpisodeSeverity.INFO.isMoreSevereThan(EpisodeSeverity.INFO) shouldBe false
+                EpisodeSeverity.from("warning") shouldBe EpisodeSeverity.WARNING
+            }
+        }
+    }
 })

@@ -2,7 +2,6 @@ package com.hub.insights.experts
 
 import com.hub.insights.domain.find.FindingCatalog
 import com.hub.insights.domain.find.FindingContext
-import com.hub.insights.domain.find.PolicyCopy
 import com.hub.insights.domain.find.SleepBriefing
 import com.hub.insights.domain.recommend.WellbeingRecommendations
 import com.hub.insights.engine.ExpertResult
@@ -17,6 +16,8 @@ import com.hub.insights.engine.InsightContext
  * - Salidas de cama en aumento
  * - Visitas nocturnas al baño en aumento
  * - Sueño dentro/fuera del rango habitual
+ *
+ * Los umbrales vienen de SleepPolicy (configurable por instalación).
  */
 class SleepExpert : Expert {
 
@@ -58,14 +59,18 @@ class SleepExpert : Expert {
             relatedEpisodeIds = ctx.relatedEpisodeIds,
         )
 
-        val findings = FindingCatalog.evaluate(findingCtx)
+        val findings = FindingCatalog.evaluate(
+            ctx = findingCtx,
+            sleepPolicy = ctx.sleepPolicy,
+            bathroomPolicy = ctx.bathroomPolicy,
+        )
         val baseline = com.hub.insights.domain.derive.Baseline(
             admissionDate = null,
             observedFrom = ctx.baseline.observedFrom,
             observedDays = ctx.baseline.observedDays,
             ready = ctx.baseline.ready,
         )
-        val recommendations = WellbeingRecommendations.forSleep(baseline, ctx.derived)
+        val recommendations = WellbeingRecommendations.forSleep(baseline, ctx.derived, ctx.sleepPolicy)
 
         return ExpertResult(
             expertName = "sueño",
