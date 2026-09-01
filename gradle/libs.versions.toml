@@ -8,6 +8,7 @@ springdoc = "2.7.0"
 mockk = "1.13.13"
 assertj = "3.27.0"
 jnats = "2.21.4"
+archunit = "1.4.0"
 
 [libraries]
 # build-logic classpath
@@ -40,6 +41,8 @@ testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.
 
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+archunit-kotlin = { module = "com.tngtech.archunit:archunit-kotlin-dsl", version.ref = "archunit" }
 
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }

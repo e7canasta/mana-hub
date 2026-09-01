@@ -1,5 +1,18 @@
 plugins {
     id("hub.spring-service")
+    jacoco
+}
+
+jacoco {
+    toolVersion = "0.8.13"
+}
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
 }
 
 val springBootVersion = libs.versions.spring.boot.get()
@@ -57,6 +70,7 @@ tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.mockk)
     testImplementation(libs.assertj)
+    testImplementation(libs.archunit.junit5)
     testImplementation(libs.testcontainers.junit.jupiter)
     testImplementation(libs.testcontainers.postgresql)
     testImplementation("org.apache.httpcomponents.client5:httpclient5")
