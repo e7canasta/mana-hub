@@ -4,6 +4,7 @@ import com.hub.streams.domain.model.*
 import com.hub.streams.domain.repository.StreamRegionRepository
 import com.hub.streams.domain.repository.StreamRepository
 import com.hub.shared.domain.RoomId
+import com.hub.shared.time.HubClock
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
@@ -49,17 +50,17 @@ interface StreamRegionEntityRepository : JpaRepository<StreamRegionEntity, Strin
 }
 
 @Repository
-class StreamRepositoryAdapter(private val jpa: StreamEntityRepository) : StreamRepository {
+class StreamRepositoryAdapter(private val jpa: StreamEntityRepository, private val clock: HubClock) : StreamRepository {
     override fun findById(id: StreamId): Stream? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByRoomId(roomId: RoomId): List<Stream> = jpa.findByRoomId(roomId.value).map { it.toDomain() }
     override fun save(stream: Stream): Stream = jpa.save(stream.toEntity()).toDomain()
 
     private fun StreamEntity.toDomain() = Stream.reconstitute(StreamId(id), RoomId(roomId), streamKey, name, active, version)
-    private fun Stream.toEntity() = StreamEntity(id.value, roomId.value, streamKey, name, active, Instant.now(), Instant.now())
+    private fun Stream.toEntity() = StreamEntity(id.value, roomId.value, streamKey, name, active, clock.now(), clock.now())
 }
 
 @Repository
-class StreamRegionRepositoryAdapter(private val jpa: StreamRegionEntityRepository) : StreamRegionRepository {
+class StreamRegionRepositoryAdapter(private val jpa: StreamRegionEntityRepository, private val clock: HubClock) : StreamRegionRepository {
     override fun findById(id: StreamId): StreamRegion? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByStreamId(streamId: StreamId): List<StreamRegion> = jpa.findByStreamId(streamId.value).map { it.toDomain() }
     override fun save(region: StreamRegion): StreamRegion = jpa.save(region.toEntity()).toDomain()
@@ -69,6 +70,6 @@ class StreamRegionRepositoryAdapter(private val jpa: StreamRegionEntityRepositor
         StreamId(id), StreamId(streamId), RegionType.from(regionType), points, label, isStatic, updatedBy, version
     )
     private fun StreamRegion.toEntity() = StreamRegionEntity(
-        id.value, streamId.value, regionType.name.lowercase(), points, label, isStatic, updatedBy, Instant.now(), Instant.now()
+        id.value, streamId.value, regionType.name.lowercase(), points, label, isStatic, updatedBy, clock.now(), clock.now()
     )
 }

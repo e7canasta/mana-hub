@@ -8,6 +8,7 @@ import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.FacilityId
 import com.hub.shared.domain.WingId
 import com.hub.shared.domain.Identifier
+import com.hub.shared.time.HubClock
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
@@ -71,7 +72,7 @@ interface ShiftNoteEntityRepository : JpaRepository<ShiftNoteEntity, String> {
 }
 
 @Repository
-class ResidentNoteRepositoryAdapter(private val jpa: ResidentNoteEntityRepository) : ResidentNoteRepository {
+class ResidentNoteRepositoryAdapter(private val jpa: ResidentNoteEntityRepository, private val clock: HubClock) : ResidentNoteRepository {
     override fun findById(id: Identifier): ResidentNote? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByResidentId(residentId: ResidentId): List<ResidentNote> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
     override fun save(note: ResidentNote): ResidentNote = jpa.save(note.toEntity()).toDomain()
@@ -82,12 +83,12 @@ class ResidentNoteRepositoryAdapter(private val jpa: ResidentNoteEntityRepositor
         timestamp = timestamp, createdAt = createdAt
     )
     private fun ResidentNote.toEntity() = ResidentNoteEntity(
-        id.value, residentId.value, authorId, kind.name, body, sourceEventId, timestamp, createdAt, Instant.now()
+        id.value, residentId.value, authorId, kind.name, body, sourceEventId, timestamp, createdAt, clock.now()
     )
 }
 
 @Repository
-class EpisodeNoteRepositoryAdapter(private val jpa: EpisodeNoteEntityRepository) : EpisodeNoteRepository {
+class EpisodeNoteRepositoryAdapter(private val jpa: EpisodeNoteEntityRepository, private val clock: HubClock) : EpisodeNoteRepository {
     override fun findById(id: Identifier): EpisodeNote? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByEpisodeId(episodeId: EpisodeId): List<EpisodeNote> = jpa.findByEpisodeId(episodeId.value).map { it.toDomain() }
     override fun save(note: EpisodeNote): EpisodeNote = jpa.save(note.toEntity()).toDomain()
@@ -102,7 +103,7 @@ class EpisodeNoteRepositoryAdapter(private val jpa: EpisodeNoteEntityRepository)
 }
 
 @Repository
-class ShiftNoteRepositoryAdapter(private val jpa: ShiftNoteEntityRepository) : ShiftNoteRepository {
+class ShiftNoteRepositoryAdapter(private val jpa: ShiftNoteEntityRepository, private val clock: HubClock) : ShiftNoteRepository {
     override fun findById(id: Identifier): ShiftNote? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByFacilityAndDate(facilityId: FacilityId, shiftDate: String): List<ShiftNote> = jpa.findByFacilityIdAndShiftDate(facilityId.value, shiftDate).map { it.toDomain() }
     override fun findByWingAndDate(wingId: WingId, shiftDate: String): List<ShiftNote> = jpa.findByWingIdAndShiftDate(wingId.value, shiftDate).map { it.toDomain() }

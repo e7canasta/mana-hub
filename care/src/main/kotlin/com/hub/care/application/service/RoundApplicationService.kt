@@ -4,6 +4,7 @@ import com.hub.care.application.dto.*
 import com.hub.care.domain.model.*
 import com.hub.care.domain.repository.RoundRepository
 import com.hub.care.domain.repository.RoundTaskRepository
+import com.hub.shared.domain.DomainEventPublisher
 import com.hub.shared.domain.WingId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -11,7 +12,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class RoundApplicationService(
     private val roundRepository: RoundRepository,
-    private val roundTaskRepository: RoundTaskRepository
+    private val roundTaskRepository: RoundTaskRepository,
+    private val eventPublisher: DomainEventPublisher
 ) {
 
     @Transactional
@@ -20,7 +22,9 @@ class RoundApplicationService(
         val existing = roundRepository.findInProgressByWingId(wingId)
         require(existing == null) { "There is already an in-progress round for this wing" }
         val round = Round.create(wingId = wingId, scheduledFor = request.scheduledFor)
-        return roundRepository.save(round).toResponse()
+        val saved = roundRepository.save(round)
+        publishEvents(round)
+        return saved.toResponse()
     }
 
     @Transactional(readOnly = true)
@@ -43,7 +47,10 @@ class RoundApplicationService(
     fun updateRound(id: String, actorId: String): RoundResponse {
         val round = roundRepository.findById(RoundId(id))
             ?: throw IllegalArgumentException("Round not found: $id")
-        return roundRepository.save(round.complete(actorId)).toResponse()
+        val completed = round.complete(actorId)
+        val saved = roundRepository.save(completed)
+        publishEvents(completed)
+        return saved.toResponse()
     }
 
     @Transactional
@@ -62,4 +69,9 @@ class RoundApplicationService(
         id = id.value, roundId = roundId.value, residentId = residentId.value,
         bedId = bedId?.value, status = status, note = note, completedAt = completedAt, completedBy = completedBy
     )
+
+    private fun publishEvents(round: Round) {
+        round.domainEvents.forEach { eventPublisher.publish(it) }
+        round.clearEvents()
+    }
 }

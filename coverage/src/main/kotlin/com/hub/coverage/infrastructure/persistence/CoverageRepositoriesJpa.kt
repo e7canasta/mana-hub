@@ -7,6 +7,7 @@ import com.hub.coverage.domain.repository.StaffMemberRepository
 import com.hub.shared.domain.FacilityId
 import com.hub.shared.domain.StaffMemberId
 import com.hub.shared.domain.UserId
+import com.hub.shared.time.HubClock
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
@@ -93,7 +94,7 @@ interface StaffMemberEntityRepository : JpaRepository<StaffMemberEntity, String>
 // ── Adapters: Domain Repository → JPA ──────────────────────────
 
 @Repository
-class StaffGroupRepositoryAdapter(private val jpa: StaffGroupEntityRepository) : StaffGroupRepository {
+class StaffGroupRepositoryAdapter(private val jpa: StaffGroupEntityRepository, private val clock: HubClock) : StaffGroupRepository {
     override fun findById(id: StaffGroupId): StaffGroup? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByFacilityId(facilityId: FacilityId): List<StaffGroup> = jpa.findByFacilityId(facilityId.value).map { it.toDomain() }
     override fun save(staffGroup: StaffGroup): StaffGroup = jpa.save(staffGroup.toEntity()).toDomain()
@@ -104,12 +105,12 @@ class StaffGroupRepositoryAdapter(private val jpa: StaffGroupEntityRepository) :
     )
     private fun StaffGroup.toEntity() = StaffGroupEntity(
         id.value, facilityId.value, name,
-        retiredAt, retiredBy, Instant.now(), Instant.now(), version
+        retiredAt, retiredBy, clock.now(), clock.now(), version
     )
 }
 
 @Repository
-class ShiftRepositoryAdapter(private val jpa: FacilityShiftEntityRepository) : ShiftRepository {
+class ShiftRepositoryAdapter(private val jpa: FacilityShiftEntityRepository, private val clock: HubClock) : ShiftRepository {
     override fun findById(id: StaffGroupId): FacilityShift? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByFacilityId(facilityId: FacilityId): List<FacilityShift> = jpa.findByFacilityId(facilityId.value).map { it.toDomain() }
     override fun save(shift: FacilityShift): FacilityShift = jpa.save(shift.toEntity()).toDomain()
@@ -120,12 +121,12 @@ class ShiftRepositoryAdapter(private val jpa: FacilityShiftEntityRepository) : S
     )
     private fun FacilityShift.toEntity() = FacilityShiftEntity(
         id.value, facilityId.value, key, label, startMinute, sortOrder,
-        retiredAt, retiredBy, Instant.now(), Instant.now(), version
+        retiredAt, retiredBy, clock.now(), clock.now(), version
     )
 }
 
 @Repository
-class StaffMemberRepositoryAdapter(private val jpa: StaffMemberEntityRepository) : StaffMemberRepository {
+class StaffMemberRepositoryAdapter(private val jpa: StaffMemberEntityRepository, private val clock: HubClock) : StaffMemberRepository {
     override fun findById(id: StaffMemberId): StaffMember? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByFacilityId(facilityId: String): List<StaffMember> = jpa.findByFacilityId(facilityId).map { it.toDomain() }
     override fun findByUserId(userId: String): StaffMember? = jpa.findByUserId(userId)?.toDomain()
@@ -137,6 +138,6 @@ class StaffMemberRepositoryAdapter(private val jpa: StaffMemberEntityRepository)
     )
     private fun StaffMember.toEntity() = StaffMemberEntity(
         id.value, facilityId.value, fullName, role.name, userId?.value,
-        null, null, Instant.now(), Instant.now(), version
+        null, null, clock.now(), clock.now(), version
     )
 }

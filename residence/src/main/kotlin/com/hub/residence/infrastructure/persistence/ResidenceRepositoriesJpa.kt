@@ -4,6 +4,7 @@ import com.hub.residence.domain.model.*
 import com.hub.shared.domain.BedId
 import com.hub.shared.domain.FacilityId
 import com.hub.residence.domain.repository.*
+import com.hub.shared.time.HubClock
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
@@ -121,37 +122,37 @@ interface RoomPrivacyRegionEntityRepository : JpaRepository<RoomPrivacyRegionEnt
 }
 
 @Repository
-class FacilityRepositoryAdapter(private val jpa: FacilityEntityRepository) : FacilityRepository {
+class FacilityRepositoryAdapter(private val jpa: FacilityEntityRepository, private val clock: HubClock) : FacilityRepository {
     override fun findById(id: FacilityId): Facility? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findAll(): List<Facility> = jpa.findAll().map { it.toDomain() }
     override fun save(facility: Facility): Facility = jpa.save(facility.toEntity()).toDomain()
 
     private fun FacilityEntity.toDomain() = Facility.reconstitute(FacilityId(id), name, timezone, retiredAt, retiredBy, version)
-    private fun Facility.toEntity() = FacilityEntity(id.value, name, timezone, retiredAt, retiredBy, Instant.now(), Instant.now(), version)
+    private fun Facility.toEntity() = FacilityEntity(id.value, name, timezone, retiredAt, retiredBy, clock.now(), clock.now(), version)
 }
 
 @Repository
-class WingRepositoryAdapter(private val jpa: WingEntityRepository) : WingRepository {
+class WingRepositoryAdapter(private val jpa: WingEntityRepository, private val clock: HubClock) : WingRepository {
     override fun findById(id: WingId): Wing? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByFacilityId(facilityId: FacilityId): List<Wing> = jpa.findByFacilityId(facilityId.value).map { it.toDomain() }
     override fun save(wing: Wing): Wing = jpa.save(wing.toEntity()).toDomain()
 
     private fun WingEntity.toDomain() = Wing.reconstitute(WingId(id), FacilityId(facilityId), name, floor, sortOrder, retiredAt, retiredBy, version)
-    private fun Wing.toEntity() = WingEntity(id.value, facilityId.value, name, floor, sortOrder, retiredAt, retiredBy, Instant.now(), Instant.now(), version)
+    private fun Wing.toEntity() = WingEntity(id.value, facilityId.value, name, floor, sortOrder, retiredAt, retiredBy, clock.now(), clock.now(), version)
 }
 
 @Repository
-class RoomRepositoryAdapter(private val jpa: RoomEntityRepository) : RoomRepository {
+class RoomRepositoryAdapter(private val jpa: RoomEntityRepository, private val clock: HubClock) : RoomRepository {
     override fun findById(id: RoomId): Room? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByWingId(wingId: WingId): List<Room> = jpa.findByWingId(wingId.value).map { it.toDomain() }
     override fun save(room: Room): Room = jpa.save(room.toEntity()).toDomain()
 
     private fun RoomEntity.toDomain() = Room.reconstitute(RoomId(id), WingId(wingId), number, roomType, streamKey, retiredAt, retiredBy, version)
-    private fun Room.toEntity() = RoomEntity(id.value, wingId.value, number, roomType, streamKey, retiredAt, retiredBy, Instant.now(), Instant.now(), version)
+    private fun Room.toEntity() = RoomEntity(id.value, wingId.value, number, roomType, streamKey, retiredAt, retiredBy, clock.now(), clock.now(), version)
 }
 
 @Repository
-class BedRepositoryAdapter(private val jpa: BedEntityRepository) : BedRepository {
+class BedRepositoryAdapter(private val jpa: BedEntityRepository, private val clock: HubClock) : BedRepository {
     override fun findById(id: BedId): Bed? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByRoomId(roomId: RoomId): List<Bed> = jpa.findByRoomId(roomId.value).map { it.toDomain() }
     override fun save(bed: Bed): Bed = jpa.save(bed.toEntity()).toDomain()
@@ -160,7 +161,7 @@ class BedRepositoryAdapter(private val jpa: BedEntityRepository) : BedRepository
     override fun findAll(): List<Bed> = jpa.findAll().map { it.toDomain() }
 
     private fun BedEntity.toDomain() = Bed.reconstitute(BedId(id), RoomId(roomId), label, monitorKey, retiredAt, retiredBy, version)
-    private fun Bed.toEntity() = BedEntity(id.value, roomId.value, label, monitorKey, retiredAt, retiredBy, Instant.now(), Instant.now(), version)
+    private fun Bed.toEntity() = BedEntity(id.value, roomId.value, label, monitorKey, retiredAt, retiredBy, clock.now(), clock.now(), version)
 }
 
 @Repository

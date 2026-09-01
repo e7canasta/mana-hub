@@ -1,5 +1,6 @@
 package com.hub.views
 
+import com.hub.shared.domain.BedLocation
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -9,14 +10,8 @@ import java.time.LocalDateTime
 data class ResidentRailItem(
     val id: String,
     val fullName: String,
-    val location: RailLocation?,
+    val location: BedLocation?,
     val currentState: RailState?,
-)
-
-data class RailLocation(
-    val wingName: String?,
-    val roomNumber: String?,
-    val bedLabel: String?,
 )
 
 data class RailState(
@@ -32,7 +27,7 @@ data class ResidentChartProjection(
     val fullName: String,
     val birthDate: LocalDate?,
     val admissionDate: LocalDate?,
-    val location: RailLocation?,
+    val location: BedLocation?,
     val currentState: RailState?,
 )
 

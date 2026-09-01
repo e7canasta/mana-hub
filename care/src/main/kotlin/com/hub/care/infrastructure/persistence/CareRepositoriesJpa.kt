@@ -7,6 +7,7 @@ import com.hub.care.domain.repository.RoundTaskRepository
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
 import com.hub.shared.domain.WingId
+import com.hub.shared.time.HubClock
 import jakarta.persistence.*
 import org.hibernate.annotations.Immutable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -79,7 +80,7 @@ interface CareNoteEntityRepository : JpaRepository<CareNoteEntity, String> {
 }
 
 @Repository
-class RoundRepositoryAdapter(private val jpa: RoundEntityRepository) : RoundRepository {
+class RoundRepositoryAdapter(private val jpa: RoundEntityRepository, private val clock: HubClock) : RoundRepository {
     override fun findById(id: RoundId): Round? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByWingId(wingId: WingId): List<Round> = jpa.findByWingId(wingId.value).map { it.toDomain() }
     override fun findInProgressByWingId(wingId: WingId): Round? = jpa.findInProgressByWingId(wingId.value)?.toDomain()
@@ -91,12 +92,12 @@ class RoundRepositoryAdapter(private val jpa: RoundEntityRepository) : RoundRepo
     )
     private fun Round.toEntity() = RoundEntity(
         id.value, wingId.value, status.name.lowercase(), scheduledFor,
-        startedAt, completedAt, startedBy, completedBy, Instant.now(), Instant.now()
+        startedAt, completedAt, startedBy, completedBy, clock.now(), clock.now()
     )
 }
 
 @Repository
-class RoundTaskRepositoryAdapter(private val jpa: RoundTaskEntityRepository) : RoundTaskRepository {
+class RoundTaskRepositoryAdapter(private val jpa: RoundTaskEntityRepository, private val clock: HubClock) : RoundTaskRepository {
     override fun findById(id: RoundTaskId): RoundTask? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByRoundId(roundId: RoundId): List<RoundTask> = jpa.findByRoundId(roundId.value).map { it.toDomain() }
     override fun save(task: RoundTask): RoundTask = jpa.save(task.toEntity()).toDomain()
@@ -107,12 +108,12 @@ class RoundTaskRepositoryAdapter(private val jpa: RoundTaskEntityRepository) : R
     )
     private fun RoundTask.toEntity() = RoundTaskEntity(
         id.value, roundId.value, residentId.value, bedId?.value,
-        status.name, note, completedAt, completedBy, Instant.now(), Instant.now()
+        status.name, note, completedAt, completedBy, clock.now(), clock.now()
     )
 }
 
 @Repository
-class CareNoteRepositoryAdapter(private val jpa: CareNoteEntityRepository) : CareNoteRepository {
+class CareNoteRepositoryAdapter(private val jpa: CareNoteEntityRepository, private val clock: HubClock) : CareNoteRepository {
     override fun findByResidentId(residentId: ResidentId): List<CareNote> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
     override fun save(note: CareNote): CareNote = jpa.save(note.toEntity()).toDomain()
 
@@ -120,6 +121,6 @@ class CareNoteRepositoryAdapter(private val jpa: CareNoteEntityRepository) : Car
         CareNoteId(id), ResidentId(residentId), authorId, CareNoteKind.from(kind), body, durationMin, createdAt
     )
     private fun CareNote.toEntity() = CareNoteEntity(
-        id.value, residentId.value, authorId, kind.name, body, durationMin, createdAt, Instant.now()
+        id.value, residentId.value, authorId, kind.name, body, durationMin, createdAt, clock.now()
     )
 }

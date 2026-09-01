@@ -2,6 +2,7 @@ package com.hub.population.application.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.hub.population.domain.model.ResidentStatus
+import com.hub.shared.domain.BedLocation
 import java.time.Instant
 import java.time.LocalDate
 
@@ -17,14 +18,6 @@ data class UpdateResidentRequest(
     val birthDate: LocalDate? = null
 )
 
-data class ResidentLocation(
-    val wingId: String?,
-    val wingName: String?,
-    val roomNumber: String?,
-    val bedId: String?,
-    val bedLabel: String?
-)
-
 data class ResidentResponse(
     val id: String,
     val externalId: String?,
@@ -33,7 +26,7 @@ data class ResidentResponse(
     val admissionDate: LocalDate,
     val status: ResidentStatus,
     @JsonProperty("isDischarged") val isDischarged: Boolean,
-    val location: ResidentLocation? = null
+    val location: BedLocation? = null
 )
 
 data class CreateAssignmentRequest(

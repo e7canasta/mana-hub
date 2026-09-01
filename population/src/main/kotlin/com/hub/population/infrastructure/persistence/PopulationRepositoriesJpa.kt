@@ -5,6 +5,7 @@ import com.hub.population.domain.repository.BedAssignmentRepository
 import com.hub.population.domain.repository.ResidentRepository
 import com.hub.shared.domain.BedId
 import com.hub.shared.domain.ResidentId
+import com.hub.shared.time.HubClock
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
@@ -59,7 +60,7 @@ interface BedAssignmentEntityRepository : JpaRepository<BedAssignmentEntity, Str
 }
 
 @Repository
-class ResidentRepositoryAdapter(private val jpa: ResidentEntityRepository) : ResidentRepository {
+class ResidentRepositoryAdapter(private val jpa: ResidentEntityRepository, private val clock: HubClock) : ResidentRepository {
     override fun findById(id: ResidentId): Resident? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByExternalId(externalId: String): Resident? = jpa.findByExternalId(externalId)?.toDomain()
     override fun findAll(): List<Resident> = jpa.findAll().map { it.toDomain() }
@@ -72,12 +73,12 @@ class ResidentRepositoryAdapter(private val jpa: ResidentEntityRepository) : Res
     )
     private fun Resident.toEntity() = ResidentEntity(
         id.value, externalId, fullName, birthDate, admissionDate, status.name.lowercase(),
-        dischargedAt, dischargedBy, Instant.now(), Instant.now()
+        dischargedAt, dischargedBy, clock.now(), clock.now()
     )
 }
 
 @Repository
-class BedAssignmentRepositoryAdapter(private val jpa: BedAssignmentEntityRepository) : BedAssignmentRepository {
+class BedAssignmentRepositoryAdapter(private val jpa: BedAssignmentEntityRepository, private val clock: HubClock) : BedAssignmentRepository {
     override fun findById(id: AssignmentId): BedAssignment? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByResidentId(residentId: ResidentId): List<BedAssignment> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
     override fun findAllOpen(): List<BedAssignment> = jpa.findByEndsAtIsNull().map { it.toDomain() }
@@ -87,7 +88,7 @@ class BedAssignmentRepositoryAdapter(private val jpa: BedAssignmentEntityReposit
     override fun save(assignment: BedAssignment): BedAssignment = jpa.save(assignment.toEntity()).toDomain()
     override fun closeAssignment(assignment: BedAssignment) {
         val entity = jpa.findById(assignment.id.value).orElse(null) ?: return
-        entity.endsAt = java.time.Instant.now()
+        entity.endsAt = clock.now()
         jpa.saveAndFlush(entity)
     }
 
@@ -95,6 +96,6 @@ class BedAssignmentRepositoryAdapter(private val jpa: BedAssignmentEntityReposit
         AssignmentId(id), ResidentId(residentId), BedId(bedId), startsAt, endsAt, createdBy, version
     )
     private fun BedAssignment.toEntity() = BedAssignmentEntity(
-        id.value, residentId.value, bedId.value, startsAt, endsAt, createdBy, Instant.now()
+        id.value, residentId.value, bedId.value, startsAt, endsAt, createdBy, clock.now()
     )
 }

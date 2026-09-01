@@ -1,6 +1,7 @@
 package com.hub.panel.projection
 
 import com.hub.panel.dto.*
+import com.hub.shared.domain.BedLocation
 import com.manahive.contracts.policy.MobilityAid
 import com.manahive.contracts.policy.PolicyMode
 import com.manahive.contracts.policy.RiskLevel
@@ -18,6 +19,21 @@ private fun mobilityAidOf(v: String?): MobilityAid =
 private fun policyModeOf(v: String?): PolicyMode =
     v?.let { runCatching { PolicyMode.valueOf(it.uppercase()) }.getOrNull() } ?: PolicyMode.PRESET
 
+/**
+ * Projectiones del panel vía JDBC directo.
+ *
+ * DUPLICACIÓN CON [com.hub.views.ProjectionService]:
+ * - **Residente rail**: ambos resuelven bed→room→wing. Este servicio lo hace
+ *   vía SQL JOINs; el otro vía JPA con cache por llamada. Ambos producen el
+ *   mismo modelo conceptual ([com.hub.shared.domain.BedLocation]).
+ * - **Episodios**: este servicio usa SQL lateral para el último review y
+ *   closed_at; el otro usa repos JPA + lógica en Kotlin.
+ * - **Alarm preferences**: este servicio lee alarm_profile_versions vía JDBC;
+ *   el otro vía AlarmProfileRepository JPA.
+ *
+ * La consolidación futura debería unificar las proyecciones en un solo módulo,
+ * eliminando el panel-api o migrándolo a usar los repos JPA del dominio.
+ */
 @Service("panelProjectionService")
 class PanelProjectionService(private val jdbc: JdbcTemplate) {
 
@@ -40,11 +56,12 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
         residentRailMapper,
     )
 
+    /** DUPLICACIÓN: bed→room→wing JOIN — mismo patrón que LocationResolver en bootstrap. */
     private val residentRailMapper = RowMapper { rs, _ ->
         ResidentRailDto(
             id = rs.getString("id"),
             fullName = rs.getString("full_name"),
-            location = LocationDto(
+            location = BedLocation(
                 wingName = rs.getString("wing_name"),
                 roomNumber = rs.getString("room_number"),
                 bedLabel = rs.getString("bed_label"),
@@ -164,7 +181,7 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
             id = rs.getString("id"),
             residentId = rs.getString("resident_id"),
             residentName = rs.getString("resident_name"),
-            location = LocationDto(
+            location = BedLocation(
                 wingName = rs.getString("wing_name"),
                 roomNumber = rs.getString("room_number"),
                 bedLabel = null,
@@ -277,7 +294,7 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
                     PreferenceFullDto(
                         residentId = rs.getString("resident_id"),
                         residentName = rs.getString("resident_name"),
-                        location = LocationDto(
+                        location = BedLocation(
                             wingName = rs.getString("wing_name"),
                             roomNumber = rs.getString("room_number"),
                             bedLabel = rs.getString("bed_label"),
@@ -320,7 +337,7 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
             PreferenceListItemDto(
                 residentId = rs.getString("resident_id"),
                 residentName = rs.getString("resident_name"),
-                location = LocationDto(
+                location = BedLocation(
                     wingName = rs.getString("wing_name"),
                     roomNumber = rs.getString("room_number"),
                     bedLabel = rs.getString("bed_label"),

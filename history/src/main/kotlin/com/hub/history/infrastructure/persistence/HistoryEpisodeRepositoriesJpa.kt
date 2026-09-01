@@ -7,6 +7,7 @@ import com.hub.history.domain.repository.HistoryEpisodeReviewRepository
 import com.hub.shared.domain.StaffMemberId
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
+import com.hub.shared.time.HubClock
 import jakarta.persistence.*
 import org.hibernate.annotations.Immutable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -66,7 +67,7 @@ interface HistoryEpisodeReviewEntityRepository : JpaRepository<HistoryEpisodeRev
 }
 
 @Repository
-class HistoryEpisodeRepositoryAdapter(private val jpa: HistoryEpisodeEntityRepository) : HistoryEpisodeDetectionRepository {
+class HistoryEpisodeRepositoryAdapter(private val jpa: HistoryEpisodeEntityRepository, private val clock: HubClock) : HistoryEpisodeDetectionRepository {
     override fun findById(id: HistoryEpisodeId): HistoryEpisode? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findBySourceRecordId(sourceRecordId: String): HistoryEpisode? = jpa.findBySourceRecordId(sourceRecordId)?.toDomain()
     override fun findByResidentId(residentId: ResidentId): List<HistoryEpisode> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
@@ -101,12 +102,12 @@ class HistoryEpisodeRepositoryAdapter(private val jpa: HistoryEpisodeEntityRepos
         id.value, sourceRecordId, residentId.value, bedId?.value, sourceAlertId,
         kind.name, severity.name.lowercase(), occurredAt, activity, injuryStatus,
         selfRecovery, responseSeconds, narrative, source.name, modelVersion, confidence,
-        provenanceJson, Instant.now()
+        provenanceJson, clock.now()
     )
 }
 
 @Repository
-class HistoryEpisodeReviewRepositoryAdapter(private val jpa: HistoryEpisodeReviewEntityRepository) : HistoryEpisodeReviewRepository {
+class HistoryEpisodeReviewRepositoryAdapter(private val jpa: HistoryEpisodeReviewEntityRepository, private val clock: HubClock) : HistoryEpisodeReviewRepository {
     override fun findByEpisodeId(episodeId: HistoryEpisodeId): List<HistoryEpisodeReview> = jpa.findByEpisodeId(episodeId.value).map { it.toDomain() }
     override fun save(review: HistoryEpisodeReview): HistoryEpisodeReview = jpa.save(review.toEntity()).toDomain()
 
@@ -115,7 +116,7 @@ class HistoryEpisodeReviewRepositoryAdapter(private val jpa: HistoryEpisodeRevie
     )
     private fun HistoryEpisodeReview.toEntity() = HistoryEpisodeReviewEntity(
         id.value, episodeId.value, status, detectionVerdict, reviewNote, resolvedAt, actorId,
-        Instant.now(), Instant.now()
+        clock.now(), clock.now()
     )
 }
 

@@ -3,6 +3,7 @@ package com.hub.identity.infrastructure.persistence
 import com.hub.identity.domain.model.*
 import com.hub.shared.domain.UserId
 import com.hub.identity.domain.repository.UserRepository
+import com.hub.shared.time.HubClock
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
@@ -16,7 +17,8 @@ interface UserRepositoryJpa : JpaRepository<UserEntity, String> {
 
 @Repository
 class UserRepositoryAdapter(
-    private val jpa: UserRepositoryJpa
+    private val jpa: UserRepositoryJpa,
+    private val clock: HubClock
 ) : UserRepository {
 
     override fun findById(id: UserId): User? {
@@ -62,7 +64,7 @@ class UserRepositoryAdapter(
         passwordHash = passwordHash,
         retiredAt = retiredAt,
         retiredBy = retiredBy?.value,
-        createdAt = Instant.now(),
-        updatedAt = Instant.now()
+        createdAt = clock.now(),
+        updatedAt = clock.now()
     )
 }

@@ -27,7 +27,9 @@ class AlarmProfileApplicationService(
     private val alarmProfileRepository: AlarmProfileRepository,
     private val alarmProfileOverrideRepository: AlarmProfileOverrideRepository,
     private val auditService: com.hub.audit.domain.service.AuditService,
-    private val eventPublisher: DomainEventPublisher
+    private val eventPublisher: DomainEventPublisher,
+    private val responseBuilder: AlarmProfileResponseBuilder,
+    private val catalogService: AlarmCatalogService,
 ) {
 
     @Transactional(readOnly = true)
@@ -35,33 +37,20 @@ class AlarmProfileApplicationService(
         val version = alarmProfileRepository.findCurrentByResidentId(ResidentId(residentId))
             ?: return null
 
-        val watchLevel = resolveWatchLevel(version.riskLevel, version.templateId)
+        val watchLevel = responseBuilder.resolveWatchLevel(version.riskLevel, version.templateId)
         val catalog = DagCatalogs.forLevel(watchLevel)
-        val traits = resolveTraits(version)
+        val traits = responseBuilder.resolveTraits(version)
 
         val typedOverrides = alarmProfileOverrideRepository.findByProfileVersionId(version.id.value)
         val overridesMap = typedOverridesToMap(typedOverrides)
 
-        return AlarmProfileResponse(
-            resident = AlarmProfileResidentDto(
-                id = residentId,
-                fullName = "",
-                traits = traits,
-            ),
-            profile = AlarmProfileSettingsDto(
-                riskLevel = version.riskLevel.name.lowercase(),
-                mobilityAid = version.mobilityAid?.name?.lowercase() ?: "none",
-                autopilot = version.autopilot,
-                mode = version.mode?.name?.lowercase() ?: "preset",
-                templateId = version.templateId?.value ?: watchLevel.name.lowercase(),
-                overrides = overridesMap,
-                updatedAt = version.validFrom.toString(),
-                updatedBy = version.updatedBy,
-                updatedByName = null,
-                source = if (version.templateId != null) "stored" else "default",
-            ),
-            effective = buildEffective(version, catalog, watchLevel),
-            recommendation = buildRecommendation(version, watchLevel),
+        return responseBuilder.buildResponse(
+            version = version,
+            residentId = residentId,
+            watchLevel = watchLevel,
+            catalog = catalog,
+            overridesMap = overridesMap,
+            traits = traits,
         )
     }
 
@@ -91,7 +80,7 @@ class AlarmProfileApplicationService(
             ?: RiskLevel.MEDIUM
         val templateId = request.templateId?.let { TemplateId.from(it) }
             ?: current?.templateId
-            ?: TemplateId.from(resolveWatchLevel(riskLevel, null).name.lowercase())
+            ?: TemplateId.from(responseBuilder.resolveWatchLevel(riskLevel, null).name.lowercase())
 
         val newProfile = AlarmProfileVersion.create(rid, request.updatedBy).update(
             mobilityAid = request.mobilityAid?.let { MobilityAid.from(it) } ?: current?.mobilityAid,
@@ -103,6 +92,7 @@ class AlarmProfileApplicationService(
         )
 
         alarmProfileRepository.save(newProfile)
+        publishAggregateEvents(newProfile)
 
         /* Los overrides siguen la misma regla: si el request no los menciona, se
          * conservan los de la version anterior. Omitir no es borrar. */
@@ -149,26 +139,16 @@ class AlarmProfileApplicationService(
     @Transactional(readOnly = true)
     fun getProfileHistory(residentId: String): List<AlarmProfileResponse> {
         return alarmProfileRepository.findByResidentId(ResidentId(residentId)).map { version ->
-            val watchLevel = resolveWatchLevel(version.riskLevel, version.templateId)
+            val watchLevel = responseBuilder.resolveWatchLevel(version.riskLevel, version.templateId)
             val catalog = DagCatalogs.forLevel(watchLevel)
             val typedOverrides = alarmProfileOverrideRepository.findByProfileVersionId(version.id.value)
             val overridesMap = typedOverridesToMap(typedOverrides)
-            AlarmProfileResponse(
-                resident = AlarmProfileResidentDto(id = residentId, fullName = "", traits = emptyList()),
-                profile = AlarmProfileSettingsDto(
-                    riskLevel = version.riskLevel.name.lowercase(),
-                    mobilityAid = version.mobilityAid?.name?.lowercase() ?: "none",
-                    autopilot = version.autopilot,
-                    mode = version.mode?.name?.lowercase() ?: "preset",
-                    templateId = version.templateId?.value ?: watchLevel.name.lowercase(),
-                    overrides = overridesMap,
-                    updatedAt = version.validFrom.toString(),
-                    updatedBy = version.updatedBy,
-                    updatedByName = null,
-                    source = if (version.templateId != null) "stored" else "default",
-                ),
-                effective = buildEffective(version, catalog, watchLevel),
-                recommendation = buildRecommendation(version, watchLevel),
+            responseBuilder.buildResponse(
+                version = version,
+                residentId = residentId,
+                watchLevel = watchLevel,
+                catalog = catalog,
+                overridesMap = overridesMap,
             )
         }
     }
@@ -182,11 +162,11 @@ class AlarmProfileApplicationService(
             shifts = listOf("day", "night"),
             modes = listOf("preset", "custom"),
             sensitivities = listOf("low", "standard", "high"),
-            groups = buildCatalogGroups(),
-            transitions = buildCatalogTransitions(),
-            presets = buildCatalogPresets(),
-            templates = buildCatalogTemplates(),
-            riskFactors = buildRiskFactors(),
+            groups = catalogService.buildCatalogGroups(),
+            transitions = catalogService.buildCatalogTransitions(),
+            presets = catalogService.buildCatalogPresets(),
+            templates = catalogService.buildCatalogTemplates(),
+            riskFactors = catalogService.buildRiskFactors(),
             autopilot = AutopilotConfigDto(
                 minimumSignalsForRaise = 3,
                 minimumDaysBetweenChanges = 7,
@@ -195,91 +175,6 @@ class AlarmProfileApplicationService(
     }
 
     // ── Private helpers ──────────────────────────────────────────────
-
-    private fun resolveWatchLevel(riskLevel: RiskLevel, templateId: TemplateId?): WatchLevel {
-        return when {
-            templateId != null -> try {
-                WatchLevel.from(templateId.value)
-            } catch (_: Exception) {
-                when (riskLevel) {
-                    RiskLevel.LOW -> WatchLevel.STANDARD
-                    RiskLevel.MEDIUM -> WatchLevel.NIGHT_WANDERING
-                    RiskLevel.HIGH -> WatchLevel.FALL_RISK
-                }
-            }
-            else -> when (riskLevel) {
-                RiskLevel.LOW -> WatchLevel.STANDARD
-                RiskLevel.MEDIUM -> WatchLevel.NIGHT_WANDERING
-                RiskLevel.HIGH -> WatchLevel.FALL_RISK
-            }
-        }
-    }
-
-    private fun resolveTraits(version: AlarmProfileVersion): List<String> {
-        val traits = mutableListOf<String>()
-        if (version.riskLevel == RiskLevel.HIGH) traits.add("fall_risk")
-        if (version.mobilityAid == MobilityAid.WHEELCHAIR) traits.add("wheelchair_user")
-        if (version.mobilityAid == MobilityAid.WALKER) traits.add("walker_user")
-        if (version.autopilot) traits.add("autopilot")
-        return traits
-    }
-
-    private fun buildEffective(
-        version: AlarmProfileVersion,
-        catalog: DagCatalog,
-        watchLevel: WatchLevel,
-    ): AlarmEffectiveDto {
-        val rules = mutableMapOf<String, AlarmRuleDto>()
-
-        catalog.residentStates.forEach { (state, rule) ->
-            if (rule.alerts) {
-                rules[state.name.lowercase()] = AlarmRuleDto(
-                    day = rule.severity.name.lowercase(),
-                    night = rule.severity.name.lowercase(),
-                    params = mapOf(
-                        "warningAfter" to (rule.warningAfter?.toMinutes() ?: 0),
-                        "alertAfter" to (rule.alertAfter?.toMinutes() ?: 0),
-                        "closure" to rule.closureCondition.name,
-                    ),
-                )
-            }
-        }
-
-        return AlarmEffectiveDto(
-            level = watchLevel.name.lowercase(),
-            mobilityAid = version.mobilityAid?.name?.lowercase() ?: "none",
-            mode = version.mode?.name?.lowercase() ?: "preset",
-            templateId = version.templateId?.value ?: watchLevel.name.lowercase(),
-            rules = rules,
-        )
-    }
-
-    private fun buildRecommendation(
-        version: AlarmProfileVersion,
-        currentLevel: WatchLevel,
-    ): AlarmRecommendationDto {
-        val recommendedLevel = when (version.riskLevel) {
-            RiskLevel.LOW -> WatchLevel.STANDARD
-            RiskLevel.MEDIUM -> WatchLevel.NIGHT_WANDERING
-            RiskLevel.HIGH -> WatchLevel.FALL_RISK
-        }
-
-        return AlarmRecommendationDto(
-            level = recommendedLevel.name.lowercase(),
-            changed = currentLevel != recommendedLevel,
-            factors = listOf(
-                RiskFactorDto(id = "risk_level", label = "Nivel de riesgo", icon = "warning"),
-            ),
-            score = when (version.riskLevel) {
-                RiskLevel.LOW -> 20
-                RiskLevel.MEDIUM -> 50
-                RiskLevel.HIGH -> 80
-            },
-            signalsEvaluated = 3,
-            suggestedTemplate = recommendedLevel.name.lowercase(),
-            computedAt = version.validFrom.toString(),
-        )
-    }
 
     private fun parseOverridesJson(json: String): Map<String, Any> {
         if (json.isBlank() || json == "{}") return emptyMap()
@@ -317,11 +212,6 @@ class AlarmProfileApplicationService(
                     if (o.closureCondition != null) entry["closureCondition"] = o.closureCondition
                 }
             }
-            /* Los tres campos comunes se escriben una vez para todas las
-             * variantes, en vez de repetirlos en cada rama. Repetirlos es como
-             * se perdieron: la rama de `dwell` simplemente no los tenía. */
-            /* En variables locales: son propiedades de la interfaz con getter
-             * abierto, y Kotlin no puede hacer smart cast sobre eso. */
             val sev = o.severity
             val clo = o.closureCondition
             val obs = o.observeOnly
@@ -389,85 +279,8 @@ class AlarmProfileApplicationService(
         return "dwell"
     }
 
-    private fun buildCatalogGroups(): List<AlarmGroupDto> = listOf(
-        AlarmGroupDto(id = "bed_exit", label = "Salida de cama", detail = "Alertas por salir de la cama"),
-        AlarmGroupDto(id = "wandering", label = "Deambulación", detail = "Alertas por deambular"),
-        AlarmGroupDto(id = "bathroom", label = "Baño", detail = "Alertas por uso de baño"),
-        AlarmGroupDto(id = "absence", label = "Ausencia", detail = "Alertas por ausencia en la habitación"),
-    )
-
-    private fun buildCatalogTransitions(): List<AlarmTransitionDto> = listOf(
-        AlarmTransitionDto(
-            id = "lying_to_sitting", group = "bed_exit", label = "Acostado → Sentado",
-            shortLabel = "Sentarse", detail = "Residente se sienta en la cama",
-            pictogram = "person_sitting", art = "figure", locked = false,
-            requiresAid = null, params = emptyList(),
-        ),
-        AlarmTransitionDto(
-            id = "lying_to_standing", group = "bed_exit", label = "Acostado → De pie",
-            shortLabel = "Levantarse", detail = "Residente se levanta de la cama",
-            pictogram = "person_standing", art = "figure", locked = false,
-            requiresAid = null, params = emptyList(),
-        ),
-        AlarmTransitionDto(
-            id = "standing_to_bathroom", group = "bathroom", label = "De pie → Baño",
-            shortLabel = "Baño", detail = "Residente entra al baño",
-            pictogram = "door_open", art = "scene", locked = false,
-            requiresAid = null, params = emptyList(),
-        ),
-        AlarmTransitionDto(
-            id = "standing_to_absent", group = "absence", label = "De pie → Ausente",
-            shortLabel = "Ausente", detail = "Residente sale de la habitación",
-            pictogram = "person_leaving", art = "figure", locked = false,
-            requiresAid = null, params = emptyList(),
-        ),
-    )
-
-    private fun buildCatalogPresets(): Map<String, Map<String, AlarmPresetRuleDto>> = mapOf(
-        "bed_exit" to mapOf(
-            "standard" to AlarmPresetRuleDto(day = "notify", night = "alarm", params = null),
-            "fall_risk" to AlarmPresetRuleDto(day = "alarm", night = "alarm", params = null),
-        ),
-        "wandering" to mapOf(
-            "standard" to AlarmPresetRuleDto(day = "off", night = "notify", params = null),
-            "fall_risk" to AlarmPresetRuleDto(day = "notify", night = "alarm", params = null),
-        ),
-        "bathroom" to mapOf(
-            "standard" to AlarmPresetRuleDto(day = "off", night = "notify", params = null),
-            "fall_risk" to AlarmPresetRuleDto(day = "notify", night = "alarm", params = null),
-        ),
-    )
-
-    private fun buildCatalogTemplates(): List<AlarmTemplateDto> = DagCatalogs.BY_LEVEL.map { (level, _) ->
-        AlarmTemplateDto(
-            id = level.name.lowercase(),
-            label = when (level) {
-                WatchLevel.STANDARD -> "Monitoreo General"
-                WatchLevel.NIGHT_WANDERING -> "Vigilia Nocturna"
-                WatchLevel.FALL_RISK -> "Riesgo de Caída"
-                WatchLevel.CRITICAL -> "Crítico"
-            },
-            detail = when (level) {
-                WatchLevel.STANDARD -> "Solo observación, sin alertas"
-                WatchLevel.NIGHT_WANDERING -> "Alertas básicas para horario nocturno"
-                WatchLevel.FALL_RISK -> "Alertas intensivas para residentes con riesgo de caída"
-                WatchLevel.CRITICAL -> "Alerta inmediata en cualquier movimiento"
-            },
-            recommendedFor = when (level) {
-                WatchLevel.STANDARD -> listOf("low_risk", "independent")
-                WatchLevel.NIGHT_WANDERING -> listOf("medium_risk", "nocturnal_wanderer")
-                WatchLevel.FALL_RISK -> listOf("high_risk", "fall_history", "walker_user")
-                WatchLevel.CRITICAL -> listOf("critical", "wheelchair_user", "recent_fall")
-            },
-            rules = emptyMap(),
-        )
+    private fun publishAggregateEvents(profile: AlarmProfileVersion) {
+        profile.domainEvents.forEach { eventPublisher.publish(it) }
+        profile.clearEvents()
     }
-
-    private fun buildRiskFactors(): List<RiskFactorDto> = listOf(
-        RiskFactorDto(id = "falls", label = "Caídas recientes", icon = "warning"),
-        RiskFactorDto(id = "night_mobility", label = "Movilidad nocturna", icon = "moon"),
-        RiskFactorDto(id = "bathroom_frequency", label = "Frecuencia de baño", icon = "bathroom"),
-        RiskFactorDto(id = "absence_duration", label = "Duración de ausencia", icon = "clock"),
-        RiskFactorDto(id = "response_time", label = "Tiempo de respuesta del staff", icon = "timer"),
-    )
 }

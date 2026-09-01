@@ -6,6 +6,7 @@ import com.hub.evidence.domain.repository.EvidenceRepository
 import com.hub.evidence.domain.repository.TimelineRepository
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
+import com.hub.shared.time.HubClock
 import jakarta.persistence.*
 import org.hibernate.annotations.Immutable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -81,7 +82,7 @@ interface ClipWindowEntityRepository : JpaRepository<ClipWindowEntity, String> {
 }
 
 @Repository
-class EvidenceRepositoryAdapter(private val jpa: EvidenceEntityRepository) : EvidenceRepository {
+class EvidenceRepositoryAdapter(private val jpa: EvidenceEntityRepository, private val clock: HubClock) : EvidenceRepository {
     override fun findById(id: EvidenceId): Evidence? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByBedId(bedId: BedId): List<Evidence> = jpa.findByBedId(bedId.value).map { it.toDomain() }
     override fun save(evidence: Evidence): Evidence = jpa.save(evidence.toEntity()).toDomain()
@@ -92,12 +93,12 @@ class EvidenceRepositoryAdapter(private val jpa: EvidenceEntityRepository) : Evi
     )
     private fun Evidence.toEntity() = EvidenceEntity(
         id.value, bedId.value, residentId.value, evidenceType, category, sceneEventId,
-        sceneEventJson, ruleId, shift, riskLevel, timestamp, Instant.now()
+        sceneEventJson, ruleId, shift, riskLevel, timestamp, clock.now()
     )
 }
 
 @Repository
-class TimelineRepositoryAdapter(private val jpa: TimelineEntityRepository) : TimelineRepository {
+class TimelineRepositoryAdapter(private val jpa: TimelineEntityRepository, private val clock: HubClock) : TimelineRepository {
     override fun findById(id: EvidenceId): Timeline? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun save(timeline: Timeline): Timeline = jpa.save(timeline.toEntity()).toDomain()
 
@@ -107,12 +108,12 @@ class TimelineRepositoryAdapter(private val jpa: TimelineEntityRepository) : Tim
     )
     private fun Timeline.toEntity() = TimelineEntity(
         id.value, bedId.value, residentId.value, anchorEventId, anchorEventJson,
-        beforeEventsJson, afterEventsJson, windowStart, windowEnd, Instant.now(), closedAt
+        beforeEventsJson, afterEventsJson, windowStart, windowEnd, clock.now(), closedAt
     )
 }
 
 @Repository
-class ClipWindowRepositoryAdapter(private val jpa: ClipWindowEntityRepository) : ClipWindowRepository {
+class ClipWindowRepositoryAdapter(private val jpa: ClipWindowEntityRepository, private val clock: HubClock) : ClipWindowRepository {
     override fun findById(id: EvidenceId): ClipWindow? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findOpenByBedId(bedId: BedId): ClipWindow? = jpa.findOpenByBedId(bedId.value)?.toDomain()
     override fun save(clipWindow: ClipWindow): ClipWindow = jpa.save(clipWindow.toEntity()).toDomain()
@@ -123,6 +124,6 @@ class ClipWindowRepositoryAdapter(private val jpa: ClipWindowEntityRepository) :
     )
     private fun ClipWindow.toEntity() = ClipWindowEntity(
         id.value, bedId.value, residentId.value, startedAt, endedAt, timeoutMinutes,
-        eventsJson, state, closeConditionJson, Instant.now(), closedAt
+        eventsJson, state, closeConditionJson, clock.now(), closedAt
     )
 }

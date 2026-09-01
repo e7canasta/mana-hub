@@ -2,6 +2,7 @@ package com.hub.policy.domain.model
 
 import com.hub.shared.domain.AggregateRoot
 import com.hub.shared.domain.ResidentId
+import com.hub.policy.domain.event.AlarmProfileEvent
 import java.time.Instant
 
 data class AlarmProfileVersion private constructor(
@@ -19,11 +20,19 @@ data class AlarmProfileVersion private constructor(
     override var version: Long
 ) : AggregateRoot<AlarmProfileId>() {
 
+    private val _domainEvents = mutableListOf<AlarmProfileEvent>()
+    val domainEvents: List<AlarmProfileEvent> get() = _domainEvents.toList()
+    fun clearEvents() = _domainEvents.clear()
+
     val isCurrent: Boolean get() = validTo == null
 
     fun expire(): AlarmProfileVersion {
         require(isCurrent) { "Profile is not current" }
-        return copy(validTo = Instant.now(), version = version + 1)
+        val next = copy(validTo = Instant.now(), version = version + 1)
+        next._domainEvents.add(
+            AlarmProfileEvent.Expired(profileId = id, residentId = residentId)
+        )
+        return next
     }
 
     fun update(
@@ -31,7 +40,7 @@ data class AlarmProfileVersion private constructor(
         riskLevel: RiskLevel?, updatedBy: String?
     ): AlarmProfileVersion {
         require(isCurrent) { "Profile is not current" }
-        return copy(
+        val next = copy(
             mobilityAid = mobilityAid ?: this.mobilityAid,
             autopilot = autopilot ?: this.autopilot,
             mode = mode ?: this.mode,
@@ -40,14 +49,27 @@ data class AlarmProfileVersion private constructor(
             riskLevel = riskLevel ?: this.riskLevel,
             version = version + 1
         )
+        next._domainEvents.add(
+            AlarmProfileEvent.Updated(
+                profileId = id, residentId = residentId,
+                riskLevel = next.riskLevel, updatedBy = next.updatedBy,
+            )
+        )
+        return next
     }
 
     companion object {
-        fun create(residentId: ResidentId, updatedBy: String?): AlarmProfileVersion = AlarmProfileVersion(
-            id = AlarmProfileId.random(), residentId = residentId, validFrom = Instant.now(),
-            validTo = null, mobilityAid = MobilityAid.NONE, autopilot = false, mode = PolicyMode.PRESET, templateId = null,
-            catalogVersion = null, updatedBy = updatedBy, riskLevel = RiskLevel.MEDIUM, version = 0
-        )
+        fun create(residentId: ResidentId, updatedBy: String?): AlarmProfileVersion {
+            val profile = AlarmProfileVersion(
+                id = AlarmProfileId.random(), residentId = residentId, validFrom = Instant.now(),
+                validTo = null, mobilityAid = MobilityAid.NONE, autopilot = false, mode = PolicyMode.PRESET, templateId = null,
+                catalogVersion = null, updatedBy = updatedBy, riskLevel = RiskLevel.MEDIUM, version = 0
+            )
+            profile._domainEvents.add(
+                AlarmProfileEvent.Created(profileId = profile.id, residentId = residentId, updatedBy = updatedBy)
+            )
+            return profile
+        }
 
         fun reconstitute(
             id: AlarmProfileId, residentId: ResidentId, validFrom: Instant, validTo: Instant?,

@@ -2,6 +2,7 @@ package com.hub.panel.dto
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.hub.shared.domain.BedLocation
 import com.manahive.contracts.policy.MobilityAid
 import com.manahive.contracts.policy.PolicyMode
 import com.manahive.contracts.policy.RiskLevel
@@ -61,12 +62,6 @@ enum class EpisodeStatus(val value: String) {
 //  Ubicación y estado
 // ══════════════════════════════════════════════════════════════
 
-data class LocationDto(
-    @JsonProperty("wingName") val wingName: String?,
-    @JsonProperty("roomNumber") val roomNumber: String?,
-    @JsonProperty("bedLabel") val bedLabel: String?,
-)
-
 data class CurrentStateDto(
     val state: String?,
     @JsonProperty("staffPresent") val staffPresent: Boolean?,
@@ -81,7 +76,7 @@ data class CurrentStateDto(
 data class ResidentRailDto(
     val id: String,
     @JsonProperty("fullName") val fullName: String,
-    val location: LocationDto?,
+    val location: BedLocation?,
     @JsonProperty("currentState") val currentState: CurrentStateDto?,
 )
 
@@ -98,7 +93,7 @@ data class EpisodeListItemDto(
     val id: String,
     @JsonProperty("residentId") val residentId: String,
     @JsonProperty("residentName") val residentName: String,
-    val location: LocationDto?,
+    val location: BedLocation?,
     val severity: EpisodeSeverity,
     val kind: String,
     val title: String,
@@ -240,7 +235,7 @@ data class NoteCreatedResponse(
 data class PreferenceFullDto(
     @JsonProperty("residentId") val residentId: String,
     @JsonProperty("residentName") val residentName: String,
-    val location: LocationDto?,
+    val location: BedLocation?,
     @JsonProperty("riskLevel") val riskLevel: RiskLevel,
     @JsonProperty("mobilityAid") val mobilityAid: MobilityAid,
     val autopilot: Boolean,
@@ -273,7 +268,7 @@ data class RecommendationDto(
 data class PreferenceListItemDto(
     @JsonProperty("residentId") val residentId: String,
     @JsonProperty("residentName") val residentName: String,
-    val location: LocationDto?,
+    val location: BedLocation?,
     @JsonProperty("riskLevel") val riskLevel: RiskLevel,
     @JsonProperty("mobilityAid") val mobilityAid: MobilityAid,
     val autopilot: Boolean,

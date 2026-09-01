@@ -1,5 +1,6 @@
 package com.hub.views
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.hub.policy.application.service.AlarmProfileApplicationService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*
 class AlarmPresetsController(
     private val projectionService: ProjectionService,
     private val alarmProfileService: AlarmProfileApplicationService,
+    private val objectMapper: ObjectMapper,
 ) {
 
     /** Presets de alarma — la configuración que le dice al sistema cómo monitorear. */
@@ -36,7 +38,7 @@ class AlarmPresetsController(
                  * recibia, se ignoraba, y la respuesta 200 con `overrides: {}`
                  * hacia parecer que se habia guardado. */
                 overridesJson = command.overrides?.let {
-                    com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(it)
+                    objectMapper.writeValueAsString(it)
                 },
                 reason = command.reason,
                 updatedBy = command.updatedBy,

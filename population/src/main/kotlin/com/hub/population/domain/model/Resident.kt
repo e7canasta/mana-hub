@@ -2,6 +2,7 @@ package com.hub.population.domain.model
 
 import com.hub.shared.domain.AggregateRoot
 import com.hub.shared.domain.ResidentId
+import com.hub.population.domain.event.ResidentEvent
 import java.time.Instant
 import java.time.LocalDate
 
@@ -30,24 +31,36 @@ class Resident private constructor(
     override var version: Long
 ) : AggregateRoot<ResidentId>() {
 
+    private val _domainEvents = mutableListOf<ResidentEvent>()
+    val domainEvents: List<ResidentEvent> get() = _domainEvents.toList()
+    fun clearEvents() = _domainEvents.clear()
+
     val isActive: Boolean get() = status == ResidentStatus.ACTIVE
 
     fun discharge(actorId: String): Resident {
         require(isActive) { "Resident is already discharged" }
-        return reconstitute(
+        val next = reconstitute(
             id = id, externalId = externalId, fullName = fullName, birthDate = birthDate,
             admissionDate = admissionDate, status = ResidentStatus.DISCHARGED,
             dischargedAt = Instant.now(), dischargedBy = actorId, version = version + 1
         )
+        next._domainEvents.add(
+            ResidentEvent.Discharged(residentId = id, actorId = actorId)
+        )
+        return next
     }
 
     fun updateProfile(fullName: String?, birthDate: LocalDate?): Resident {
-        return reconstitute(
+        val next = reconstitute(
             id = id, externalId = externalId, fullName = fullName ?: this.fullName,
             birthDate = birthDate ?: this.birthDate, admissionDate = admissionDate,
             status = status, dischargedAt = dischargedAt, dischargedBy = dischargedBy,
             version = version + 1
         )
+        next._domainEvents.add(
+            ResidentEvent.Updated(residentId = id, fullName = next.fullName, birthDate = next.birthDate)
+        )
+        return next
     }
 
     companion object {
@@ -56,11 +69,20 @@ class Resident private constructor(
             admissionDate: LocalDate,
             birthDate: LocalDate? = null,
             externalId: String? = null
-        ): Resident = Resident(
-            id = ResidentId.random(), externalId = externalId, fullName = fullName,
-            birthDate = birthDate, admissionDate = admissionDate, status = ResidentStatus.ACTIVE,
-            dischargedAt = null, dischargedBy = null, version = 0
-        )
+        ): Resident {
+            val resident = Resident(
+                id = ResidentId.random(), externalId = externalId, fullName = fullName,
+                birthDate = birthDate, admissionDate = admissionDate, status = ResidentStatus.ACTIVE,
+                dischargedAt = null, dischargedBy = null, version = 0
+            )
+            resident._domainEvents.add(
+                ResidentEvent.Admitted(
+                    residentId = resident.id, fullName = fullName,
+                    admissionDate = admissionDate, birthDate = birthDate, externalId = externalId,
+                )
+            )
+            return resident
+        }
 
         fun reconstitute(
             id: ResidentId, externalId: String?, fullName: String, birthDate: LocalDate?,

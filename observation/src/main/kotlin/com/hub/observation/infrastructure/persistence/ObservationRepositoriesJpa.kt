@@ -10,6 +10,7 @@ import com.hub.observation.domain.repository.SummaryRepository
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
 import com.hub.shared.domain.Identifier
+import com.hub.shared.time.HubClock
 import jakarta.persistence.*
 import org.hibernate.annotations.ColumnTransformer
 import org.hibernate.annotations.Immutable
@@ -221,14 +222,14 @@ class SensorEventRepositoryAdapter(private val jpa: SensorEventEntityRepository)
 }
 
 @Repository
-class CurrentBedStateRepositoryAdapter(private val jpa: CurrentBedStateEntityRepository) : CurrentBedStateRepository {
+class CurrentBedStateRepositoryAdapter(private val jpa: CurrentBedStateEntityRepository, private val clock: HubClock) : CurrentBedStateRepository {
     override fun findByBedId(bedId: BedId): CurrentBedState? = jpa.findById(bedId.value).orElse(null)?.toDomain()
     override fun findAll(): List<CurrentBedState> = jpa.findAll().map { it.toDomain() }
     override fun save(state: CurrentBedState): CurrentBedState = jpa.save(state.toEntity()).toDomain()
     override fun updateStaffPresent(bedId: BedId, present: Boolean) {
         jpa.findById(bedId.value).ifPresent { entity ->
             entity.staffPresent = present
-            entity.updatedAt = Instant.now()
+            entity.updatedAt = clock.now()
             jpa.save(entity)
         }
     }
@@ -247,7 +248,8 @@ class CurrentBedStateRepositoryAdapter(private val jpa: CurrentBedStateEntityRep
 class SummaryRepositoryAdapter(
     private val sleepJpa: SleepSummaryEntityRepository,
     private val mobilityJpa: MobilitySummaryEntityRepository,
-    private val bathroomJpa: BathroomSummaryEntityRepository
+    private val bathroomJpa: BathroomSummaryEntityRepository,
+    private val clock: HubClock
 ) : SummaryRepository {
     override fun findSleepByResidentAndDate(residentId: ResidentId, date: LocalDate): SleepSummary? =
         sleepJpa.findByResidentIdAndObservedOn(residentId.value, date)?.toDomain()
@@ -270,21 +272,21 @@ class SummaryRepositoryAdapter(
     override fun saveSleep(summary: SleepSummary): SleepSummary {
         val entity = summary.toEntity()
         sleepJpa.findById(summary.id.value).ifPresent { old -> entity.createdAt = old.createdAt }
-        entity.updatedAt = Instant.now()
+        entity.updatedAt = clock.now()
         return sleepJpa.save(entity).toDomain()
     }
 
     override fun saveMobility(summary: MobilitySummary): MobilitySummary {
         val entity = summary.toEntity()
         mobilityJpa.findById(summary.id.value).ifPresent { old -> entity.createdAt = old.createdAt }
-        entity.updatedAt = Instant.now()
+        entity.updatedAt = clock.now()
         return mobilityJpa.save(entity).toDomain()
     }
 
     override fun saveBathroom(summary: BathroomSummary): BathroomSummary {
         val entity = summary.toEntity()
         bathroomJpa.findById(summary.id.value).ifPresent { old -> entity.createdAt = old.createdAt }
-        entity.updatedAt = Instant.now()
+        entity.updatedAt = clock.now()
         return bathroomJpa.save(entity).toDomain()
     }
 
@@ -297,7 +299,7 @@ class SummaryRepositoryAdapter(
     private fun SleepSummary.toEntity() = SleepSummaryEntity(
         id.value, sourceRecordId, residentId.value, observedOn, calmMinutes,
         restlessMinutes, awakeMinutes, outOfBedMinutes, bedExitCount, wakeCount,
-        source, modelVersion, confidence, startedAt, endedAt, Instant.now(), Instant.now()
+        source, modelVersion, confidence, startedAt, endedAt, clock.now(), clock.now()
     )
 
     private fun MobilitySummaryEntity.toDomain() = MobilitySummary(
@@ -308,7 +310,7 @@ class SummaryRepositoryAdapter(
     private fun MobilitySummary.toEntity() = MobilitySummaryEntity(
         id.value, sourceRecordId, residentId.value, observedOn, inBedMinutes,
         outOfBedMinutes, outOfSightMinutes, walkingMinutes, distanceMeters,
-        transferCount, source, modelVersion, confidence, Instant.now(), Instant.now()
+        transferCount, source, modelVersion, confidence, clock.now(), clock.now()
     )
 
     private fun BathroomSummaryEntity.toDomain() = BathroomSummary(
@@ -318,12 +320,12 @@ class SummaryRepositoryAdapter(
     private fun BathroomSummary.toEntity() = BathroomSummaryEntity(
         id.value, sourceRecordId, residentId.value, observedOn, visitCount,
         nightVisitCount, assistedCount, totalMinutes, source, modelVersion,
-        confidence, Instant.now(), Instant.now()
+        confidence, clock.now(), clock.now()
     )
 }
 
 @Repository
-class SceneEventRepositoryAdapter(private val jpa: SceneEventEntityRepository) : SceneEventRepository {
+class SceneEventRepositoryAdapter(private val jpa: SceneEventEntityRepository, private val clock: HubClock) : SceneEventRepository {
     override fun findByResidentId(residentId: ResidentId): List<SceneEvent> =
         jpa.findByResidentId(residentId.value).map { it.toDomain() }
 
@@ -346,7 +348,7 @@ class SceneEventRepositoryAdapter(private val jpa: SceneEventEntityRepository) :
     private fun SceneEvent.toEntity() = SceneEventEntity(
         id = id.value, eventId = eventId, bedId = bedId.value, residentId = residentId?.value,
         eventType = eventType?.name ?: "", fromState = fromState?.name, toState = toState?.name, triggerType = triggerType?.name,
-        timestamp = timestamp, payloadJson = payloadJson, receivedAt = Instant.now(),
+        timestamp = timestamp, payloadJson = payloadJson, receivedAt = clock.now(),
         twinSnapshotJson = twinSnapshotJson, stateSince = stateSince, sceneSince = sceneSince,
         signalLost = signalLost, monitorId = monitorId
     )

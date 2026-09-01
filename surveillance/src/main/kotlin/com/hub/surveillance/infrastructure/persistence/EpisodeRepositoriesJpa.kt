@@ -4,6 +4,7 @@ import com.hub.surveillance.domain.model.*
 import com.hub.surveillance.domain.repository.EpisodeRepository
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
+import com.hub.shared.time.HubClock
 import jakarta.persistence.*
 import jakarta.persistence.criteria.Predicate
 import org.springframework.data.jpa.domain.Specification
@@ -50,7 +51,7 @@ interface EpisodeEntityRepository :
 }
 
 @Repository
-class EpisodeRepositoryAdapter(private val jpa: EpisodeEntityRepository) : EpisodeRepository {
+class EpisodeRepositoryAdapter(private val jpa: EpisodeEntityRepository, private val clock: HubClock) : EpisodeRepository {
     override fun findById(id: EpisodeId): Episode? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findByResidentId(residentId: ResidentId): List<Episode> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
     override fun findPending(): List<Episode> = jpa.findPending().map { it.toDomain() }
@@ -99,6 +100,6 @@ class EpisodeRepositoryAdapter(private val jpa: EpisodeEntityRepository) : Episo
     private fun Episode.toEntity() = EpisodeEntity(
         id.value, residentId.value, bedId?.value, evidenceKind, evidenceRef, ruleId,
         severity.name, status, statusActorId, statusAt, title, detail,
-        occurredAt, escalationLevel, escalatedAt, escalatedTo, Instant.now(), Instant.now()
+        occurredAt, escalationLevel, escalatedAt, escalatedTo, clock.now(), clock.now()
     )
 }

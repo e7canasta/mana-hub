@@ -4,6 +4,7 @@ import com.hub.care.domain.model.CareSummary
 import com.hub.care.domain.model.CareSummaryId
 import com.hub.care.domain.repository.CareSummaryRepository
 import com.hub.shared.domain.ResidentId
+import com.hub.shared.time.HubClock
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
@@ -37,7 +38,8 @@ interface CareSummaryEntityRepository : JpaRepository<CareSummaryEntity, String>
 
 @Repository
 class CareSummaryRepositoryAdapter(
-    private val jpa: CareSummaryEntityRepository
+    private val jpa: CareSummaryEntityRepository,
+    private val clock: HubClock
 ) : CareSummaryRepository {
 
     override fun findByResidentAndDate(residentId: ResidentId, date: LocalDate): CareSummary? =
@@ -49,7 +51,7 @@ class CareSummaryRepositoryAdapter(
     override fun save(summary: CareSummary): CareSummary {
         val entity = summary.toEntity()
         jpa.findById(summary.id.value).ifPresent { old -> entity.createdAt = old.createdAt }
-        entity.updatedAt = Instant.now()
+        entity.updatedAt = clock.now()
         return jpa.save(entity).toDomain()
     }
 
