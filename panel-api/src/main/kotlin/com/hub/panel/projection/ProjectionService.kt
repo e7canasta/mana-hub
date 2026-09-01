@@ -39,6 +39,8 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
 
     // ─── Residentes ─────────────────────────────────────────────
 
+    // TODO: DUPLICATED with com.hub.views.ProjectionService.getResidentRail() — consolidate into shared reader
+    // See: bootstrap/src/main/kotlin/com/hub/views/readers/ResidentProjectionReader.kt
     fun residentRail(): List<ResidentRailDto> = jdbc.query(
         """
         SELECT r.id, r.full_name,
@@ -74,6 +76,7 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
         )
     }
 
+    // TODO: DUPLICATED with com.hub.views.ProjectionService.getResidentRail() — same bed→room→wing resolution
     fun residentDetail(residentId: String): ResidentRailDto? = jdbc.queryForObject(
         """
         SELECT r.id, r.full_name,
@@ -118,6 +121,8 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
      *
      * `LEFT JOIN LATERAL ... LIMIT 1` deja una fila por episodio y toma la
      * revisión más reciente, que es la que vale. */
+    // TODO: DUPLICATED with com.hub.views.ProjectionService.getEpisodesTab() — different approach (SQL lateral vs JPA repos), same domain concept
+    // See: bootstrap/src/main/kotlin/com/hub/views/readers/EpisodesProjectionReader.kt
     fun episodeFeed(): EpisodeFeedDto {
         val episodes = jdbc.query(
             """
@@ -273,6 +278,8 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
 
     // ─── Preferencias ───────────────────────────────────────────
 
+    // TODO: DUPLICATED with com.hub.views.ProjectionService.getAlarmPresets() — same alarm_profile_versions query, JDBC vs JPA
+    // See: bootstrap/src/main/kotlin/com/hub/views/readers/AlarmPresetsProjectionReader.kt
     fun preferenceFull(residentId: String): PreferenceFullDto? {
         return try {
             jdbc.queryForObject(
@@ -317,6 +324,7 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
         }
     }
 
+    // TODO: DUPLICATED with com.hub.views.ProjectionService.getAlarmPresets() — same query for all residents
     fun preferenceList(): List<PreferenceListItemDto> = jdbc.query(
         """
         SELECT apv.resident_id, r.full_name as resident_name,
