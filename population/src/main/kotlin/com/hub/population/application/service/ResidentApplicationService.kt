@@ -133,11 +133,7 @@ class ResidentApplicationService(
             val bed = bedRepository.findById(assignment.bedId)
             val room = bed?.let { roomRepository.findById(it.roomId) }
             val wing = room?.let { wingRepository.findById(it.wingId) }
-            BedLocation(
-                wingName = wing?.name,
-                roomNumber = room?.number,
-                bedLabel = bed?.label
-            )
+            BedLocation.of(wing?.name, room?.number, bed?.label)
         } else null
 
         return ResidentResponse(

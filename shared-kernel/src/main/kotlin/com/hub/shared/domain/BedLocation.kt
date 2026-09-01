@@ -7,4 +7,9 @@ data class BedLocation(
     val roomNumber: String? = null,
     val bedId: String? = null,
     val bedLabel: String? = null,
-)
+) {
+    companion object {
+        fun of(wingName: String?, roomNumber: String?, bedLabel: String?) =
+            BedLocation(wingName = wingName, roomNumber = roomNumber, bedLabel = bedLabel)
+    }
+}

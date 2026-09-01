@@ -28,11 +28,7 @@ class JpaLocationResolver(
         val bed = bedRepository.findById(bedId) ?: return null
         val room = rooms.getOrPut(bed.roomId.value) { roomRepository.findById(bed.roomId) }
         val wing = room?.let { r -> wings.getOrPut(r.wingId.value) { wingRepository.findById(r.wingId) } }
-        return BedLocation(
-            wingName = wing?.name,
-            roomNumber = room?.number,
-            bedLabel = bed.label,
-        )
+        return BedLocation.of(wing?.name, room?.number, bed.label)
     }
 
     override fun zone(bedId: BedId): ZoneId {

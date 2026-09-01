@@ -16,7 +16,6 @@ import org.springframework.stereotype.Repository
 import java.time.Instant
 
 @Entity
-@Immutable
 @Table(name = "history_episode_detections")
 class HistoryEpisodeEntity(
     @Id var id: String = "",
@@ -36,6 +35,7 @@ class HistoryEpisodeEntity(
     @Column(name = "model_version") var modelVersion: String? = null,
     @Column(name = "confidence") var confidence: Double? = null,
     @Column(name = "provenance_json") var provenanceJson: String = "{}",
+    @Column(name = "location") var location: String? = null,
     @Version var version: Long = 0,
 ) : BaseEntity()
 

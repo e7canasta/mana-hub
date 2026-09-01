@@ -61,10 +61,10 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
         ResidentRailDto(
             id = rs.getString("id"),
             fullName = rs.getString("full_name"),
-            location = BedLocation(
-                wingName = rs.getString("wing_name"),
-                roomNumber = rs.getString("room_number"),
-                bedLabel = rs.getString("bed_label"),
+            location = BedLocation.of(
+                rs.getString("wing_name"),
+                rs.getString("room_number"),
+                rs.getString("bed_label"),
             ),
             currentState = CurrentStateDto(
                 state = rs.getString("state"),
@@ -181,10 +181,10 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
             id = rs.getString("id"),
             residentId = rs.getString("resident_id"),
             residentName = rs.getString("resident_name"),
-            location = BedLocation(
-                wingName = rs.getString("wing_name"),
-                roomNumber = rs.getString("room_number"),
-                bedLabel = null,
+            location = BedLocation.of(
+                rs.getString("wing_name"),
+                rs.getString("room_number"),
+                null,
             ),
             severity = EpisodeSeverity.from(rs.getString("severity")),
             kind = rs.getString("kind") ?: "other",
@@ -294,10 +294,10 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
                     PreferenceFullDto(
                         residentId = rs.getString("resident_id"),
                         residentName = rs.getString("resident_name"),
-                        location = BedLocation(
-                            wingName = rs.getString("wing_name"),
-                            roomNumber = rs.getString("room_number"),
-                            bedLabel = rs.getString("bed_label"),
+                        location = BedLocation.of(
+                            rs.getString("wing_name"),
+                            rs.getString("room_number"),
+                            rs.getString("bed_label"),
                         ),
                         riskLevel = riskLevelOf(rs.getString("risk_level")),
                         mobilityAid = mobilityAidOf(rs.getString("mobility_aid")),
@@ -337,10 +337,10 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
             PreferenceListItemDto(
                 residentId = rs.getString("resident_id"),
                 residentName = rs.getString("resident_name"),
-                location = BedLocation(
-                    wingName = rs.getString("wing_name"),
-                    roomNumber = rs.getString("room_number"),
-                    bedLabel = rs.getString("bed_label"),
+                location = BedLocation.of(
+                    rs.getString("wing_name"),
+                    rs.getString("room_number"),
+                    rs.getString("bed_label"),
                 ),
                 riskLevel = riskLevelOf(rs.getString("risk_level")),
                 mobilityAid = mobilityAidOf(rs.getString("mobility_aid")),

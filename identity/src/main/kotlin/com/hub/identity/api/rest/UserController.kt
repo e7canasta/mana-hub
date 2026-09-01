@@ -9,7 +9,6 @@ import com.hub.identity.application.service.UserApplicationService
 import com.hub.shared.domain.UserId
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -19,7 +18,8 @@ class UserController(
 ) {
 
     @PostMapping
-    fun createUser(@Valid @RequestBody request: CreateUserRequest): ResponseEntity<UserResponse> {
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createUser(@Valid @RequestBody request: CreateUserRequest): UserResponse {
         val appRequest = AppCreateUserRequest(
             username = request.username,
             displayName = request.displayName,
@@ -27,29 +27,26 @@ class UserController(
             jobTitle = request.jobTitle,
             password = request.password
         )
-        val response = userApplicationService.createUser(appRequest)
-        return ResponseEntity.status(HttpStatus.CREATED).body(response)
+        return userApplicationService.createUser(appRequest)
     }
 
     @GetMapping
-    fun listUsers(): ResponseEntity<List<UserResponse>> {
-        return ResponseEntity.ok(userApplicationService.listUsers())
-    }
+    fun listUsers(): List<UserResponse> =
+        userApplicationService.listUsers()
 
     @GetMapping("/{userId}")
-    fun getUserById(@PathVariable userId: String): ResponseEntity<UserResponse> {
-        return ResponseEntity.ok(userApplicationService.getUserById(UserId(userId)))
-    }
+    fun getUserById(@PathVariable userId: String): UserResponse =
+        userApplicationService.getUserById(UserId(userId))
 
     @PatchMapping("/{userId}")
     fun updateUser(
         @PathVariable userId: String,
         @Valid @RequestBody request: UpdateUserRequest
-    ): ResponseEntity<UserResponse> {
+    ): UserResponse {
         val appRequest = AppUpdateUserRequest(
             displayName = request.displayName,
             jobTitle = request.jobTitle
         )
-        return ResponseEntity.ok(userApplicationService.updateUser(UserId(userId), appRequest))
+        return userApplicationService.updateUser(UserId(userId), appRequest)
     }
 }

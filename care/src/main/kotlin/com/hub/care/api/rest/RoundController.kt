@@ -4,7 +4,6 @@ import com.hub.care.application.dto.*
 import com.hub.care.application.service.RoundApplicationService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -14,40 +13,33 @@ class RoundController(
 ) {
 
     @PostMapping("/rounds")
-    fun createRound(@Valid @RequestBody request: CreateRoundRequest): ResponseEntity<RoundResponse> {
-        return ResponseEntity.status(HttpStatus.CREATED).body(roundApplicationService.createRound(request))
-    }
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createRound(@Valid @RequestBody request: CreateRoundRequest): RoundResponse =
+        roundApplicationService.createRound(request)
 
     @GetMapping("/rounds/current")
-    fun getCurrentRound(@RequestParam wingId: String): ResponseEntity<RoundResponse> {
-        val round = roundApplicationService.getCurrentRound(wingId)
-            ?: return ResponseEntity.notFound().build()
-        return ResponseEntity.ok(round)
-    }
+    fun getCurrentRound(@RequestParam wingId: String): RoundResponse? =
+        roundApplicationService.getCurrentRound(wingId)
 
     @GetMapping("/rounds")
-    fun listRounds(@RequestParam wingId: String): ResponseEntity<List<RoundResponse>> {
-        return ResponseEntity.ok(roundApplicationService.listRounds(wingId))
-    }
+    fun listRounds(@RequestParam wingId: String): List<RoundResponse> =
+        roundApplicationService.listRounds(wingId)
 
     @GetMapping("/rounds/{roundId}")
-    fun getRound(@PathVariable roundId: String): ResponseEntity<RoundResponse> {
-        return ResponseEntity.ok(roundApplicationService.getRound(roundId))
-    }
+    fun getRound(@PathVariable roundId: String): RoundResponse =
+        roundApplicationService.getRound(roundId)
 
     @PatchMapping("/rounds/{roundId}")
     fun updateRound(
         @PathVariable roundId: String,
         @RequestParam(required = false) actorId: String?
-    ): ResponseEntity<RoundResponse> {
-        return ResponseEntity.ok(roundApplicationService.updateRound(roundId, actorId ?: "system"))
-    }
+    ): RoundResponse =
+        roundApplicationService.updateRound(roundId, actorId ?: "system")
 
     @PatchMapping("/round-tasks/{taskId}")
     fun updateRoundTask(
         @PathVariable taskId: String,
         @Valid @RequestBody request: UpdateRoundTaskRequest
-    ): ResponseEntity<RoundTaskResponse> {
-        return ResponseEntity.ok(roundApplicationService.updateRoundTask(taskId, request))
-    }
+    ): RoundTaskResponse =
+        roundApplicationService.updateRoundTask(taskId, request)
 }

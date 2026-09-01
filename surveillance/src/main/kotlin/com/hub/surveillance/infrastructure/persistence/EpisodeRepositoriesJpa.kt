@@ -82,11 +82,7 @@ class EpisodeRepositoryAdapter(private val jpa: EpisodeEntityRepository, private
         return jpa.findAll(spec).map { it.toDomain() }
     }
     override fun save(episode: Episode): Episode {
-        val existing = jpa.findById(episode.id.value).orElse(null)
         val entity = episode.toEntity()
-        if (existing != null) {
-            entity.version = existing.version
-        }
         return jpa.save(entity).toDomain()
     }
 

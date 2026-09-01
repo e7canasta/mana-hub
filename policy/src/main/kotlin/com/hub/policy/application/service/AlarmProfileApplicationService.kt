@@ -30,6 +30,7 @@ class AlarmProfileApplicationService(
     private val eventPublisher: DomainEventPublisher,
     private val responseBuilder: AlarmProfileResponseBuilder,
     private val catalogService: AlarmCatalogService,
+    private val objectMapper: com.fasterxml.jackson.databind.ObjectMapper,
 ) {
 
     @Transactional(readOnly = true)
@@ -179,9 +180,8 @@ class AlarmProfileApplicationService(
     private fun parseOverridesJson(json: String): Map<String, Any> {
         if (json.isBlank() || json == "{}") return emptyMap()
         return try {
-            val mapper = com.fasterxml.jackson.databind.ObjectMapper()
             @Suppress("UNCHECKED_CAST")
-            mapper.readValue(json, Map::class.java) as Map<String, Any>
+            objectMapper.readValue(json, Map::class.java) as Map<String, Any>
         } catch (e: Exception) {
             emptyMap()
         }

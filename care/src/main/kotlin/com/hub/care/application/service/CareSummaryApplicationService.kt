@@ -4,6 +4,7 @@ import com.hub.care.application.dto.*
 import com.hub.care.domain.model.CareSummary
 import com.hub.care.domain.repository.CareSummaryRepository
 import com.hub.shared.domain.ResidentId
+import com.hub.shared.time.DateRange
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -69,9 +70,7 @@ class CareSummaryApplicationService(
     }
 
     private fun datesInRange(from: LocalDate, to: LocalDate): List<LocalDate> =
-        generateSequence(from) { it.plusDays(1) }
-            .takeWhile { !it.isAfter(to) }
-            .toList()
+        DateRange.datesBetween(from, to)
 
     private fun toResponse(s: CareSummary) = CareSummaryResponse(
         residentId = s.residentId.value,
