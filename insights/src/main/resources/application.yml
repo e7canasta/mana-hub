@@ -4,12 +4,15 @@ server:
 spring:
   application:
     name: mana-insights
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
-      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
-      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mana_hub
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
 
 insights:
   hub-url: ${INSIGHTS_HUB_URL:http://localhost:8080}

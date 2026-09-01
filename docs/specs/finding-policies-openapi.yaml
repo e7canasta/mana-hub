@@ -1,0 +1,359 @@
+openapi: 3.0.3
+info:
+  title: mana-hub — Finding Policies
+  description: >
+    API de configuración de reglas de análisis de hallazgos por residente.
+    Complemento de [insights-product-spec.md](./insights-product-spec.md).
+  version: "1.0"
+
+servers:
+  - url: http://localhost:8080
+    description: Local dev
+
+tags:
+  - name: Finding Policies
+    description: Configuración de reglas de análisis por residente
+
+paths:
+  /api/v1/insights/policies/default:
+    get:
+      tags: [Finding Policies]
+      summary: Obtener política default
+      description: Retorna la política global que cubre a todos los residentes sin política propia. Si no existe, la crea con todos los valores por defecto.
+      operationId: getDefault
+      responses:
+        "200":
+          description: Política default
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindingPolicyResponse"
+
+    put:
+      tags: [Finding Policies]
+      summary: Actualizar política default
+      description: Actualiza la política global. Los campos no enviados conservan su valor actual.
+      operationId: updateDefault
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FindingPolicyUpdateRequest"
+      responses:
+        "200":
+          description: Política actualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindingPolicyResponse"
+
+  /api/v1/insights/policies/{residentId}:
+    get:
+      tags: [Finding Policies]
+      summary: Obtener política de un residente
+      description: >
+        Si el residente tiene política propia la retorna.
+        Si no, cascada a la default.
+      operationId: getForResident
+      parameters:
+        - $ref: "#/components/parameters/ResidentId"
+      responses:
+        "200":
+          description: Política del residente (o default)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindingPolicyResponse"
+
+    put:
+      tags: [Finding Policies]
+      summary: Crear o actualizar política de un residente
+      description: >
+        Crea una política propia para el residente.
+        Si ya existe, actualiza solo los campos enviados.
+      operationId: updateForResident
+      parameters:
+        - $ref: "#/components/parameters/ResidentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FindingPolicyUpdateRequest"
+      responses:
+        "200":
+          description: Política actualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindingPolicyResponse"
+
+  /api/v1/insights/policies/{residentId}/reset:
+    put:
+      tags: [Finding Policies]
+      summary: Resetear política de un residente
+      description: >
+        Borra la política propia del residente.
+        A partir de ahí cascada a la default.
+      operationId: resetForResident
+      parameters:
+        - $ref: "#/components/parameters/ResidentId"
+      responses:
+        "200":
+          description: Política después del reset (default)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindingPolicyResponse"
+
+components:
+  parameters:
+    ResidentId:
+      name: residentId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: ID del residente (ej: "jose", "maria")
+
+  schemas:
+    FindingPolicyResponse:
+      type: object
+      description: Respuesta con la política completa
+      required: [id, default, sleep, care, bathroom, version]
+      properties:
+        id:
+          type: string
+          description: Identificador único
+          example: "policy-default"
+        residentId:
+          type: string
+          nullable: true
+          description: ID del residente. Null para la política default
+          example: null
+        default:
+          type: boolean
+          description: true si es la política global que cubre a todos
+          example: true
+        sleep:
+          $ref: "#/components/schemas/SleepPolicy"
+        care:
+          $ref: "#/components/schemas/CarePolicy"
+        bathroom:
+          $ref: "#/components/schemas/BathroomPolicy"
+        version:
+          type: integer
+          format: int64
+          description: Versión para optimistic locking
+          example: 1
+
+    FindingPolicyUpdateRequest:
+      type: object
+      description: >
+        Campos a actualizar. Solo los enviados se modifican;
+        los demás conservan su valor.
+      properties:
+        sleep:
+          $ref: "#/components/schemas/SleepPolicyDto"
+        care:
+          $ref: "#/components/schemas/CarePolicyDto"
+        bathroom:
+          $ref: "#/components/schemas/BathroomPolicyDto"
+
+    SleepPolicy:
+      type: object
+      description: Umbrales de evaluación de sueño (respuesta)
+      properties:
+        restlessHighEnabled:
+          type: boolean
+          example: true
+        restlessHighThreshold:
+          type: number
+          format: double
+          example: 0.25
+        restlessFragmentedEnabled:
+          type: boolean
+          example: true
+        restlessFragmentedThreshold:
+          type: number
+          format: double
+          example: 0.35
+        exitsRisingEnabled:
+          type: boolean
+          example: true
+        exitsRisingFactor:
+          type: number
+          format: double
+          example: 1.15
+        exitsRisingMinDelta:
+          type: number
+          format: double
+          example: 0.3
+        sleepInRangeEnabled:
+          type: boolean
+          example: true
+        sleepInRangeThreshold:
+          type: number
+          format: double
+          example: 0.2
+        dropWoWEnabled:
+          type: boolean
+          example: true
+        dropWoWMinutes:
+          type: integer
+          example: 45
+        dawnClusterEnabled:
+          type: boolean
+          example: true
+        dawnFrom:
+          type: string
+          example: "05:00"
+        dawnTo:
+          type: string
+          example: "06:05"
+        dawnMinCount:
+          type: integer
+          example: 3
+        dawnRatio:
+          type: number
+          format: double
+          example: 0.66
+
+    SleepPolicyDto:
+      type: object
+      description: >
+        Campos de sueño a actualizar.
+        Todos son nullable — solo los enviados se modifican.
+      properties:
+        restlessHighEnabled:
+          type: boolean
+          description: "Habilitar regla de sueño inquieto alto"
+          example: true
+        restlessHighThreshold:
+          type: number
+          format: double
+          description: "Umbral (0–1). Por encima se genera hallazgo"
+          example: 0.25
+        restlessFragmentedEnabled:
+          type: boolean
+          description: "Habilitar regla de sueño fragmentado"
+          example: true
+        restlessFragmentedThreshold:
+          type: number
+          format: double
+          description: "Umbral (0–1). Por encima es patológico"
+          example: 0.35
+        exitsRisingEnabled:
+          type: boolean
+          description: "Habilitar regla de salidas de cama en aumento"
+          example: true
+        exitsRisingFactor:
+          type: number
+          format: double
+          description: "Factor de aumento entre semanas"
+          example: 1.15
+        exitsRisingMinDelta:
+          type: number
+          format: double
+          description: "Diferencia mínima absoluta de salidas"
+          example: 0.3
+        sleepInRangeEnabled:
+          type: boolean
+          description: "Habilitar regla de sueño en rango habitual"
+          example: true
+        sleepInRangeThreshold:
+          type: number
+          format: double
+          description: "Umbral de variación"
+          example: 0.2
+        dropWoWEnabled:
+          type: boolean
+          description: "Habilitar regla de baja semana a semana"
+          example: true
+        dropWoWMinutes:
+          type: integer
+          description: "Baja mínima en minutos"
+          example: 45
+        dawnClusterEnabled:
+          type: boolean
+          description: "Habilitar regla de cluster de alba"
+          example: true
+        dawnFrom:
+          type: string
+          description: "Inicio de ventana de alba (HH:mm)"
+          example: "05:00"
+        dawnTo:
+          type: string
+          description: "Fin de ventana de alba (HH:mm)"
+          example: "06:05"
+        dawnMinCount:
+          type: integer
+          description: "Mínimo de salidas en ventana"
+          example: 3
+        dawnRatio:
+          type: number
+          format: double
+          description: "Proporción mínima (0–1)"
+          example: 0.66
+
+    CarePolicy:
+      type: object
+      description: Umbrales de evaluación de cuidado (respuesta)
+      properties:
+        careThinEnabled:
+          type: boolean
+          example: true
+        careThinMinutes:
+          type: number
+          format: double
+          example: 20.0
+
+    CarePolicyDto:
+      type: object
+      description: Campos de cuidado a actualizar
+      properties:
+        careThinEnabled:
+          type: boolean
+          description: "Habilitar regla de poco cuidado medido"
+          example: true
+        careThinMinutes:
+          type: number
+          format: double
+          description: "Minutos mínimos diarios de cuidado medido"
+          example: 20.0
+
+    BathroomPolicy:
+      type: object
+      description: Umbrales de evaluación de visitas nocturnas (respuesta)
+      properties:
+        bathroomNightEnabled:
+          type: boolean
+          example: true
+        nightMinAvg:
+          type: number
+          format: double
+          example: 1.0
+        nightRiseFactor:
+          type: number
+          format: double
+          example: 1.5
+
+    BathroomPolicyDto:
+      type: object
+      description: Campos de baño a actualizar
+      properties:
+        bathroomNightEnabled:
+          type: boolean
+          description: "Habilitar regla de visitas nocturnas"
+          example: true
+        nightMinAvg:
+          type: number
+          format: double
+          description: "Promedio mínimo de visitas nocturnas"
+          example: 1.0
+        nightRiseFactor:
+          type: number
+          format: double
+          description: "Factor de aumento entre semanas"
+          example: 1.5

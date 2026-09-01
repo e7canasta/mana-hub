@@ -1,7 +1,9 @@
 -- =============================================
--- seed-test.sql — datos mínimos para integración
--- Patrón: TRUNCATE CASCADE + este archivo = DB consistente por test
--- Cada dominio agrega sus inserts con ON CONFLICT DO NOTHING
+-- seed-test.sql — insights integration
+-- Datos mínimos para los repos que FindingService consulta:
+--   ResidentRepository, SummaryRepository, SceneEventRepository,
+--   CareSummaryRepository, HistoryEpisodeDetectionRepository,
+--   AlarmProfileRepository, AlarmProfileOverrideRepository
 -- =============================================
 
 -- ctx-residencia: facility → wing → room → bed
@@ -30,6 +32,8 @@ VALUES ('bed-5', 'room-302', 'Cama B', 'm2', now(), now(), 0)
 ON CONFLICT (id) DO NOTHING;
 
 -- ctx-poblacion: residentes + asignaciones
+-- jose: admisión 2024-01-15, duerme bien, movilidad normal
+-- maria: admisión 2024-02-01, sueño inquieto, movilidad limitada
 INSERT INTO residents (id, full_name, birth_date, admission_date, status, created_at, updated_at, version)
 VALUES ('jose', 'José García', '1942-03-15'::date, '2024-01-15'::date, 'active', now(), now(), 0)
 ON CONFLICT (id) DO NOTHING;
@@ -59,37 +63,8 @@ INSERT INTO alarm_profile_overrides (id, profile_version_id, rule_id, override_t
 VALUES ('override-jose-bed', 'profile-jose-v1', 'BED_EXIT', 'dwell', 'OUT_OF_BED', 5, 15, now())
 ON CONFLICT DO NOTHING;
 
--- insights: finding policy default (cubre residentes sin política propia)
-INSERT INTO finding_policies (id, is_default, sleep, care, bathroom, created_at, version)
-VALUES ('policy-default', true, '{
-    "restlessHighEnabled": true,
-    "restlessHighThreshold": 0.25,
-    "restlessFragmentedEnabled": true,
-    "restlessFragmentedThreshold": 0.35,
-    "exitsRisingEnabled": true,
-    "exitsRisingFactor": 1.15,
-    "exitsRisingMinDelta": 0.3,
-    "sleepInRangeEnabled": true,
-    "sleepInRangeThreshold": 0.20,
-    "dropWoWEnabled": true,
-    "dropWoWMinutes": 45,
-    "dawnClusterEnabled": true,
-    "dawnFrom": "05:00",
-    "dawnTo": "06:05",
-    "dawnMinCount": 3,
-    "dawnRatio": 0.66
-}'::jsonb, '{
-    "careThinEnabled": true,
-    "careThinMinutes": 20.0
-}'::jsonb, '{
-    "bathroomNightEnabled": true,
-    "nightMinAvg": 1.0,
-    "nightRiseFactor": 1.5
-}'::jsonb, now(), 0)
-ON CONFLICT (id) DO NOTHING;
-
--- mana-observation: resúmenes clínicos (7 días para baseline)
--- sleep: jose duerme bien, maria inquieta
+-- mana-observation: sleep_summaries (7 días para baseline)
+-- jose: sueño estable (~360 calm, ~30 restless)
 INSERT INTO sleep_summaries (id, source_record_id, resident_id, observed_on, calm_minutes, restless_minutes, awake_minutes, out_of_bed_minutes, bed_exit_count, wake_count, source, created_at, updated_at)
 VALUES
   ('ss-j-20260825', 'src-j-20260825', 'jose', '2026-08-25', 360, 30, 20, 10, 1, 1, 'seed', now(), now()),
@@ -98,7 +73,12 @@ VALUES
   ('ss-j-20260828', 'src-j-20260828', 'jose', '2026-08-28', 380, 20, 10, 5, 0, 1, 'seed', now(), now()),
   ('ss-j-20260829', 'src-j-20260829', 'jose', '2026-08-29', 365, 35, 18, 8, 1, 1, 'seed', now(), now()),
   ('ss-j-20260830', 'src-j-20260830', 'jose', '2026-08-30', 375, 22, 12, 6, 0, 1, 'seed', now(), now()),
-  ('ss-j-20260831', 'src-j-20260831', 'jose', '2026-08-31', 360, 30, 20, 10, 1, 1, 'seed', now(), now()),
+  ('ss-j-20260831', 'src-j-20260831', 'jose', '2026-08-31', 360, 30, 20, 10, 1, 1, 'seed', now(), now())
+ON CONFLICT (id) DO NOTHING;
+
+-- maria: sueño inquieto (~275 calm, ~85 restless, ~65 awake)
+INSERT INTO sleep_summaries (id, source_record_id, resident_id, observed_on, calm_minutes, restless_minutes, awake_minutes, out_of_bed_minutes, bed_exit_count, wake_count, source, created_at, updated_at)
+VALUES
   ('ss-m-20260825', 'src-m-20260825', 'maria', '2026-08-25', 280, 80, 60, 40, 4, 5, 'seed', now(), now()),
   ('ss-m-20260826', 'src-m-20260826', 'maria', '2026-08-26', 260, 90, 70, 50, 5, 6, 'seed', now(), now()),
   ('ss-m-20260827', 'src-m-20260827', 'maria', '2026-08-27', 290, 75, 55, 35, 3, 4, 'seed', now(), now()),
@@ -108,7 +88,8 @@ VALUES
   ('ss-m-20260831', 'src-m-20260831', 'maria', '2026-08-31', 275, 82, 62, 42, 4, 5, 'seed', now(), now())
 ON CONFLICT (id) DO NOTHING;
 
--- bathroom: jose normal, maria nocturnas frecuentes
+-- mana-observation: bathroom_summaries
+-- jose: normal (2-3 visitas, 0-1 nocturnas)
 INSERT INTO bathroom_summaries (id, source_record_id, resident_id, observed_on, visit_count, night_visit_count, assisted_count, total_minutes, source, created_at, updated_at)
 VALUES
   ('bs-j-20260825', 'bsrc-j-20260825', 'jose', '2026-08-25', 3, 1, 0, 15, 'seed', now(), now()),
@@ -117,7 +98,12 @@ VALUES
   ('bs-j-20260828', 'bsrc-j-20260828', 'jose', '2026-08-28', 2, 0, 0, 10, 'seed', now(), now()),
   ('bs-j-20260829', 'bsrc-j-20260829', 'jose', '2026-08-29', 3, 1, 0, 15, 'seed', now(), now()),
   ('bs-j-20260830', 'bsrc-j-20260830', 'jose', '2026-08-30', 2, 0, 0, 10, 'seed', now(), now()),
-  ('bs-j-20260831', 'bsrc-j-20260831', 'jose', '2026-08-31', 3, 1, 0, 15, 'seed', now(), now()),
+  ('bs-j-20260831', 'bsrc-j-20260831', 'jose', '2026-08-31', 3, 1, 0, 15, 'seed', now(), now())
+ON CONFLICT (id) DO NOTHING;
+
+-- maria: nocturnas frecuentes (3-5 nocturnas, asistida)
+INSERT INTO bathroom_summaries (id, source_record_id, resident_id, observed_on, visit_count, night_visit_count, assisted_count, total_minutes, source, created_at, updated_at)
+VALUES
   ('bs-m-20260825', 'bsrc-m-20260825', 'maria', '2026-08-25', 5, 3, 1, 30, 'seed', now(), now()),
   ('bs-m-20260826', 'bsrc-m-20260826', 'maria', '2026-08-26', 6, 4, 2, 35, 'seed', now(), now()),
   ('bs-m-20260827', 'bsrc-m-20260827', 'maria', '2026-08-27', 4, 2, 1, 25, 'seed', now(), now()),
@@ -127,7 +113,8 @@ VALUES
   ('bs-m-20260831', 'bsrc-m-20260831', 'maria', '2026-08-31', 5, 3, 1, 30, 'seed', now(), now())
 ON CONFLICT (id) DO NOTHING;
 
--- mobility: jose camina, maria limitada
+-- mana-observation: mobility_summaries
+-- jose: camina bien (~60 min/día, ~300m)
 INSERT INTO mobility_summaries (id, source_record_id, resident_id, observed_on, in_bed_minutes, out_of_bed_minutes, out_of_sight_minutes, walking_minutes, distance_meters, transfer_count, source, created_at, updated_at)
 VALUES
   ('ms-j-20260825', 'msrc-j-20260825', 'jose', '2026-08-25', 480, 240, 20, 60, 300.0, 8, 'seed', now(), now()),
@@ -136,7 +123,12 @@ VALUES
   ('ms-j-20260828', 'msrc-j-20260828', 'jose', '2026-08-28', 485, 235, 18, 58, 290.0, 8, 'seed', now(), now()),
   ('ms-j-20260829', 'msrc-j-20260829', 'jose', '2026-08-29', 480, 240, 20, 60, 300.0, 8, 'seed', now(), now()),
   ('ms-j-20260830', 'msrc-j-20260830', 'jose', '2026-08-30', 490, 230, 15, 55, 275.0, 7, 'seed', now(), now()),
-  ('ms-j-20260831', 'msrc-j-20260831', 'jose', '2026-08-31', 480, 240, 20, 60, 300.0, 8, 'seed', now(), now()),
+  ('ms-j-20260831', 'msrc-j-20260831', 'jose', '2026-08-31', 480, 240, 20, 60, 300.0, 8, 'seed', now(), now())
+ON CONFLICT (id) DO NOTHING;
+
+-- maria: movilidad limitada (~17 min/día caminando, ~85m)
+INSERT INTO mobility_summaries (id, source_record_id, resident_id, observed_on, in_bed_minutes, out_of_bed_minutes, out_of_sight_minutes, walking_minutes, distance_meters, transfer_count, source, created_at, updated_at)
+VALUES
   ('ms-m-20260825', 'msrc-m-20260825', 'maria', '2026-08-25', 540, 180, 40, 20, 100.0, 4, 'seed', now(), now()),
   ('ms-m-20260826', 'msrc-m-20260826', 'maria', '2026-08-26', 550, 170, 45, 15, 75.0, 3, 'seed', now(), now()),
   ('ms-m-20260827', 'msrc-m-20260827', 'maria', '2026-08-27', 535, 185, 35, 25, 125.0, 5, 'seed', now(), now()),
@@ -145,3 +137,16 @@ VALUES
   ('ms-m-20260830', 'msrc-m-20260830', 'maria', '2026-08-30', 540, 180, 40, 20, 100.0, 4, 'seed', now(), now()),
   ('ms-m-20260831', 'msrc-m-20260831', 'maria', '2026-08-31', 548, 172, 43, 17, 85.0, 3, 'seed', now(), now())
 ON CONFLICT (id) DO NOTHING;
+
+-- mana-observation: scene_events (jose se levanta de la cama, maria frecuentes salidas)
+INSERT INTO scene_events (id, event_id, bed_id, resident_id, event_type, from_state, to_state, trigger_type, timestamp, payload_json, received_at)
+VALUES
+  ('se-j-001', 'evt-j-001', 'bed-4', 'jose', 'TRANSITION', 'IN_BED', 'OUT_OF_BED', 'MOTION', '2026-08-31 02:30:00', '{}', now()),
+  ('se-j-002', 'evt-j-002', 'bed-4', 'jose', 'TRANSITION', 'OUT_OF_BED', 'IN_BED', 'MOTION', '2026-08-31 02:45:00', '{}', now()),
+  ('se-j-003', 'evt-j-003', 'bed-4', 'jose', 'TRANSITION', 'IN_BED', 'OUT_OF_BED', 'MOTION', '2026-08-31 05:00:00', '{}', now()),
+  ('se-m-001', 'evt-m-001', 'bed-5', 'maria', 'TRANSITION', 'IN_BED', 'OUT_OF_BED', 'MOTION', '2026-08-31 01:15:00', '{}', now()),
+  ('se-m-002', 'evt-m-002', 'bed-5', 'maria', 'TRANSITION', 'OUT_OF_BED', 'IN_BED', 'MOTION', '2026-08-31 01:40:00', '{}', now()),
+  ('se-m-003', 'evt-m-003', 'bed-5', 'maria', 'TRANSITION', 'IN_BED', 'OUT_OF_BED', 'MOTION', '2026-08-31 03:00:00', '{}', now()),
+  ('se-m-004', 'evt-m-004', 'bed-5', 'maria', 'TRANSITION', 'OUT_OF_BED', 'IN_BED', 'MOTION', '2026-08-31 03:20:00', '{}', now()),
+  ('se-m-005', 'evt-m-005', 'bed-5', 'maria', 'TRANSITION', 'IN_BED', 'OUT_OF_BED', 'MOTION', '2026-08-31 05:30:00', '{}', now())
+ON CONFLICT (event_id) DO NOTHING;

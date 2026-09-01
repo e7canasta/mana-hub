@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository
 interface FindingPolicyEntityRepository : JpaRepository<FindingPolicyEntity, String> {
     fun findByResidentId(residentId: String): FindingPolicyEntity?
     fun findByIsDefaultTrue(): FindingPolicyEntity?
+    fun deleteByResidentId(residentId: String)
 }

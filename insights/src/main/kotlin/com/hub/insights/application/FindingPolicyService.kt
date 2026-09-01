@@ -64,16 +64,7 @@ class FindingPolicyService(
     }
 
     fun resetForResident(residentId: String): FindingPolicy {
-        val existing = repository.findByResidentId(residentId)
-        if (existing != null) {
-            repository.save(
-                existing.copy(
-                    sleep = SleepPolicy(),
-                    care = CarePolicy(),
-                    bathroom = BathroomPolicy(),
-                )
-            )
-        }
+        repository.deleteByResidentId(residentId)
         return getForResident(residentId)
     }
 

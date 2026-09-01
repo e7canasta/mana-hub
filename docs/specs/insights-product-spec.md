@@ -313,6 +313,9 @@ El sistema genera una oración en lenguaje natural:
 
 ## Configuración de políticas por residente
 
+> Para la referencia técnica de la API (endpoints, payloads, ejemplos curl), ver [finding-policies-integration-guide.md](./finding-policies-integration-guide.md).
+> Para entender el modelo de datos, las specs BDD, y cómo se relacionan las entidades, ver [insights-data-model-guide.md](./insights-data-model-guide.md).
+
 ### Endpoints
 
 | Método | Ruta | Qué hace |

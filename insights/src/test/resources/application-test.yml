@@ -4,6 +4,12 @@ server:
 spring:
   main:
     allow-bean-definition-overriding: true
+  flyway:
+    enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
 
 insights:
   hub-url: http://localhost:1

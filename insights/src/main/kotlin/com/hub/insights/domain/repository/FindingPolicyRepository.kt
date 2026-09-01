@@ -6,4 +6,5 @@ interface FindingPolicyRepository {
     fun findByResidentId(residentId: String): FindingPolicy?
     fun findDefault(): FindingPolicy?
     fun save(policy: FindingPolicy): FindingPolicy
+    fun deleteByResidentId(residentId: String)
 }
