@@ -4,6 +4,7 @@ import com.hub.evidence.domain.model.*
 import com.hub.evidence.domain.repository.ClipWindowRepository
 import com.hub.evidence.domain.repository.EvidenceRepository
 import com.hub.evidence.domain.repository.TimelineRepository
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
 import com.hub.shared.time.HubClock
@@ -28,10 +29,8 @@ class EvidenceEntity(
     @Column(name = "rule_id") var ruleId: String? = null,
     @Column(name = "shift") var shift: String? = null,
     @Column(name = "risk_level") var riskLevel: String? = null,
-    @Column(name = "timestamp") var timestamp: Instant = Instant.now(),
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+    @Column(name = "timestamp") var timestamp: Instant = Instant.now()
+) : BaseEntity()
 
 @Entity
 @Table(name = "timelines")
@@ -45,10 +44,8 @@ class TimelineEntity(
     @Column(name = "after_events_json") var afterEventsJson: String = "[]",
     @Column(name = "window_start") var windowStart: Instant = Instant.now(),
     @Column(name = "window_end") var windowEnd: Instant? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "closed_at") var closedAt: Instant? = null,
-    @Version var version: Long = 0
-)
+    @Column(name = "closed_at") var closedAt: Instant? = null
+) : BaseEntity()
 
 @Entity
 @Table(name = "clip_windows")
@@ -62,10 +59,8 @@ class ClipWindowEntity(
     @Column(name = "events_json") var eventsJson: String = "[]",
     @Column(name = "state") var state: String = "open",
     @Column(name = "close_condition_json") var closeConditionJson: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "closed_at") var closedAt: Instant? = null,
-    @Version var version: Long = 0
-)
+    @Column(name = "closed_at") var closedAt: Instant? = null
+) : BaseEntity()
 
 @Repository
 interface EvidenceEntityRepository : JpaRepository<EvidenceEntity, String> {
@@ -93,7 +88,7 @@ class EvidenceRepositoryAdapter(private val jpa: EvidenceEntityRepository, priva
     )
     private fun Evidence.toEntity() = EvidenceEntity(
         id.value, bedId.value, residentId.value, evidenceType, category, sceneEventId,
-        sceneEventJson, ruleId, shift, riskLevel, timestamp, clock.now()
+        sceneEventJson, ruleId, shift, riskLevel, timestamp
     )
 }
 
@@ -108,7 +103,7 @@ class TimelineRepositoryAdapter(private val jpa: TimelineEntityRepository, priva
     )
     private fun Timeline.toEntity() = TimelineEntity(
         id.value, bedId.value, residentId.value, anchorEventId, anchorEventJson,
-        beforeEventsJson, afterEventsJson, windowStart, windowEnd, clock.now(), closedAt
+        beforeEventsJson, afterEventsJson, windowStart, windowEnd, closedAt
     )
 }
 
@@ -124,6 +119,6 @@ class ClipWindowRepositoryAdapter(private val jpa: ClipWindowEntityRepository, p
     )
     private fun ClipWindow.toEntity() = ClipWindowEntity(
         id.value, bedId.value, residentId.value, startedAt, endedAt, timeoutMinutes,
-        eventsJson, state, closeConditionJson, clock.now(), closedAt
+        eventsJson, state, closeConditionJson, closedAt
     )
 }

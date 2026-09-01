@@ -3,6 +3,7 @@ package com.hub.care.infrastructure.persistence
 import com.hub.care.domain.model.CareSummary
 import com.hub.care.domain.model.CareSummaryId
 import com.hub.care.domain.repository.CareSummaryRepository
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.time.HubClock
 import jakarta.persistence.*
@@ -24,11 +25,8 @@ class CareSummaryEntity(
     @Column(name = "notes_count") var notesCount: Int = 0,
     @Column(name = "source") var source: String? = null,
     @Column(name = "model_version") var modelVersion: String? = null,
-    @Column(name = "confidence") var confidence: Double? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+    @Column(name = "confidence") var confidence: Double? = null
+) : BaseEntity()
 
 @Repository
 interface CareSummaryEntityRepository : JpaRepository<CareSummaryEntity, String> {
@@ -81,7 +79,6 @@ class CareSummaryRepositoryAdapter(
         notesCount = notesCount,
         source = source,
         modelVersion = modelVersion,
-        confidence = confidence,
-        version = version
+        confidence = confidence
     )
 }

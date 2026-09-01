@@ -7,6 +7,7 @@ import com.hub.policy.domain.model.TemplateId
 import com.hub.policy.domain.model.recommendation.PolicyRecommendation
 import com.hub.policy.domain.model.recommendation.PresetPatch
 import com.hub.policy.domain.repository.PolicyRecommendationRepository
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.domain.ResidentId
 import com.hub.policy.domain.model.recommendation.RecommendationId
 import com.hub.policy.domain.model.recommendation.RecommendationOrigin
@@ -31,11 +32,9 @@ class PolicyRecommendationEntity(
     @Column(name = "patch_risk_level") var patchRiskLevel: String? = null,
     @Column(name = "patch_mobility_aid") var patchMobilityAid: String? = null,
     @Column(name = "patch_autopilot") var patchAutopilot: Boolean? = null,
-    @Version var version: Long = 0,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
     @Column(name = "resolved_at") var resolvedAt: Instant? = null,
     @Column(name = "applied_at") var appliedAt: Instant? = null,
-)
+) : BaseEntity()
 
 @Repository
 interface PolicyRecommendationEntityRepository : JpaRepository<PolicyRecommendationEntity, String> {
@@ -71,26 +70,29 @@ class PolicyRecommendationRepositoryAdapter(
         ),
         origin = RecommendationOrigin.valueOf(origin),
         state = RecommendationState.valueOf(state),
-        createdAt = createdAt,
+        createdAt = createdAt!!,
         resolvedAt = resolvedAt,
         appliedAt = appliedAt,
     )
 
-    private fun PolicyRecommendation.toEntity() = PolicyRecommendationEntity(
-        id = id.value.toString(),
-        episodeId = episodeId,
-        residentId = residentId.value,
-        title = title,
-        description = description,
-        origin = origin.name,
-        state = state.name,
-        patchTemplateId = presetPatch.templateId?.value,
-        patchMode = presetPatch.mode?.name?.lowercase(),
-        patchRiskLevel = presetPatch.riskLevel?.name?.lowercase(),
-        patchMobilityAid = presetPatch.mobilityAid?.name?.lowercase(),
-        patchAutopilot = presetPatch.autopilot,
-        createdAt = createdAt,
-        resolvedAt = resolvedAt,
-        appliedAt = appliedAt,
-    )
+    private fun PolicyRecommendation.toEntity(): PolicyRecommendationEntity {
+        val entity = PolicyRecommendationEntity(
+            id = id.value.toString(),
+            episodeId = episodeId,
+            residentId = residentId.value,
+            title = title,
+            description = description,
+            origin = origin.name,
+            state = state.name,
+            patchTemplateId = presetPatch.templateId?.value,
+            patchMode = presetPatch.mode?.name?.lowercase(),
+            patchRiskLevel = presetPatch.riskLevel?.name?.lowercase(),
+            patchMobilityAid = presetPatch.mobilityAid?.name?.lowercase(),
+            patchAutopilot = presetPatch.autopilot,
+            resolvedAt = resolvedAt,
+            appliedAt = appliedAt,
+        )
+        entity.createdAt = createdAt
+        return entity
+    }
 }

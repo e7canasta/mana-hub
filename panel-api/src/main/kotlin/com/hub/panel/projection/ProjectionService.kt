@@ -24,8 +24,8 @@ private fun policyModeOf(v: String?): PolicyMode =
  *
  * DUPLICACIÓN CON [com.hub.views.ProjectionService]:
  * - **Residente rail**: ambos resuelven bed→room→wing. Este servicio lo hace
- *   vía SQL JOINs; el otro vía JPA con cache por llamada. Ambos producen el
- *   mismo modelo conceptual ([com.hub.shared.domain.BedLocation]).
+ *   vía SQL JOINs; el otro vía [com.hub.shared.domain.LocationResolver] (JPA).
+ *   Ambos producen el mismo modelo conceptual ([com.hub.shared.domain.BedLocation]).
  * - **Episodios**: este servicio usa SQL lateral para el último review y
  *   closed_at; el otro usa repos JPA + lógica en Kotlin.
  * - **Alarm preferences**: este servicio lee alarm_profile_versions vía JDBC;
@@ -56,7 +56,7 @@ class PanelProjectionService(private val jdbc: JdbcTemplate) {
         residentRailMapper,
     )
 
-    /** DUPLICACIÓN: bed→room→wing JOIN — mismo patrón que LocationResolver en bootstrap. */
+    /** DUPLICACIÓN: bed→room→wing JOIN — mismo patrón que [com.hub.shared.domain.LocationResolver] en bootstrap. */
     private val residentRailMapper = RowMapper { rs, _ ->
         ResidentRailDto(
             id = rs.getString("id"),

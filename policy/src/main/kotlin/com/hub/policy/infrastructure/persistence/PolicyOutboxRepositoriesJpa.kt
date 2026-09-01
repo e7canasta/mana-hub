@@ -2,6 +2,7 @@ package com.hub.policy.infrastructure.persistence
 
 import com.hub.policy.domain.model.OutboxEntryId
 import com.hub.policy.domain.model.PolicyOutboxEntry
+import com.hub.shared.domain.BaseEntity
 import jakarta.persistence.*
 import org.hibernate.annotations.Immutable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -20,8 +21,7 @@ class PolicyOutboxEntity(
     @Column(name = "published") var published: Boolean = false,
     @Column(name = "attempts") var attempts: Int = 0,
     @Column(name = "last_error") var lastError: String? = null,
-    @Version var version: Long = 0
-)
+) : BaseEntity()
 
 @Repository
 interface PolicyOutboxEntityRepository : JpaRepository<PolicyOutboxEntity, String> {

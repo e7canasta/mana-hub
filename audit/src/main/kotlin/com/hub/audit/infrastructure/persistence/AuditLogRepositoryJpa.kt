@@ -3,6 +3,7 @@ package com.hub.audit.infrastructure.persistence
 import com.hub.audit.domain.model.AuditLogEntry
 import com.hub.audit.domain.model.AuditLogId
 import com.hub.audit.domain.repository.AuditLogRepository
+import com.hub.shared.domain.BaseEntity
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
@@ -29,10 +30,7 @@ class AuditLogEntity(
 
     @Column(name = "metadata_json")
     var metadataJson: String = "{}",
-
-    @Column(name = "created_at")
-    var createdAt: Instant = Instant.now()
-)
+) : BaseEntity()
 
 @Repository
 interface AuditLogEntityRepository : JpaRepository<AuditLogEntity, String> {
@@ -53,8 +51,8 @@ class AuditLogRepositoryAdapter(
             entityType = entry.entityType,
             entityId = entry.entityId,
             metadataJson = entry.metadataJson,
-            createdAt = entry.createdAt
         )
+        entity.createdAt = entry.createdAt
         jpa.save(entity)
         return entry
     }
@@ -78,6 +76,6 @@ class AuditLogRepositoryAdapter(
         entityType = entityType,
         entityId = entityId,
         metadataJson = metadataJson,
-        createdAt = createdAt
+        createdAt = createdAt!!
     )
 }

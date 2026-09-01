@@ -2,6 +2,7 @@ package com.hub.integration.infrastructure.persistence
 
 import com.hub.integration.domain.model.ResidentProfile
 import com.hub.integration.domain.repository.ResidentProfileRepository
+import com.hub.shared.domain.BaseEntity
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
@@ -14,23 +15,21 @@ class ResidentProfileEntity(
     @Id val id: String,
     val residentId: String,
     val profileId: String,
-    val version: Int,
+    @Column(name = "version") val profileVersion: Int,
     val supersedes: Int?,
     val validFrom: Instant,
     @Column(columnDefinition = "TEXT") val provenanceJson: String,
     @Column(columnDefinition = "TEXT") val windowsJson: String,
     @Column(columnDefinition = "TEXT") val subjectsJson: String,
     @Column(columnDefinition = "TEXT") val rawJson: String,
-    val createdAt: Instant = Instant.now(),
-    val updatedAt: Instant = Instant.now(),
-)
+) : BaseEntity()
 
 interface ResidentProfileEntityRepository : JpaRepository<ResidentProfileEntity, String> {
     fun findTopByResidentIdOrderByVersionDesc(residentId: String): ResidentProfileEntity?
 
     fun findByResidentId(residentId: String): List<ResidentProfileEntity>
 
-    @Query("SELECT e FROM ResidentProfileEntity e WHERE e.version = (SELECT MAX(e2.version) FROM ResidentProfileEntity e2 WHERE e2.residentId = e.residentId)")
+    @Query("SELECT e FROM ResidentProfileEntity e WHERE e.profileVersion = (SELECT MAX(e2.profileVersion) FROM ResidentProfileEntity e2 WHERE e2.residentId = e.residentId)")
     fun findActiveProfiles(): List<ResidentProfileEntity>
 }
 
@@ -56,16 +55,19 @@ class ResidentProfileRepositoryAdapter(
 
     private fun ResidentProfileEntity.toDomain() = ResidentProfile(
         id = id, residentId = residentId, profileId = profileId,
-        version = version, supersedes = supersedes, validFrom = validFrom,
+        version = profileVersion, supersedes = supersedes, validFrom = validFrom,
         provenanceJson = provenanceJson, windowsJson = windowsJson,
-        subjectsJson = subjectsJson, rawJson = rawJson, createdAt = createdAt,
+        subjectsJson = subjectsJson, rawJson = rawJson, createdAt = createdAt!!,
     )
 
-    private fun ResidentProfile.toEntity() = ResidentProfileEntity(
-        id = id, residentId = residentId, profileId = profileId,
-        version = version, supersedes = supersedes, validFrom = validFrom,
-        provenanceJson = provenanceJson, windowsJson = windowsJson,
-        subjectsJson = subjectsJson, rawJson = rawJson, createdAt = createdAt,
-        updatedAt = Instant.now(),
-    )
+    private fun ResidentProfile.toEntity(): ResidentProfileEntity {
+        val entity = ResidentProfileEntity(
+            id = id, residentId = residentId, profileId = profileId,
+            profileVersion = version, supersedes = supersedes, validFrom = validFrom,
+            provenanceJson = provenanceJson, windowsJson = windowsJson,
+            subjectsJson = subjectsJson, rawJson = rawJson,
+        )
+        entity.createdAt = createdAt
+        return entity
+    }
 }

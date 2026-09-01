@@ -5,6 +5,7 @@ import com.hub.population.domain.repository.BedAssignmentRepository
 import com.hub.population.domain.repository.ResidentRepository
 import com.hub.shared.domain.BedId
 import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.time.HubClock
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
@@ -24,10 +25,7 @@ class ResidentEntity(
     @Column(name = "status") var status: String = "active",
     @Column(name = "discharged_at") var dischargedAt: Instant? = null,
     @Column(name = "discharged_by") var dischargedBy: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+) : BaseEntity()
 
 @Entity
 @Table(name = "resident_bed_assignments")
@@ -38,9 +36,7 @@ class BedAssignmentEntity(
     @Column(name = "starts_at") var startsAt: Instant = Instant.now(),
     @Column(name = "ends_at") var endsAt: Instant? = null,
     @Column(name = "created_by") var createdBy: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+) : BaseEntity()
 
 @Repository
 interface ResidentEntityRepository : JpaRepository<ResidentEntity, String> {
@@ -73,7 +69,7 @@ class ResidentRepositoryAdapter(private val jpa: ResidentEntityRepository, priva
     )
     private fun Resident.toEntity() = ResidentEntity(
         id.value, externalId, fullName, birthDate, admissionDate, status.name.lowercase(),
-        dischargedAt, dischargedBy, clock.now(), clock.now()
+        dischargedAt, dischargedBy
     )
 }
 
@@ -96,6 +92,6 @@ class BedAssignmentRepositoryAdapter(private val jpa: BedAssignmentEntityReposit
         AssignmentId(id), ResidentId(residentId), BedId(bedId), startsAt, endsAt, createdBy, version
     )
     private fun BedAssignment.toEntity() = BedAssignmentEntity(
-        id.value, residentId.value, bedId.value, startsAt, endsAt, createdBy, clock.now()
+        id.value, residentId.value, bedId.value, startsAt, endsAt, createdBy
     )
 }

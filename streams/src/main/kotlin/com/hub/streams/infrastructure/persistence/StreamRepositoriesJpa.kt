@@ -3,6 +3,7 @@ package com.hub.streams.infrastructure.persistence
 import com.hub.streams.domain.model.*
 import com.hub.streams.domain.repository.StreamRegionRepository
 import com.hub.streams.domain.repository.StreamRepository
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.domain.RoomId
 import com.hub.shared.time.HubClock
 import jakarta.persistence.*
@@ -18,10 +19,8 @@ class StreamEntity(
     @Column(name = "stream_key") var streamKey: String = "",
     @Column(name = "name") var name: String? = null,
     @Column(name = "active") var active: Boolean = true,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+    @Column(name = "updated_at") override var updatedAt: Instant? = Instant.now()
+) : BaseEntity()
 
 @Entity
 @Table(name = "stream_regions")
@@ -33,10 +32,8 @@ class StreamRegionEntity(
     @Column(name = "label") var label: String? = null,
     @Column(name = "is_static") var isStatic: Boolean = true,
     @Column(name = "updated_by") var updatedBy: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+    @Column(name = "updated_at") override var updatedAt: Instant? = Instant.now()
+) : BaseEntity()
 
 @Repository
 interface StreamEntityRepository : JpaRepository<StreamEntity, String> {
@@ -56,7 +53,7 @@ class StreamRepositoryAdapter(private val jpa: StreamEntityRepository, private v
     override fun save(stream: Stream): Stream = jpa.save(stream.toEntity()).toDomain()
 
     private fun StreamEntity.toDomain() = Stream.reconstitute(StreamId(id), RoomId(roomId), streamKey, name, active, version)
-    private fun Stream.toEntity() = StreamEntity(id.value, roomId.value, streamKey, name, active, clock.now(), clock.now())
+    private fun Stream.toEntity() = StreamEntity(id.value, roomId.value, streamKey, name, active, clock.now())
 }
 
 @Repository
@@ -70,6 +67,6 @@ class StreamRegionRepositoryAdapter(private val jpa: StreamRegionEntityRepositor
         StreamId(id), StreamId(streamId), RegionType.from(regionType), points, label, isStatic, updatedBy, version
     )
     private fun StreamRegion.toEntity() = StreamRegionEntity(
-        id.value, streamId.value, regionType.name.lowercase(), points, label, isStatic, updatedBy, clock.now(), clock.now()
+        id.value, streamId.value, regionType.name.lowercase(), points, label, isStatic, updatedBy, clock.now()
     )
 }

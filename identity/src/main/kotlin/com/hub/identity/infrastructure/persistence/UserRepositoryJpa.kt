@@ -64,7 +64,5 @@ class UserRepositoryAdapter(
         passwordHash = passwordHash,
         retiredAt = retiredAt,
         retiredBy = retiredBy?.value,
-        createdAt = clock.now(),
-        updatedAt = clock.now()
     )
 }

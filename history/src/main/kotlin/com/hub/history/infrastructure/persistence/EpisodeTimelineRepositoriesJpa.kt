@@ -4,6 +4,7 @@ import com.hub.history.domain.model.timeline.EpisodeTimelineEvent
 import com.hub.history.domain.model.timeline.EpisodeTimelineEventId
 import com.hub.history.domain.model.timeline.EpisodeTimelineRepository
 import com.hub.history.domain.model.timeline.EventType
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.domain.ResidentId
 import jakarta.persistence.*
 import org.springframework.data.domain.PageRequest
@@ -22,8 +23,7 @@ class EpisodeTimelineEventEntity(
     @Column(name = "from_state") var fromState: String? = null,
     @Column(name = "to_state") var toState: String? = null,
     @Column(name = "description") var description: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-)
+) : BaseEntity()
 
 @Repository
 interface EpisodeTimelineEventEntityRepository : JpaRepository<EpisodeTimelineEventEntity, String> {

@@ -1,5 +1,6 @@
 package com.hub.identity.infrastructure.persistence
 
+import com.hub.shared.domain.BaseEntity
 import jakarta.persistence.*
 import java.time.Instant
 
@@ -30,13 +31,4 @@ class UserEntity(
 
     @Column(name = "retired_by")
     var retiredBy: String? = null,
-
-    @Column(name = "created_at")
-    var createdAt: Instant = Instant.now(),
-
-    @Column(name = "updated_at")
-    var updatedAt: Instant = Instant.now(),
-
-    @Version
-    var version: Long = 0
-)
+) : BaseEntity()

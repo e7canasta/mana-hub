@@ -4,6 +4,7 @@ import com.hub.surveillance.domain.model.*
 import com.hub.surveillance.domain.repository.EpisodeRepository
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.time.HubClock
 import jakarta.persistence.*
 import jakarta.persistence.criteria.Predicate
@@ -34,10 +35,7 @@ class EpisodeEntity(
     @Column(name = "escalation_level") var escalationLevel: Int = 0,
     @Column(name = "escalated_at") var escalatedAt: Instant? = null,
     @Column(name = "escalated_to") var escalatedTo: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+) : BaseEntity()
 
 @Repository
 interface EpisodeEntityRepository :
@@ -100,6 +98,6 @@ class EpisodeRepositoryAdapter(private val jpa: EpisodeEntityRepository, private
     private fun Episode.toEntity() = EpisodeEntity(
         id.value, residentId.value, bedId?.value, evidenceKind, evidenceRef, ruleId,
         severity.name, status, statusActorId, statusAt, title, detail,
-        occurredAt, escalationLevel, escalatedAt, escalatedTo, clock.now(), clock.now()
+        occurredAt, escalationLevel, escalatedAt, escalatedTo
     )
 }

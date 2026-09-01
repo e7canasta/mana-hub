@@ -2,6 +2,7 @@ package com.hub.policy.infrastructure.persistence
 
 import com.hub.policy.domain.model.PolicyOverride
 import com.hub.policy.domain.repository.AlarmProfileOverrideRepository
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.domain.Identifier
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
@@ -28,8 +29,7 @@ class AlarmProfileOverrideEntity(
     @Column(name = "closure_condition") var closureCondition: String? = null,
     /* La regla se mira y no habla. Ver `PolicyOverride.observeOnly`. */
     @Column(name = "observe_only") var observeOnly: Boolean? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-)
+) : BaseEntity()
 
 @Repository
 interface AlarmProfileOverrideEntityRepository : JpaRepository<AlarmProfileOverrideEntity, String> {

@@ -9,12 +9,9 @@ import com.hub.history.domain.repository.HistoryEpisodeReviewRepository
 import com.hub.care.domain.repository.CareSummaryRepository
 import com.hub.policy.domain.repository.AlarmProfileRepository
 import com.hub.policy.domain.repository.AlarmProfileOverrideRepository
-import com.hub.residence.domain.repository.BedRepository
-import com.hub.residence.domain.repository.FacilityRepository
-import com.hub.residence.domain.repository.RoomRepository
-import com.hub.residence.domain.repository.WingRepository
 import com.hub.shared.domain.BedId
 import com.hub.shared.domain.BedLocation
+import com.hub.shared.domain.LocationResolver
 import com.hub.shared.domain.ResidentId
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -35,67 +32,8 @@ class ProjectionService(
     private val careSummaryRepository: CareSummaryRepository,
     private val alarmProfileRepository: AlarmProfileRepository,
     private val alarmOverrideRepository: AlarmProfileOverrideRepository,
-    private val bedRepository: BedRepository,
-    private val roomRepository: RoomRepository,
-    private val wingRepository: WingRepository,
-    private val facilityRepository: FacilityRepository,
+    private val locationResolver: LocationResolver,
 ) {
-
-    /**
-     * Resuelve cama -> habitacion -> ala usando JPA repos con cache por llamada.
-     *
-     * El panel muestra "Hab. 301 - Cama A" en cada fila del piso: sin esto la
-     * lista es cuatro nombres sin lugar, y en una residencia el lugar es medio
-     * dato. Antes devolvía un objeto vacío que el cliente no podía distinguir
-     * de "todavía no tiene cama".
-     *
-     * El cache es por llamada: el rail pide la ubicacion de cada residente y
-     * varios comparten habitacion y ala, asi que sin memoizar son tres queries
-     * por fila para leer los mismos dos registros.
-     *
-     * DUPLICACIÓN: [com.hub.panel.projection.PanelProjectionService] resuelve
-     * la misma jerarquía bed→room→wing vía SQL JOINs (ver residentRailMapper).
-     * Ambos producen [BedLocation] (shared-kernel) como modelo canónico de
-     * ubicación. Si se cambia la jerarquía edilicia, ambos archivos deben
-     * actualizarse.
-     */
-    private class LocationResolver(
-        private val bedRepository: BedRepository,
-        private val roomRepository: RoomRepository,
-        private val wingRepository: WingRepository,
-        private val facilityRepository: FacilityRepository,
-    ) {
-        private val rooms = mutableMapOf<String, com.hub.residence.domain.model.Room?>()
-        private val wings = mutableMapOf<String, com.hub.residence.domain.model.Wing?>()
-        private val facilities = mutableMapOf<String, com.hub.residence.domain.model.Facility?>()
-
-        fun resolve(bedId: BedId): BedLocation? {
-            val bed = bedRepository.findById(bedId) ?: return null
-            val room = rooms.getOrPut(bed.roomId.value) { roomRepository.findById(bed.roomId) }
-            val wing = room?.let { r ->
-                wings.getOrPut(r.wingId.value) { wingRepository.findById(r.wingId) }
-            }
-            return BedLocation(
-                wingName = wing?.name,
-                roomNumber = room?.number,
-                bedLabel = bed.label,
-            )
-        }
-
-        fun zone(bedId: BedId): ZoneId {
-            val bed = bedRepository.findById(bedId) ?: return DEFAULT_ZONE
-            val room = rooms.getOrPut(bed.roomId.value) { roomRepository.findById(bed.roomId) }
-            val wing = room?.let { r ->
-                wings.getOrPut(r.wingId.value) { wingRepository.findById(r.wingId) }
-            }
-            val facility = wing?.let { w ->
-                facilities.getOrPut(w.facilityId.value) { facilityRepository.findById(w.facilityId) }
-            }
-            return facility?.timezone?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: DEFAULT_ZONE
-        }
-    }
-
-    private fun locations() = LocationResolver(bedRepository, roomRepository, wingRepository, facilityRepository)
 
     private fun BedLocation?.toRailLocation(): BedLocation? = this
 
@@ -118,14 +56,13 @@ class ProjectionService(
     @Transactional(readOnly = true)
     fun getResidentRail(): List<ResidentRailItem> {
         val residents = residentRepository.findAll()
-        val resolver = locations()
         return residents.map { resident ->
             val assignment = bedAssignmentRepository.findOpenByResidentId(resident.id)
             val bedState = assignment?.let { bedStateRepository.findByBedId(it.bedId) }
             ResidentRailItem(
                 id = resident.id.value,
                 fullName = resident.fullName,
-                location = assignment?.let { resolver.resolve(it.bedId)?.toRailLocation() },
+                location = assignment?.let { locationResolver.resolve(it.bedId)?.toRailLocation() },
                     currentState = bedState?.let {
                     RailState(
                         state = it.state,
@@ -149,7 +86,7 @@ class ProjectionService(
             fullName = resident.fullName,
             birthDate = resident.birthDate,
             admissionDate = resident.admissionDate,
-            location = assignment?.let { locations().resolve(it.bedId)?.toRailLocation() },
+            location = assignment?.let { locationResolver.resolve(it.bedId)?.toRailLocation() },
             currentState = bedState?.let {
                 RailState(state = it.state, staffPresent = it.staffPresent, stateSince = it.stateSince)
             },
@@ -293,7 +230,7 @@ class ProjectionService(
             .sortedByDescending { it.occurredAt }
 
         val assignment = bedAssignmentRepository.findOpenByResidentId(ResidentId(residentId))
-        val zone = assignment?.let { locations().zone(it.bedId) } ?: DEFAULT_ZONE
+        val zone = assignment?.let { locationResolver.zone(it.bedId) } ?: DEFAULT_ZONE
         val now = LocalDate.now(zone)
         val monthRange = (0 until months).map { YearMonth.now(zone).minusMonths(it.toLong()) }
 

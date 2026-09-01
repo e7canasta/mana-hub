@@ -1,5 +1,6 @@
 package com.hub.surveillance.infrastructure.persistence
 
+import com.hub.shared.domain.BaseEntity
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
@@ -26,8 +27,7 @@ class NotificationDeliveryEntity(
     @Column(name = "recipient_id") var recipientId: String = "",
     @Column(name = "channel") var channel: String = "",
     @Column(name = "escalation_level") var escalationLevel: Int = 0,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now()
-)
+) : BaseEntity()
 
 @Entity
 @Table(name = "notification_delivery_events")
@@ -47,8 +47,7 @@ class EpisodeEscalationEntity(
     @Column(name = "level") var level: Int = 0,
     @Column(name = "target_id") var targetId: String = "",
     @Column(name = "occurred_at") var occurredAt: Instant = Instant.now(),
-    @Column(name = "created_at") var createdAt: Instant = Instant.now()
-)
+) : BaseEntity()
 
 @Repository
 interface EpisodeTransitionEntityRepository : JpaRepository<EpisodeTransitionEntity, String> {

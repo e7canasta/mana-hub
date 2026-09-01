@@ -4,6 +4,7 @@ import com.hub.coverage.domain.model.*
 import com.hub.coverage.domain.repository.ShiftRepository
 import com.hub.coverage.domain.repository.StaffGroupRepository
 import com.hub.coverage.domain.repository.StaffMemberRepository
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.domain.FacilityId
 import com.hub.shared.domain.StaffMemberId
 import com.hub.shared.domain.UserId
@@ -20,11 +21,8 @@ class StaffGroupEntity(
     @Column(name = "facility_id") var facilityId: String = "",
     @Column(name = "name") var name: String = "",
     @Column(name = "retired_at") var retiredAt: Instant? = null,
-    @Column(name = "retired_by") var retiredBy: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+    @Column(name = "retired_by") var retiredBy: String? = null
+) : BaseEntity()
 
 @Entity
 @Table(name = "facility_shifts")
@@ -36,11 +34,8 @@ class FacilityShiftEntity(
     @Column(name = "start_minute") var startMinute: Int = 0,
     @Column(name = "sort_order") var sortOrder: Int = 0,
     @Column(name = "retired_at") var retiredAt: Instant? = null,
-    @Column(name = "retired_by") var retiredBy: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+    @Column(name = "retired_by") var retiredBy: String? = null
+) : BaseEntity()
 
 @Entity
 @Table(name = "unit_shift_coverages")
@@ -51,9 +46,9 @@ class UnitShiftCoverageEntity(
     @Column(name = "shift_key") var shiftKey: String = "",
     @Column(name = "valid_from") var validFrom: Instant = Instant.now(),
     @Column(name = "valid_to") var validTo: Instant? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
+    @Column(name = "created_at") override var createdAt: Instant? = null,
     @Column(name = "created_by") var createdBy: String? = null
-)
+) : BaseEntity()
 
 @Entity
 @Table(name = "staff_members")
@@ -64,11 +59,8 @@ class StaffMemberEntity(
     @Column(name = "role") var role: String = "",
     @Column(name = "user_id") var userId: String? = null,
     @Column(name = "retired_at") var retiredAt: Instant? = null,
-    @Column(name = "retired_by") var retiredBy: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+    @Column(name = "retired_by") var retiredBy: String? = null
+) : BaseEntity()
 
 @Repository
 interface StaffGroupEntityRepository : JpaRepository<StaffGroupEntity, String> {
@@ -105,7 +97,7 @@ class StaffGroupRepositoryAdapter(private val jpa: StaffGroupEntityRepository, p
     )
     private fun StaffGroup.toEntity() = StaffGroupEntity(
         id.value, facilityId.value, name,
-        retiredAt, retiredBy, clock.now(), clock.now(), version
+        retiredAt, retiredBy
     )
 }
 
@@ -121,7 +113,7 @@ class ShiftRepositoryAdapter(private val jpa: FacilityShiftEntityRepository, pri
     )
     private fun FacilityShift.toEntity() = FacilityShiftEntity(
         id.value, facilityId.value, key, label, startMinute, sortOrder,
-        retiredAt, retiredBy, clock.now(), clock.now(), version
+        retiredAt, retiredBy
     )
 }
 
@@ -138,6 +130,6 @@ class StaffMemberRepositoryAdapter(private val jpa: StaffMemberEntityRepository,
     )
     private fun StaffMember.toEntity() = StaffMemberEntity(
         id.value, facilityId.value, fullName, role.name, userId?.value,
-        null, null, clock.now(), clock.now(), version
+        null, null
     )
 }

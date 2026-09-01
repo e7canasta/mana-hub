@@ -4,6 +4,7 @@ import com.hub.care.domain.model.*
 import com.hub.care.domain.repository.CareNoteRepository
 import com.hub.care.domain.repository.RoundRepository
 import com.hub.care.domain.repository.RoundTaskRepository
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
 import com.hub.shared.domain.WingId
@@ -25,11 +26,8 @@ class RoundEntity(
     @Column(name = "started_at") var startedAt: Instant? = null,
     @Column(name = "completed_at") var completedAt: Instant? = null,
     @Column(name = "started_by") var startedBy: String? = null,
-    @Column(name = "completed_by") var completedBy: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+    @Column(name = "completed_by") var completedBy: String? = null
+) : BaseEntity()
 
 @Entity
 @Table(name = "round_tasks")
@@ -41,11 +39,8 @@ class RoundTaskEntity(
     @Column(name = "status") var status: String = "PENDING",
     @Column(name = "note") var note: String? = null,
     @Column(name = "completed_at") var completedAt: Instant? = null,
-    @Column(name = "completed_by") var completedBy: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+    @Column(name = "completed_by") var completedBy: String? = null
+) : BaseEntity()
 
 @Entity
 @Immutable
@@ -56,11 +51,8 @@ class CareNoteEntity(
     @Column(name = "author_id") var authorId: String = "",
     @Column(name = "kind") var kind: String = "GENERAL",
     @Column(name = "body") var body: String = "",
-    @Column(name = "duration_min") var durationMin: Int? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+    @Column(name = "duration_min") var durationMin: Int? = null
+) : BaseEntity()
 
 @Repository
 interface RoundEntityRepository : JpaRepository<RoundEntity, String> {
@@ -92,7 +84,7 @@ class RoundRepositoryAdapter(private val jpa: RoundEntityRepository, private val
     )
     private fun Round.toEntity() = RoundEntity(
         id.value, wingId.value, status.name.lowercase(), scheduledFor,
-        startedAt, completedAt, startedBy, completedBy, clock.now(), clock.now()
+        startedAt, completedAt, startedBy, completedBy
     )
 }
 
@@ -108,7 +100,7 @@ class RoundTaskRepositoryAdapter(private val jpa: RoundTaskEntityRepository, pri
     )
     private fun RoundTask.toEntity() = RoundTaskEntity(
         id.value, roundId.value, residentId.value, bedId?.value,
-        status.name, note, completedAt, completedBy, clock.now(), clock.now()
+        status.name, note, completedAt, completedBy
     )
 }
 
@@ -118,9 +110,9 @@ class CareNoteRepositoryAdapter(private val jpa: CareNoteEntityRepository, priva
     override fun save(note: CareNote): CareNote = jpa.save(note.toEntity()).toDomain()
 
     private fun CareNoteEntity.toDomain() = CareNote(
-        CareNoteId(id), ResidentId(residentId), authorId, CareNoteKind.from(kind), body, durationMin, createdAt
+        CareNoteId(id), ResidentId(residentId), authorId, CareNoteKind.from(kind), body, durationMin, createdAt!!
     )
     private fun CareNote.toEntity() = CareNoteEntity(
-        id.value, residentId.value, authorId, kind.name, body, durationMin, createdAt, clock.now()
+        id.value, residentId.value, authorId, kind.name, body, durationMin
     )
 }

@@ -9,6 +9,7 @@ import com.hub.observation.domain.repository.SensorEventRepository
 import com.hub.observation.domain.repository.SummaryRepository
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.domain.Identifier
 import com.hub.shared.time.HubClock
 import jakarta.persistence.*
@@ -41,7 +42,7 @@ class SensorEventEntity(
     @Column(name = "occurred_at") var occurredAt: Instant = Instant.now(),
     @Column(name = "received_at") var receivedAt: Instant = Instant.now(),
     @Column(name = "payload_json") var payloadJson: String = "{}"
-)
+) : BaseEntity()
 
 @Entity
 @Table(name = "current_bed_states")
@@ -53,11 +54,10 @@ class CurrentBedStateEntity(
     @Column(name = "substate") var substate: String? = null,
     @Column(name = "sleeping") var sleeping: Boolean? = null,
     @Column(name = "state_since") var stateSince: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
     @Column(name = "source") var source: String? = null,
     @Column(name = "source_event_id") var sourceEventId: String? = null,
     @Column(name = "staff_present") var staffPresent: Boolean? = null
-)
+) : BaseEntity()
 
 @Entity
 @Table(name = "sleep_summaries")
@@ -76,10 +76,8 @@ class SleepSummaryEntity(
     @Column(name = "model_version") var modelVersion: String? = null,
     @Column(name = "confidence") var confidence: Double? = null,
     @Column(name = "started_at") var startedAt: LocalDateTime? = null,
-    @Column(name = "ended_at") var endedAt: LocalDateTime? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now()
-)
+    @Column(name = "ended_at") var endedAt: LocalDateTime? = null
+) : BaseEntity()
 
 @Entity
 @Table(name = "mobility_summaries")
@@ -96,10 +94,8 @@ class MobilitySummaryEntity(
     @Column(name = "transfer_count") var transferCount: Int = 0,
     @Column(name = "source") var source: String? = null,
     @Column(name = "model_version") var modelVersion: String? = null,
-    @Column(name = "confidence") var confidence: Double? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now()
-)
+    @Column(name = "confidence") var confidence: Double? = null
+) : BaseEntity()
 
 @Entity
 @Table(name = "bathroom_summaries")
@@ -114,10 +110,8 @@ class BathroomSummaryEntity(
     @Column(name = "total_minutes") var totalMinutes: Int = 0,
     @Column(name = "source") var source: String? = null,
     @Column(name = "model_version") var modelVersion: String? = null,
-    @Column(name = "confidence") var confidence: Double? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now()
-)
+    @Column(name = "confidence") var confidence: Double? = null
+) : BaseEntity()
 
 @Repository
 interface SensorEventEntityRepository : JpaRepository<SensorEventEntity, String> {
@@ -169,7 +163,7 @@ class SceneEventEntity(
     @Column(name = "scene_since") var sceneSince: Instant? = null,
     @Column(name = "signal_lost") var signalLost: Boolean? = null,
     @Column(name = "monitor_id") var monitorId: String? = null
-)
+) : BaseEntity()
 
 @Repository
 interface SceneEventEntityRepository : JpaRepository<SceneEventEntity, String> {
@@ -196,7 +190,7 @@ class NotificationEventEntity(
     @Column(name = "risk_level") var riskLevel: String? = null,
     @Column(name = "payload_json") var payloadJson: String = "{}",
     @Column(name = "received_at") var receivedAt: Instant = Instant.now()
-)
+) : BaseEntity()
 
 @Repository
 interface NotificationEventEntityRepository : JpaRepository<NotificationEventEntity, String> {
@@ -236,11 +230,11 @@ class CurrentBedStateRepositoryAdapter(private val jpa: CurrentBedStateEntityRep
 
     private fun CurrentBedStateEntity.toDomain() = CurrentBedState(
         BedId(bedId), residentId?.let { ResidentId(it) }, roomState, state, substate,
-        sleeping, stateSince, updatedAt, source, sourceEventId, staffPresent
+        sleeping, stateSince, updatedAt!!, source, sourceEventId, staffPresent
     )
     private fun CurrentBedState.toEntity() = CurrentBedStateEntity(
         bedId.value, residentId?.value, roomState, state, substate, sleeping,
-        stateSince, updated, source, sourceEventId, staffPresent
+        stateSince, source, sourceEventId, staffPresent
     )
 }
 
@@ -299,7 +293,7 @@ class SummaryRepositoryAdapter(
     private fun SleepSummary.toEntity() = SleepSummaryEntity(
         id.value, sourceRecordId, residentId.value, observedOn, calmMinutes,
         restlessMinutes, awakeMinutes, outOfBedMinutes, bedExitCount, wakeCount,
-        source, modelVersion, confidence, startedAt, endedAt, clock.now(), clock.now()
+        source, modelVersion, confidence, startedAt, endedAt
     )
 
     private fun MobilitySummaryEntity.toDomain() = MobilitySummary(
@@ -310,7 +304,7 @@ class SummaryRepositoryAdapter(
     private fun MobilitySummary.toEntity() = MobilitySummaryEntity(
         id.value, sourceRecordId, residentId.value, observedOn, inBedMinutes,
         outOfBedMinutes, outOfSightMinutes, walkingMinutes, distanceMeters,
-        transferCount, source, modelVersion, confidence, clock.now(), clock.now()
+        transferCount, source, modelVersion, confidence
     )
 
     private fun BathroomSummaryEntity.toDomain() = BathroomSummary(
@@ -320,7 +314,7 @@ class SummaryRepositoryAdapter(
     private fun BathroomSummary.toEntity() = BathroomSummaryEntity(
         id.value, sourceRecordId, residentId.value, observedOn, visitCount,
         nightVisitCount, assistedCount, totalMinutes, source, modelVersion,
-        confidence, clock.now(), clock.now()
+        confidence
     )
 }
 
@@ -387,8 +381,8 @@ class SentinelSignalEntity(
     @Column(name = "confirmation_window") var confirmationWindow: String? = null,
     @Column(name = "requires_confirmation") var requiresConfirmation: Boolean? = null,
     @Column(name = "elapsed") var elapsed: String? = null,
-    @Column(name = "threshold") var threshold: String? = null,
-)
+    @Column(name = "threshold") var threshold: String? = null
+) : BaseEntity()
 
 @Repository
 interface SentinelSignalEntityRepository : JpaRepository<SentinelSignalEntity, String> {

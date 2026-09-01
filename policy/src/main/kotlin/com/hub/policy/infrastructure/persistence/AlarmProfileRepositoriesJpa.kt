@@ -2,6 +2,7 @@ package com.hub.policy.infrastructure.persistence
 
 import com.hub.policy.domain.model.*
 import com.hub.policy.domain.repository.AlarmProfileRepository
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.domain.ResidentId
 import jakarta.persistence.*
 import org.springframework.data.jpa.repository.JpaRepository
@@ -22,10 +23,8 @@ class AlarmProfileVersionEntity(
     @Column(name = "template_id") var templateId: String? = null,
     @Column(name = "catalog_version") var catalogVersion: String? = null,
     @Column(name = "updated_by") var updatedBy: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
     @Column(name = "risk_level") var riskLevel: String = "medium",
-    @Version var version: Long = 0
-)
+) : BaseEntity()
 
 @Repository
 interface AlarmProfileVersionEntityRepository : JpaRepository<AlarmProfileVersionEntity, String> {
@@ -60,6 +59,6 @@ class AlarmProfileRepositoryAdapter(private val jpa: AlarmProfileVersionEntityRe
         mobilityAid?.name?.lowercase(), autopilot,
         mode?.name?.lowercase(),
         templateId?.value,
-        catalogVersion, updatedBy, Instant.now(), riskLevel.name.lowercase()
+        catalogVersion, updatedBy, riskLevel.name.lowercase()
     )
 }

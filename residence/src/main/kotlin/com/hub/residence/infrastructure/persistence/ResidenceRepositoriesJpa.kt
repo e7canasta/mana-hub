@@ -2,6 +2,7 @@ package com.hub.residence.infrastructure.persistence
 
 import com.hub.residence.domain.model.*
 import com.hub.shared.domain.BedId
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.domain.FacilityId
 import com.hub.residence.domain.repository.*
 import com.hub.shared.time.HubClock
@@ -17,11 +18,8 @@ class FacilityEntity(
     @Column(name = "name") var name: String = "",
     @Column(name = "timezone") var timezone: String = "UTC",
     @Column(name = "retired_at") var retiredAt: Instant? = null,
-    @Column(name = "retired_by") var retiredBy: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+    @Column(name = "retired_by") var retiredBy: String? = null
+) : BaseEntity()
 
 @Entity
 @Table(name = "wings")
@@ -32,11 +30,8 @@ class WingEntity(
     @Column(name = "floor") var floor: String? = null,
     @Column(name = "sort_order") var sortOrder: Int = 0,
     @Column(name = "retired_at") var retiredAt: Instant? = null,
-    @Column(name = "retired_by") var retiredBy: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+    @Column(name = "retired_by") var retiredBy: String? = null
+) : BaseEntity()
 
 @Entity
 @Table(name = "rooms")
@@ -47,11 +42,8 @@ class RoomEntity(
     @Column(name = "room_type") var roomType: String? = null,
     @Column(name = "stream_key") var streamKey: String? = null,
     @Column(name = "retired_at") var retiredAt: Instant? = null,
-    @Column(name = "retired_by") var retiredBy: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+    @Column(name = "retired_by") var retiredBy: String? = null
+) : BaseEntity()
 
 @Entity
 @Table(name = "beds")
@@ -61,11 +53,8 @@ class BedEntity(
     @Column(name = "label") var label: String = "",
     @Column(name = "monitor_key") var monitorKey: String? = null,
     @Column(name = "retired_at") var retiredAt: Instant? = null,
-    @Column(name = "retired_by") var retiredBy: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+    @Column(name = "retired_by") var retiredBy: String? = null
+) : BaseEntity()
 
 @Entity
 @Table(name = "planogram_placements")
@@ -77,7 +66,7 @@ class PlanogramPlacementEntity(
     var y: Double = 0.0,
     @Column(name = "sort_order") var sortOrder: Int = 0,
     var active: Boolean = true
-)
+) : BaseEntity()
 
 @Entity
 @Table(name = "room_privacy_regions")
@@ -89,7 +78,7 @@ class RoomPrivacyRegionEntity(
     var w: Double = 0.0,
     var h: Double = 0.0,
     var active: Boolean = true
-)
+) : BaseEntity()
 
 @Repository
 interface FacilityEntityRepository : JpaRepository<FacilityEntity, String>
@@ -128,7 +117,7 @@ class FacilityRepositoryAdapter(private val jpa: FacilityEntityRepository, priva
     override fun save(facility: Facility): Facility = jpa.save(facility.toEntity()).toDomain()
 
     private fun FacilityEntity.toDomain() = Facility.reconstitute(FacilityId(id), name, timezone, retiredAt, retiredBy, version)
-    private fun Facility.toEntity() = FacilityEntity(id.value, name, timezone, retiredAt, retiredBy, clock.now(), clock.now(), version)
+    private fun Facility.toEntity() = FacilityEntity(id.value, name, timezone, retiredAt, retiredBy)
 }
 
 @Repository
@@ -138,7 +127,7 @@ class WingRepositoryAdapter(private val jpa: WingEntityRepository, private val c
     override fun save(wing: Wing): Wing = jpa.save(wing.toEntity()).toDomain()
 
     private fun WingEntity.toDomain() = Wing.reconstitute(WingId(id), FacilityId(facilityId), name, floor, sortOrder, retiredAt, retiredBy, version)
-    private fun Wing.toEntity() = WingEntity(id.value, facilityId.value, name, floor, sortOrder, retiredAt, retiredBy, clock.now(), clock.now(), version)
+    private fun Wing.toEntity() = WingEntity(id.value, facilityId.value, name, floor, sortOrder, retiredAt, retiredBy)
 }
 
 @Repository
@@ -148,7 +137,7 @@ class RoomRepositoryAdapter(private val jpa: RoomEntityRepository, private val c
     override fun save(room: Room): Room = jpa.save(room.toEntity()).toDomain()
 
     private fun RoomEntity.toDomain() = Room.reconstitute(RoomId(id), WingId(wingId), number, roomType, streamKey, retiredAt, retiredBy, version)
-    private fun Room.toEntity() = RoomEntity(id.value, wingId.value, number, roomType, streamKey, retiredAt, retiredBy, clock.now(), clock.now(), version)
+    private fun Room.toEntity() = RoomEntity(id.value, wingId.value, number, roomType, streamKey, retiredAt, retiredBy)
 }
 
 @Repository
@@ -161,7 +150,7 @@ class BedRepositoryAdapter(private val jpa: BedEntityRepository, private val clo
     override fun findAll(): List<Bed> = jpa.findAll().map { it.toDomain() }
 
     private fun BedEntity.toDomain() = Bed.reconstitute(BedId(id), RoomId(roomId), label, monitorKey, retiredAt, retiredBy, version)
-    private fun Bed.toEntity() = BedEntity(id.value, roomId.value, label, monitorKey, retiredAt, retiredBy, clock.now(), clock.now(), version)
+    private fun Bed.toEntity() = BedEntity(id.value, roomId.value, label, monitorKey, retiredAt, retiredBy)
 }
 
 @Repository

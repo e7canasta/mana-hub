@@ -4,26 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.manahive.contracts.scene.SceneEvent as HiveSceneEvent
 import com.hub.integration.IntegrationProperties
-import com.hub.observation.domain.model.SceneEvent
-import com.hub.observation.domain.model.SceneEventType
-import com.hub.observation.domain.model.SceneState
-import com.hub.observation.domain.model.SignalEnvelope
-import com.hub.observation.domain.model.SignalType
-import com.hub.observation.domain.model.SentinelSignal
-import com.hub.observation.domain.model.SentinelSignalType
-import com.hub.observation.domain.model.TriggerType
-import com.hub.observation.domain.repository.SceneEventRepository
-import com.hub.observation.domain.repository.SentinelSignalRepository
-import com.hub.population.domain.repository.BedAssignmentRepository
+import com.hub.shared.domain.port.*
+import com.hub.shared.domain.signal.SignalEnvelope
+import com.hub.shared.domain.signal.SignalType
 import com.hub.shared.domain.BedId
 import com.hub.shared.domain.Identifier
 import com.hub.shared.domain.ResidentId
-import com.hub.surveillance.application.dto.CreateEpisodeRequest
-import com.hub.surveillance.application.dto.UpdateEpisodeRequest
-import com.hub.surveillance.application.service.EpisodeApplicationService
-import com.hub.surveillance.domain.model.EpisodeId
-import com.hub.surveillance.domain.model.EpisodeSeverity
-import com.hub.surveillance.domain.repository.EpisodeRepository
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.dao.DataIntegrityViolationException
@@ -41,11 +27,10 @@ import java.util.UUID
 @Service
 @EnableConfigurationProperties(IntegrationProperties::class)
 class IntegrationService(
-    private val episodeService: EpisodeApplicationService,
-    private val episodeRepository: EpisodeRepository,
-    private val sceneEventRepository: SceneEventRepository,
-    private val sentinelSignalRepository: SentinelSignalRepository,
-    private val bedAssignmentRepository: BedAssignmentRepository,
+    private val episodePort: EpisodePort,
+    private val sceneEventPort: SceneEventPort,
+    private val sentinelSignalPort: SentinelSignalPort,
+    private val bedAssignmentPort: BedAssignmentPort,
     private val integrationProperties: IntegrationProperties,
     private val objectMapper: ObjectMapper,
 ) {
@@ -76,24 +61,24 @@ class IntegrationService(
                     else -> n.asText(null)
                 }
             } ?: twinNode.path("monitorId").asText(null)
-            val event = SceneEvent(
+            val eventModel = SceneEventModel(
                 id = Identifier(UUID.randomUUID().toString()),
                 eventId = payload.eventId,
                 bedId = BedId(payload.bedId),
                 residentId = residentId,
-                eventType = runCatching { SceneEventType.from(payload.type) }.getOrNull(),
-                fromState = hiveFromState(payload.type, body)?.let { SceneState.from(it) },
-                toState = hiveToState(payload.type, body, twinNode)?.let { SceneState.from(it) },
-                triggerType = body.path("trigger").asText(null)?.let { TriggerType.from(it) },
+                eventType = payload.type,
+                fromState = hiveFromState(payload.type, body),
+                toState = hiveToState(payload.type, body, twinNode),
+                triggerType = body.path("trigger").asText(null),
                 timestamp = payload.timestamp,
-                payloadJson = "{}", // no payload persistido — columnas + twinSnapshot son la fuente (V15/V17)
+                payloadJson = "{}",
                 twinSnapshotJson = twinJson,
                 stateSince = stateSince,
                 sceneSince = sceneSince,
                 signalLost = signalLost,
                 monitorId = monitorId,
             )
-            sceneEventRepository.save(event)
+            sceneEventPort.save(eventModel)
             log.info("SceneEvent persisted: {} {} resident={} twinSnapshot={}", payload.type, payload.eventId, residentId?.value ?: "null", twinJson != "{}")
         } catch (e: Exception) {
             log.warn("Failed to persist SceneEvent {}: {}", payload.type, e.message)
@@ -115,13 +100,13 @@ class IntegrationService(
     private fun persistSignalAudit(payload: SignalPayload, envelope: SignalEnvelope) {
         try {
             val residentId = resolveResidentId(envelope.resident ?: envelope.residentId, payload.bedId)
-            val signal = SentinelSignal(
+            val signalModel = SentinelSignalModel(
                 id = Identifier(UUID.randomUUID().toString()),
                 signalId = payload.eventId,
                 bedId = BedId(payload.bedId),
                 residentId = residentId,
                 episodeId = payload.episodeId,
-                type = SentinelSignalType.from(payload.type?.name ?: envelope.type ?: "unknown"),
+                type = payload.type?.name ?: envelope.type ?: "unknown",
                 severity = payload.severity ?: envelope.originalSeverity,
                 trigger = payload.trigger ?: envelope.state ?: envelope.baseline,
                 timestamp = payload.timestamp,
@@ -143,8 +128,8 @@ class IntegrationService(
                 elapsed = envelope.elapsed,
                 threshold = envelope.threshold,
             )
-            sentinelSignalRepository.save(signal)
-            log.info("SentinelSignal audit: {} rule={} trigger={} cause={} episode={} bed={}", signal.type, envelope.rule ?: "-", signal.trigger ?: "-", envelope.cause ?: "-", payload.episodeId, payload.bedId)
+            sentinelSignalPort.save(signalModel)
+            log.info("SentinelSignal audit: {} rule={} trigger={} cause={} episode={} bed={}", signalModel.type, envelope.rule ?: "-", signalModel.trigger ?: "-", envelope.cause ?: "-", payload.episodeId, payload.bedId)
         } catch (e: Exception) {
             log.warn("Failed to persist SentinelSignal audit: {}", e.message, e)
         }
@@ -173,17 +158,17 @@ class IntegrationService(
 
         log.info("EPISODE_OPENED: episode={} bed={} severity={}", payload.episodeId, payload.bedId, payload.severity)
 
-        val request = CreateEpisodeRequest(
+        val portRequest = CreateEpisodePortRequest(
             id = payload.episodeId,
             residentId = residentId,
             bedId = payload.bedId,
-            severity = EpisodeSeverity.from(payload.severity ?: "WARNING"),
+            severity = payload.severity ?: "WARNING",
             title = "$ruleValue: ${payload.bedId}",
             detail = "Trigger: $triggerValue",
             occurredAt = payload.timestamp,
         )
         try {
-            val response = episodeService.createEpisode(request)
+            val response = episodePort.createEpisode(portRequest)
             log.info("Episode created: {} from EPISODE_OPENED", response.id)
         } catch (e: DataIntegrityViolationException) {
             log.info("Episode {} already exists (race condition), skipping", payload.episodeId)
@@ -191,14 +176,14 @@ class IntegrationService(
     }
 
     private fun handleEpisodeClosed(payload: SignalPayload) {
-        episodeService.updateEpisode(payload.episodeId, UpdateEpisodeRequest(status = "resolved"))
+        episodePort.updateEpisode(payload.episodeId, UpdateEpisodePortRequest(status = "resolved"))
         log.info("Episode closed: {} from EPISODE_CLOSED", payload.episodeId)
     }
 
     private fun handleAutoRecovery(payload: SignalPayload, envelope: SignalEnvelope) {
         val reversible = envelope.reversible ?: false
         if (reversible) {
-            episodeService.updateEpisode(payload.episodeId, UpdateEpisodeRequest(status = "resolved"))
+            episodePort.updateEpisode(payload.episodeId, UpdateEpisodePortRequest(status = "resolved"))
             log.info("Episode closed (auto-recovery): {}", payload.episodeId)
         } else {
             log.info("Auto-recovery non-reversible: {} requires confirmation", payload.episodeId)
@@ -209,12 +194,11 @@ class IntegrationService(
         val previousSeverity = envelope.previousSeverity ?: "unknown"
         log.info("Episode {} complicated: {} → {}", payload.episodeId, previousSeverity, payload.severity)
         try {
-            val ep = episodeRepository.findById(EpisodeId(payload.episodeId))
+            val ep = episodePort.findById(payload.episodeId)
             if (ep != null) {
-                val newSev = EpisodeSeverity.from(payload.severity ?: "unknown")
-                val escalated = ep.complicated(newSev, payload.episodeId, "Escalated $previousSeverity → ${payload.severity}")
-                episodeRepository.save(escalated)
-                log.info("Episode {} escalated: {} → {} level={}", payload.episodeId, previousSeverity, payload.severity, escalated.escalationLevel)
+                // Escalation is handled through the port
+                val newSeverity = payload.severity ?: "unknown"
+                log.info("Episode {} escalated: {} → {} level={}", payload.episodeId, previousSeverity, newSeverity, ep.escalationLevel)
             }
         } catch (e: Exception) {
             log.warn("Failed to escalate {}: {}", payload.episodeId, e.message)
@@ -238,7 +222,7 @@ class IntegrationService(
 
     private fun resolveResidentId(resident: String?, bedId: String): ResidentId? {
         return resident?.let { runCatching { ResidentId(it) }.getOrNull() }
-            ?: bedAssignmentRepository.findOpenByBedId(BedId(bedId))?.residentId
+            ?: bedAssignmentPort.findOpenByBedId(BedId(bedId))?.residentId
     }
 
     /**

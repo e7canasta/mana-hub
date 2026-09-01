@@ -7,6 +7,7 @@ import com.hub.history.domain.repository.HistoryEpisodeReviewRepository
 import com.hub.shared.domain.StaffMemberId
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.BedId
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.time.HubClock
 import jakarta.persistence.*
 import org.hibernate.annotations.Immutable
@@ -35,9 +36,7 @@ class HistoryEpisodeEntity(
     @Column(name = "model_version") var modelVersion: String? = null,
     @Column(name = "confidence") var confidence: Double? = null,
     @Column(name = "provenance_json") var provenanceJson: String = "{}",
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+) : BaseEntity()
 
 @Entity
 @Table(name = "history_episode_reviews")
@@ -50,9 +49,7 @@ class HistoryEpisodeReviewEntity(
     @Column(name = "resolved_at") var resolvedAt: Instant? = null,
     @Column(name = "actor_id") var actorId: String = "",
     @Column(name = "recorded_at") var recordedAt: Instant = Instant.now(),
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Version var version: Long = 0
-)
+) : BaseEntity()
 
 @Repository
 interface HistoryEpisodeEntityRepository : JpaRepository<HistoryEpisodeEntity, String> {
@@ -102,7 +99,7 @@ class HistoryEpisodeRepositoryAdapter(private val jpa: HistoryEpisodeEntityRepos
         id.value, sourceRecordId, residentId.value, bedId?.value, sourceAlertId,
         kind.name, severity.name.lowercase(), occurredAt, activity, injuryStatus,
         selfRecovery, responseSeconds, narrative, source.name, modelVersion, confidence,
-        provenanceJson, clock.now()
+        provenanceJson
     )
 }
 
@@ -116,7 +113,7 @@ class HistoryEpisodeReviewRepositoryAdapter(private val jpa: HistoryEpisodeRevie
     )
     private fun HistoryEpisodeReview.toEntity() = HistoryEpisodeReviewEntity(
         id.value, episodeId.value, status, detectionVerdict, reviewNote, resolvedAt, actorId,
-        clock.now(), clock.now()
+        clock.now()
     )
 }
 
@@ -130,8 +127,7 @@ class HistoryEpisodeInterventionEntity(
     @Column(name = "performed_at") var performedAt: Instant = Instant.now(),
     @Column(name = "performed_by") var performedBy: String? = null,
     @Column(name = "detail") var detail: String? = null,
-    @Column(name = "created_at") var createdAt: Instant = Instant.now()
-)
+) : BaseEntity()
 
 @Repository
 interface HistoryEpisodeInterventionEntityRepository : JpaRepository<HistoryEpisodeInterventionEntity, String> {

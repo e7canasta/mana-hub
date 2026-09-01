@@ -4,6 +4,7 @@ import com.hub.care.domain.model.*
 import com.hub.care.domain.repository.EpisodeNoteRepository
 import com.hub.care.domain.repository.ResidentNoteRepository
 import com.hub.care.domain.repository.ShiftNoteRepository
+import com.hub.shared.domain.BaseEntity
 import com.hub.shared.domain.ResidentId
 import com.hub.shared.domain.FacilityId
 import com.hub.shared.domain.WingId
@@ -23,10 +24,8 @@ class ResidentNoteEntity(
     @Column(name = "kind") var kind: String = "",
     @Column(name = "body") var body: String = "",
     @Column(name = "source_event_id") var sourceEventId: String? = null,
-    @Column(name = "timestamp") var timestamp: Instant = Instant.now(),
-    @Column(name = "created_at") var createdAt: Instant = Instant.now(),
-    @Column(name = "updated_at") var updatedAt: Instant = Instant.now()
-)
+    @Column(name = "timestamp") var timestamp: Instant = Instant.now()
+) : BaseEntity()
 
 @Entity
 @Table(name = "episode_notes")
@@ -36,9 +35,8 @@ class EpisodeNoteEntity(
     @Column(name = "author_id") var authorId: String = "",
     @Column(name = "kind") var kind: String = "",
     @Column(name = "body") var body: String = "",
-    @Column(name = "timestamp") var timestamp: Instant = Instant.now(),
-    @Column(name = "created_at") var createdAt: Instant = Instant.now()
-)
+    @Column(name = "timestamp") var timestamp: Instant = Instant.now()
+) : BaseEntity()
 
 @Entity
 @Table(name = "shift_notes")
@@ -51,9 +49,8 @@ class ShiftNoteEntity(
     @Column(name = "author_id") var authorId: String = "",
     @Column(name = "kind") var kind: String = "",
     @Column(name = "body") var body: String = "",
-    @Column(name = "timestamp") var timestamp: Instant = Instant.now(),
-    @Column(name = "created_at") var createdAt: Instant = Instant.now()
-)
+    @Column(name = "timestamp") var timestamp: Instant = Instant.now()
+) : BaseEntity()
 
 @Repository
 interface ResidentNoteEntityRepository : JpaRepository<ResidentNoteEntity, String> {
@@ -80,10 +77,10 @@ class ResidentNoteRepositoryAdapter(private val jpa: ResidentNoteEntityRepositor
     private fun ResidentNoteEntity.toDomain() = ResidentNote(
         id = Identifier(id), residentId = ResidentId(residentId), authorId = authorId,
         kind = ResidentNoteKind.from(kind), body = body, sourceEventId = sourceEventId,
-        timestamp = timestamp, createdAt = createdAt
+        timestamp = timestamp, createdAt = createdAt!!
     )
     private fun ResidentNote.toEntity() = ResidentNoteEntity(
-        id.value, residentId.value, authorId, kind.name, body, sourceEventId, timestamp, createdAt, clock.now()
+        id.value, residentId.value, authorId, kind.name, body, sourceEventId, timestamp
     )
 }
 
@@ -95,10 +92,10 @@ class EpisodeNoteRepositoryAdapter(private val jpa: EpisodeNoteEntityRepository,
 
     private fun EpisodeNoteEntity.toDomain() = EpisodeNote(
         id = Identifier(id), episodeId = EpisodeId(episodeId), authorId = authorId,
-        kind = EpisodeNoteKind.from(kind), body = body, timestamp = timestamp, createdAt = createdAt
+        kind = EpisodeNoteKind.from(kind), body = body, timestamp = timestamp, createdAt = createdAt!!
     )
     private fun EpisodeNote.toEntity() = EpisodeNoteEntity(
-        id.value, episodeId.value, authorId, kind.name, body, timestamp, createdAt
+        id.value, episodeId.value, authorId, kind.name, body, timestamp
     )
 }
 
@@ -113,9 +110,9 @@ class ShiftNoteRepositoryAdapter(private val jpa: ShiftNoteEntityRepository, pri
         id = Identifier(id), facilityId = FacilityId(facilityId),
         wingId = wingId?.let { WingId(it) }, shiftKey = shiftKey,
         shiftDate = shiftDate, authorId = authorId, kind = ShiftNoteKind.from(kind),
-        body = body, timestamp = timestamp, createdAt = createdAt
+        body = body, timestamp = timestamp, createdAt = createdAt!!
     )
     private fun ShiftNote.toEntity() = ShiftNoteEntity(
-        id.value, facilityId.value, wingId?.value, shiftKey, shiftDate, authorId, kind.name, body, timestamp, createdAt
+        id.value, facilityId.value, wingId?.value, shiftKey, shiftDate, authorId, kind.name, body, timestamp
     )
 }
