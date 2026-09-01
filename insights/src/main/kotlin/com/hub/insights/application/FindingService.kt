@@ -4,15 +4,12 @@ import com.hub.insights.config.InsightsProperties
 import com.hub.insights.config.ObservationWindow
 import com.hub.insights.domain.derive.Baseline
 import com.hub.insights.domain.derive.BaselineService
-import com.hub.insights.domain.derive.SleepDerived
 import com.hub.insights.domain.derive.SleepInsights
 import com.hub.insights.domain.find.BedExits
 import com.hub.insights.domain.find.EpisodeRef
 import com.hub.insights.domain.find.FacilityBriefing
 import com.hub.insights.domain.find.FacilityReport
 import com.hub.insights.domain.find.Finding
-import com.hub.insights.domain.find.FindingCatalog
-import com.hub.insights.domain.find.FindingContext
 import com.hub.insights.domain.find.FindingKind
 import com.hub.insights.domain.find.Polarity
 import com.hub.insights.domain.find.PolicyCopy
@@ -21,6 +18,11 @@ import com.hub.insights.domain.find.ResidentFindingSummary
 import com.hub.insights.domain.find.ResidentReport
 import com.hub.insights.domain.find.SleepBriefing
 import com.hub.insights.domain.rollup.SceneTimeline
+import com.hub.insights.engine.InsightContext
+import com.hub.insights.engine.InsightEngine
+import com.hub.insights.engine.BathroomDayData
+import com.hub.insights.engine.EpisodeData
+import com.hub.insights.engine.SleepDayData
 import com.hub.insights.inbound.HubClient
 import com.hub.insights.inbound.HubEpisode
 import com.hub.insights.inbound.HubResident
@@ -35,6 +37,7 @@ import java.time.temporal.ChronoUnit
 class FindingService(
     private val hub: HubClient,
     private val properties: InsightsProperties,
+    private val engine: InsightEngine = InsightEngine(),
 ) {
     private val window = ObservationWindow.from(properties)
 
@@ -66,6 +69,12 @@ class FindingService(
         )
     }
 
+    fun resolveWindow(from: LocalDate?, to: LocalDate?, days: Int): Pair<LocalDate, LocalDate> {
+        val end = to ?: LocalDate.now(properties.zoneId)
+        val start = from ?: end.minusDays(days.toLong().coerceAtLeast(1) - 1)
+        return start to end
+    }
+
     private fun toFacilityBriefing(packs: List<ResidentPack>, from: LocalDate, to: LocalDate) = FacilityBriefing(
         generatedAt = Instant.now(),
         from = from.toString(),
@@ -75,12 +84,6 @@ class FindingService(
         toReview = packs.flatMap { it.toReviewSummaries() },
         positive = packs.flatMap { it.positiveSummaries() },
     )
-
-    fun resolveWindow(from: LocalDate?, to: LocalDate?, days: Int): Pair<LocalDate, LocalDate> {
-        val end = to ?: LocalDate.now(properties.zoneId)
-        val start = from ?: end.minusDays(days.toLong().coerceAtLeast(1) - 1)
-        return start to end
-    }
 
     private fun loadFacility(from: LocalDate, to: LocalDate): List<ResidentPack> =
         hub.listResidents().filter { it.active() }.mapNotNull { resident ->
@@ -120,22 +123,61 @@ class FindingService(
             exits.any { exit -> Duration.between(exit, ep.occurredAt).abs() <= EPISODE_NEAR }
         }.map { it.id }
         val windowDays = ChronoUnit.DAYS.between(from, to).toInt() + 1
-        val ctx = FindingContext(
+
+        // ─── Construir contexto del pipeline ───
+        val ctx = InsightContext(
             residentId = residentId,
             residentName = chart.fullName,
+            from = from,
+            to = to,
             baseline = baseline,
-            sleep = derived,
-            sleepDays = sleepTab.summaries,
-            bathroomDays = bathroomTab.summaries,
+            derived = derived,
+            sleepDays = sleepTab.summaries.map { s ->
+                SleepDayData(
+                    day = s.day,
+                    calmMinutes = s.calmMinutes,
+                    restlessMinutes = s.restlessMinutes,
+                    awakeMinutes = s.awakeMinutes,
+                    outOfBedMinutes = s.outOfBedMinutes,
+                    bedExitCount = s.bedExitCount,
+                    wakeCount = s.wakeCount,
+                    measured = s.measured,
+                )
+            },
+            bathroomDays = bathroomTab.summaries.map { b ->
+                BathroomDayData(
+                    day = b.day,
+                    visitCount = b.visitCount,
+                    nightVisitCount = b.nightVisitCount,
+                    assistedCount = b.assistedCount,
+                    totalMinutes = b.totalMinutes,
+                    measured = b.measured,
+                )
+            },
             careAvgMinutes = careTab.avgMinutesPerDay,
+            careTotalMinutes = careTab.summaries.filter { it.measured }.sumOf { it.totalMinutes },
             exitsLast7d = exits,
             staffAfterExitCount = staffCount,
             riskLevel = presets.riskLevel,
             bedEdgeWarningMinutes = PolicyCopy.bedEdgeWarningMinutes(presets.riskLevel, presets.overrides),
+            relatedEpisodeIds = related,
+            policyToday = PolicyCopy.spokenLines(presets.riskLevel, presets.overrides),
+            episodes = episodes.map { ep ->
+                EpisodeData(
+                    id = ep.id,
+                    kind = ep.kind,
+                    severity = ep.severity,
+                    occurredAt = ep.occurredAt,
+                    selfRecovery = ep.selfRecovery,
+                )
+            },
             zone = properties.zoneId,
             windowDays = windowDays,
-            relatedEpisodeIds = related,
         )
+
+        // ─── Ejecutar motor de insights ───
+        val engineResult = engine.evaluate(ctx)
+
         return ResidentPack(
             residentId = residentId,
             residentName = chart.fullName,
@@ -145,7 +187,7 @@ class FindingService(
             baseline = baseline,
             derived = derived,
             sleepDays = sleepTab.summaries,
-            findings = FindingCatalog.evaluate(ctx),
+            findings = engineResult.findings,
             policyToday = PolicyCopy.spokenLines(presets.riskLevel, presets.overrides),
             episodes = episodes.filter { ep ->
                 !ep.occurredAt.atZone(properties.zoneId).toLocalDate().isBefore(from)
@@ -159,7 +201,7 @@ class FindingService(
         val from: LocalDate,
         val to: LocalDate,
         val observedFrom: LocalDate,
-        val baseline: com.hub.insights.domain.derive.Baseline,
+        val baseline: Baseline,
         val derived: com.hub.insights.domain.derive.SleepDerived,
         val sleepDays: List<com.hub.insights.inbound.HubSleepDay>,
         val findings: List<Finding>,
