@@ -195,15 +195,45 @@ class IntegrationService(
     }
 
     private fun handleEpisodeClosed(payload: SignalPayload) {
-        episodePort.updateEpisode(payload.episodeId, UpdateEpisodePortRequest(status = "resolved"))
-        log.info("Episode closed: {} from EPISODE_CLOSED", payload.episodeId)
+        var lastError: Exception? = null
+        for (attempt in 1..3) {
+            try {
+                episodePort.updateEpisode(payload.episodeId, UpdateEpisodePortRequest(status = "RESOLVED"))
+                log.info("Episode closed: {} from EPISODE_CLOSED (attempt {})", payload.episodeId, attempt)
+                return
+            } catch (e: Exception) {
+                lastError = e
+                if (e.message?.contains("already updated") == true) {
+                    log.warn("Optimistic lock on episode {} attempt {}, retrying...", payload.episodeId, attempt)
+                    Thread.sleep(100)
+                } else {
+                    break
+                }
+            }
+        }
+        log.error("Failed to close episode {} after retries: {}", payload.episodeId, lastError?.message)
     }
 
     private fun handleAutoRecovery(payload: SignalPayload, envelope: SignalEnvelope) {
         val reversible = envelope.reversible ?: false
         if (reversible) {
-            episodePort.updateEpisode(payload.episodeId, UpdateEpisodePortRequest(status = "resolved"))
-            log.info("Episode closed (auto-recovery): {}", payload.episodeId)
+            var lastError: Exception? = null
+            for (attempt in 1..3) {
+                try {
+                    episodePort.updateEpisode(payload.episodeId, UpdateEpisodePortRequest(status = "RESOLVED"))
+                    log.info("Episode closed (auto-recovery): {} (attempt {})", payload.episodeId, attempt)
+                    return
+                } catch (e: Exception) {
+                    lastError = e
+                    if (e.message?.contains("already updated") == true) {
+                        log.warn("Optimistic lock on episode {} attempt {}, retrying...", payload.episodeId, attempt)
+                        Thread.sleep(50)
+                    } else {
+                        break
+                    }
+                }
+            }
+            log.error("Failed to close episode {} (auto-recovery) after retries: {}", payload.episodeId, lastError?.message, lastError)
         } else {
             log.info("Auto-recovery non-reversible: {} requires confirmation", payload.episodeId)
         }
@@ -214,11 +244,19 @@ class IntegrationService(
         log.info("Episode {} complicated: {} → {}", payload.episodeId, previousSeverity, payload.severity)
         try {
             val ep = episodePort.findById(payload.episodeId)
-            if (ep != null) {
-                // Escalation is handled through the port
-                val newSeverity = payload.severity ?: "unknown"
-                log.info("Episode {} escalated: {} → {} level={}", payload.episodeId, previousSeverity, newSeverity, ep.escalationLevel)
+            if (ep == null) {
+                log.warn("Episode {} not found, skipping escalation", payload.episodeId)
+                return
             }
+            // If episode is already closed, don't escalate — closed wins over complicated
+            if (ep.status == "RESOLVED") {
+                log.info("Episode {} already RESOLVED, skipping escalation from {} to {}", payload.episodeId, previousSeverity, payload.severity)
+                return
+            }
+            val newSeverity = payload.severity ?: "unknown"
+            log.info("Episode {} escalated: {} → {} level={}", payload.episodeId, previousSeverity, newSeverity, ep.escalationLevel)
+            episodePort.updateEpisode(payload.episodeId, UpdateEpisodePortRequest(severity = newSeverity))
+            log.info("Episode {} severity updated to {}", payload.episodeId, newSeverity)
         } catch (e: Exception) {
             log.warn("Failed to escalate {}: {}", payload.episodeId, e.message)
         }

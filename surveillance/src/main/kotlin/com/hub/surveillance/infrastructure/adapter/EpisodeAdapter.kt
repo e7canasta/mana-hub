@@ -28,12 +28,15 @@ class EpisodeAdapter(
     }
 
     override fun updateEpisode(episodeId: String, request: UpdateEpisodePortRequest) {
-        episodeService.updateEpisode(episodeId, UpdateEpisodeRequest(status = request.status))
+        episodeService.updateEpisode(episodeId, UpdateEpisodeRequest(
+            status = request.status,
+            severity = request.severity
+        ))
     }
 
     override fun findById(episodeId: String): EpisodePortModel? {
         return episodeRepository.findById(EpisodeId(episodeId))?.let {
-            EpisodePortModel(id = it.id.value, severity = it.severity.name, escalationLevel = it.escalationLevel)
+            EpisodePortModel(id = it.id.value, severity = it.severity.name, status = it.status.name, escalationLevel = it.escalationLevel)
         }
     }
 

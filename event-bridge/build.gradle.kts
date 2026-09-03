@@ -11,6 +11,7 @@ dependencies {
     implementation(libs.findLibrary("jackson.module.kotlin").get())
     implementation(libs.findLibrary("jackson.datatype.jsr310").get())
     implementation(libs.findLibrary("spring.boot.starter.web").get())
+    implementation(libs.findLibrary("spring.boot.starter.actuator").get())
     testImplementation(libs.findLibrary("mockk").get())
     testImplementation(libs.findLibrary("kotest.runner.junit5").get())
     testImplementation(libs.findLibrary("kotest.assertions.core").get())

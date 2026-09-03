@@ -96,6 +96,6 @@ class EpisodeRepositoryAdapter(private val jpa: EpisodeEntityRepository, private
     private fun Episode.toEntity() = EpisodeEntity(
         id.value, residentId.value, bedId?.value, evidenceKind, evidenceRef, ruleId,
         severity.name, status, statusActorId, statusAt, title, detail,
-        occurredAt, escalationLevel, escalatedAt, escalatedTo
+        occurredAt, escalationLevel, escalatedAt, escalatedTo, version = version
     )
 }

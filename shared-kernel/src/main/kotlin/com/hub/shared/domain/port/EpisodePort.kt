@@ -22,6 +22,7 @@ data class CreateEpisodePortRequest(
 
 data class UpdateEpisodePortRequest(
     val status: String? = null,
+    val severity: String? = null,
 )
 
 data class EpisodePortResponse(val id: String)
@@ -29,5 +30,6 @@ data class EpisodePortResponse(val id: String)
 data class EpisodePortModel(
     val id: String,
     val severity: String,
+    val status: String,
     val escalationLevel: Int,
 )

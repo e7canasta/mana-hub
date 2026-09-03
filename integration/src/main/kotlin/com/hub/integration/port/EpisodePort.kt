@@ -1,32 +1,9 @@
 package com.hub.integration.port
 
-import java.time.Instant
-
-interface EpisodePort {
-    fun createEpisode(request: CreateEpisodePortRequest): EpisodePortResponse
-    fun updateEpisode(episodeId: String, request: UpdateEpisodePortRequest)
-    fun findById(episodeId: String): EpisodePortModel?
-    fun save(episode: EpisodePortModel)
-}
-
-data class CreateEpisodePortRequest(
-    val id: String,
-    val residentId: String,
-    val bedId: String,
-    val severity: String,
-    val title: String,
-    val detail: String,
-    val occurredAt: Instant,
-)
-
-data class UpdateEpisodePortRequest(
-    val status: String? = null,
-)
-
-data class EpisodePortResponse(val id: String)
-
-data class EpisodePortModel(
-    val id: String,
-    val severity: String,
-    val escalationLevel: Int,
-)
+// Re-export from shared-kernel to avoid duplication
+// All port classes are defined in com.hub.shared.domain.port
+typealias EpisodePort = com.hub.shared.domain.port.EpisodePort
+typealias CreateEpisodePortRequest = com.hub.shared.domain.port.CreateEpisodePortRequest
+typealias UpdateEpisodePortRequest = com.hub.shared.domain.port.UpdateEpisodePortRequest
+typealias EpisodePortResponse = com.hub.shared.domain.port.EpisodePortResponse
+typealias EpisodePortModel = com.hub.shared.domain.port.EpisodePortModel

@@ -36,6 +36,7 @@ data class AcknowledgeEpisodeRequest(
 
 data class UpdateEpisodeRequest(
     val status: String? = null,
+    val severity: String? = null,
     val title: String? = null,
     val detail: String? = null,
     val actorId: String? = null

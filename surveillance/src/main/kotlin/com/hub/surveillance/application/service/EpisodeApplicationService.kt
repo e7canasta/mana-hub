@@ -86,7 +86,18 @@ class EpisodeApplicationService(
     fun updateEpisode(episodeId: String, request: UpdateEpisodeRequest): EpisodeResponse {
         val episode = episodeRepository.findById(EpisodeId(episodeId))
             ?: throw IllegalArgumentException("Episode not found: $episodeId")
-        val updated = episode.resolve(request.actorId ?: "system")
+        
+        var updated = episode
+        // Handle severity escalation
+        if (request.severity != null) {
+            val newSeverity = EpisodeSeverity.from(request.severity)
+            updated = updated.elevateSeverity(newSeverity, null)
+        }
+        // Handle status change
+        if (request.status != null) {
+            updated = updated.resolve(request.actorId ?: "system")
+        }
+        
         val saved = episodeRepository.save(updated)
         eventPublisher.publishAndClear(updated)
         return saved.toResponse()

@@ -1,5 +1,8 @@
 package com.hub.integration.application.service
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.manahive.profile.api.ResidentProfileDto
 import com.hub.integration.domain.model.ResidentProfile
 import com.hub.integration.domain.repository.ResidentProfileRepository
 import org.slf4j.LoggerFactory
@@ -15,11 +18,25 @@ import org.springframework.transaction.annotation.Transactional
 class ResidentProfileService(
     private val repository: ResidentProfileRepository,
     private val eventPublisher: ApplicationEventPublisher,
+    private val objectMapper: ObjectMapper,
 ) {
 
     @Transactional
-    fun ingestProfile(rawJson: String): ResidentProfile {
+    fun ingestProfile(expectedResidentId: String, rawJson: String): ResidentProfile {
+        try {
+            objectMapper.copy()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                .readValue(rawJson, ResidentProfileDto::class.java)
+        } catch (e: Exception) {
+            throw InvalidResidentProfileException("Invalid ResidentProfileDto: ${e.message}")
+        }
+
         val profile = ResidentProfile.fromRawJson(rawJson)
+        if (profile.residentId != expectedResidentId) {
+            throw InvalidResidentProfileException(
+                "residentId in body (${profile.residentId}) does not match path ($expectedResidentId)",
+            )
+        }
 
         // Idempotency: same (residentId, version) already persisted
         val existing = repository.findByResidentId(profile.residentId)
@@ -61,6 +78,8 @@ class ResidentProfileService(
         private val log = LoggerFactory.getLogger(ResidentProfileService::class.java)
     }
 }
+
+class InvalidResidentProfileException(message: String) : RuntimeException(message)
 
 data class ProfileChangedEvent(
     val residentId: String,

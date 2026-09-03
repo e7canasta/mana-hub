@@ -32,7 +32,6 @@ data class Episode private constructor(
         require(status == EpisodeStatus.PENDING) { "Episode is not pending" }
         val next = copy(
             status = EpisodeStatus.ACKNOWLEDGED, statusActorId = actorId, statusAt = Instant.now(),
-            version = version + 1
         )
         next._domainEvents.add(
             EpisodeEvent.Acknowledged(episodeId = id, actorId = actorId)
@@ -43,7 +42,6 @@ data class Episode private constructor(
     fun resolve(actorId: String): Episode {
         val next = copy(
             status = EpisodeStatus.RESOLVED, statusActorId = actorId, statusAt = Instant.now(),
-            version = version + 1
         )
         next._domainEvents.add(
             EpisodeEvent.Resolved(episodeId = id, actorId = actorId)
@@ -54,7 +52,7 @@ data class Episode private constructor(
     fun escalate(targetId: String): Episode {
         val next = copy(
             escalationLevel = escalationLevel + 1, escalatedAt = Instant.now(),
-            escalatedTo = targetId, version = version + 1
+            escalatedTo = targetId
         )
         next._domainEvents.add(
             EpisodeEvent.Escalated(episodeId = id, targetId = targetId, newLevel = next.escalationLevel)
@@ -70,7 +68,7 @@ data class Episode private constructor(
     fun elevateSeverity(newSeverity: EpisodeSeverity, newDetail: String?): Episode {
         if (!newSeverity.isMoreSevereThan(this.severity)) return this
         return copy(
-            severity = newSeverity, detail = newDetail ?: detail, version = version + 1
+            severity = newSeverity, detail = newDetail ?: detail
         )
     }
 
