@@ -17,6 +17,8 @@ data class CreateEpisodePortRequest(
     val residentId: String,
     val bedId: String,
     val severity: String,
+    val ruleId: String? = null,
+    val trigger: String? = null,
     val title: String,
     val detail: String,
     val occurredAt: Instant,

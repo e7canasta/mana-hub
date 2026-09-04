@@ -16,24 +16,22 @@ Murmur (companion del enfermero) ya escucha episodios vía NATS (`sentinel.signa
 | Acción | Endpoint | Módulo |
 |--------|----------|--------|
 | Acknowledge | `POST /api/v1/episodes/{id}/acknowledge` | surveillance |
-| Resolve | `PATCH /api/v1/episodes/{id}` con `{status: "resolved"}` | surveillance |
+| Resolve | `POST /api/v1/episodes/{id}/resolved` | surveillance |
 | Episode note | `POST /api/v1/episodes/{id}/notes` | care |
 
-**Subjects en alcance:**
+**MVP boundary:**
 
-- `nurse.ack.v1`
-- `nurse.resolved.v1`
-- `nurse.episode_note.v1`
-- `nurse.camera.v1`
+- `POST /api/v1/episodes/{id}/acknowledge`
+- `POST /api/v1/episodes/{id}/resolved`
+- `POST /api/v1/episodes/{id}/notes`
 
-El consumer se suscribe a `nurse.>` para recibir el stream, pero valida una
-allowlist de esos cuatro tipos. `nurse.mute.v1` y `nurse.pause.v1` siguen siendo
-locales a la estación y quedan fuera de este sprint.
+No se agrega todavía un consumer Hub para `nurse.*`. Esos subjects quedan
+disponibles para una futura auditoría/event distribution, pero no se usa una
+segunda ruta para las mismas acciones.
 
-**Diseño:** La enfermera **informa** vía NATS, Hub decide y persiste. Murmur
-publica los cuatro subjects; Hub consume directamente, traduce una sola vez a
-una interacción de `care`, aplica la lógica del agregado y publica
-`hub.episode.*`. Event-bridge no participa en este flujo.
+**Diseño:** Murmur solicita por API, Hub decide y persiste. Para `resolved`, Hub
+aplica el cierre manual existente y publica `hub.episode.*`. Para una nota,
+Hub guarda `episode_notes` sin cambiar el estado del episodio.
 
 ---
 
@@ -54,24 +52,19 @@ una interacción de `care`, aplica la lógica del agregado y publica
 
 **Flujo detallado:**
 
-1. Murmur publica `nurse.ack.v1` / `nurse.resolved.v1` /
-   `nurse.episode_note.v1` / `nurse.camera.v1` a NATS.
-2. Hub consume `nurse.>` con consumer durable y deduplica por `eventId`.
-3. Hub `NurseEventService` traduce el envelope una sola vez y procesa:
-   - `nurse.ack.v1` → `POST /api/v1/episodes/{id}/acknowledge` (internamente llama `episodeApplicationService.acknowledgeEpisode`)
-   - `nurse.resolved.v1` → `PATCH /api/v1/episodes/{id}` (internamente llama `episodeApplicationService.updateEpisode`)
-   - `nurse.episode_note.v1` → `POST /api/v1/episodes/{id}/notes` (internamente llama `noteApplicationService.createEpisodeNote`)
-   - `nurse.camera.v1` → auditoría de revelación, sin mutar el estado del episodio
+1. Murmur consulta Hub antes de mostrar un episodio recibido.
+2. Murmur llama los endpoints existentes para acknowledge y nota, y el nuevo
+   endpoint semántico para resolución manual.
+3. Hub persiste y publica el hecho confirmado del episodio.
 
 ---
 
 ## Trabajo por proyecto
 
-### 1. mana-hub care consumer y timeline
+### 1. mana-hub episode APIs y timeline
 
-**Responsabilidad:** consumir NATS, persistir la interacción de care y delegar
-la mutación del episodio a sus puertos existentes. No crear un endpoint HTTP
-intermedio para eventos de Murmur.
+**Responsabilidad:** exponer la acción semántica de resolución sobre el cierre
+manual existente y mantener notas/timeline bajo ownership de Hub.
 
 **Archivos a modificar:**
 - `integration/src/main/kotlin/com/hub/integration/application/service/NurseEventService.kt`

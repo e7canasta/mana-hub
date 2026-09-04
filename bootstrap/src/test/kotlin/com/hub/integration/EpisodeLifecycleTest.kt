@@ -29,7 +29,7 @@ class EpisodeLifecycleTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `resolve episode`() {
+    fun `resolve episode through the semantic endpoint`() {
         val created = post("/api/v1/episodes", mapOf(
             "residentId" to "jose",
             "bedId" to "bed-4",
@@ -39,13 +39,17 @@ class EpisodeLifecycleTest : IntegrationTestBase() {
         )) as Map<String, Any>
         val episodeId = created["id"] as String
 
-        val resolved = client.exchange(
-            "$baseUrl/api/v1/episodes/$episodeId",
-            org.springframework.http.HttpMethod.PATCH,
-            org.springframework.http.HttpEntity(mapOf("status" to "resolved")),
-            Any::class.java
-        )
-        assertThat(resolved.statusCode.is2xxSuccessful).isTrue()
+        val resolved = post(
+            "/api/v1/episodes/$episodeId/resolved",
+            mapOf("staffMemberId" to "staff-nurse-1"),
+        ) as Map<String, Any>
+        assertThat(resolved["status"]).isEqualTo("RESOLVED")
+
+        val retried = post(
+            "/api/v1/episodes/$episodeId/resolved",
+            mapOf("staffMemberId" to "staff-nurse-1"),
+        ) as Map<String, Any>
+        assertThat(retried["status"]).isEqualTo("RESOLVED")
     }
 
     @Test

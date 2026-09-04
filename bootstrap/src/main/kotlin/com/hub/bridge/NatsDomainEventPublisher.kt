@@ -16,7 +16,8 @@ import jakarta.annotation.PreDestroy
 import org.springframework.beans.factory.annotation.Value
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.context.event.EventListener
+import org.springframework.transaction.event.TransactionPhase
+import org.springframework.transaction.event.TransactionalEventListener
 import org.springframework.stereotype.Component
 import java.time.Duration
 
@@ -28,7 +29,9 @@ class NatsDomainEventPublisher(
 ) {
     private var connection: Connection? = null
 
-    @EventListener
+    // Publish only after persistence commits, so consumers can reconcile the
+    // confirmed event through Hub without racing the database transaction.
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun publish(event: DomainEvent) {
         val subject = when {
             event is SceneConfirmed -> "hub.scene.v1.${event.bedId.value}"

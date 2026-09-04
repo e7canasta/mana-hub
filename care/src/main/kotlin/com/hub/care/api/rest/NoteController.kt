@@ -33,10 +33,18 @@ class NoteController(
     @PostMapping("/episodes/{episodeId}/notes")
     fun createEpisodeNote(
         @PathVariable episodeId: String,
-        @Valid @RequestBody request: CreateEpisodeNoteRequest
+        @Valid @RequestBody request: CreateEpisodeNoteBody
     ): ResponseEntity<EpisodeNoteResponse> {
         return ResponseEntity.status(HttpStatus.CREATED).body(
-            noteApplicationService.createEpisodeNote(request.copy(episodeId = episodeId))
+            noteApplicationService.createEpisodeNote(
+                CreateEpisodeNoteRequest(
+                    episodeId = episodeId,
+                    authorId = request.authorId,
+                    kind = request.kind,
+                    body = request.body,
+                    timestamp = request.timestamp ?: java.time.Instant.now(),
+                ),
+            )
         )
     }
 

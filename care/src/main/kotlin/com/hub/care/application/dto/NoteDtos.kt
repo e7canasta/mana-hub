@@ -33,6 +33,13 @@ data class CreateEpisodeNoteRequest(
     val timestamp: Instant = Instant.now()
 )
 
+data class CreateEpisodeNoteBody(
+    val authorId: String,
+    val kind: EpisodeNoteKind,
+    val body: String,
+    val timestamp: Instant? = null
+)
+
 data class EpisodeNoteResponse(
     val id: String,
     val episodeId: String,

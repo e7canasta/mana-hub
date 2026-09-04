@@ -151,6 +151,8 @@ class FlujoObservacionBehaviorSpec : BehaviorSpec({
                 SceneState.from("inventado") shouldBe SceneState.UNKNOWN
                 SceneState.from("no-existe") shouldBe SceneState.UNKNOWN
                 SceneState.from("SLEEPING") shouldBe SceneState.SLEEPING
+                SceneState.from("Lying") shouldBe SceneState.LYING
+                SceneState.from("SittingInBed") shouldBe SceneState.SITTING_IN_BED
             }
         }
         `when`("el motor manda SceneEventType inventado") {
