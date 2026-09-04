@@ -60,4 +60,4 @@ anterior.
 curl http://localhost:8080/actuator/health
 ```
 
-El frontend `crm-ui` usa esta API por defecto desde `http://localhost:5173`.
+El frontend `mana-ui` usa esta API por defecto desde `http://localhost:5173`.
