@@ -6,8 +6,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.hub.integration.infrastructure.persistence.ResidentProfileEntityRepository
 import com.hub.observation.infrastructure.persistence.SceneEventEntityRepository
 import com.hub.observation.infrastructure.persistence.SentinelSignalEntityRepository
+import com.hub.population.infrastructure.persistence.BedAssignmentEntityRepository
 import com.hub.surveillance.infrastructure.persistence.EpisodeEntityRepository
 import org.springframework.http.ResponseEntity
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
@@ -18,10 +20,12 @@ class CleanController(
     private val sceneJpa: SceneEventEntityRepository,
     private val signalJpa: SentinelSignalEntityRepository,
     private val profileJpa: ResidentProfileEntityRepository,
+    private val bedAssignmentJpa: BedAssignmentEntityRepository,
 ) {
     private val mapper = ObjectMapper().apply { registerModule(JavaTimeModule()) }
 
     @PostMapping("/clean")
+    @Transactional
     fun clean(
         @RequestParam residentId: String,
         @RequestParam(required = false) bedId: String? = null,
@@ -29,12 +33,21 @@ class CleanController(
     ): ResponseEntity<Map<String, Any>> {
         val episodes = episodeJpa.findByResidentId(residentId)
         episodeJpa.deleteAll(episodes)
-        val scenes = if (bedId != null) sceneJpa.findByBedId(bedId)
-        else sceneJpa.findAll().filter { it.residentId == residentId }
-        sceneJpa.deleteAll(scenes)
-        val signals = if (bedId != null) signalJpa.findByBedId(bedId)
-        else signalJpa.findByResidentId(residentId)
-        signalJpa.deleteAll(signals)
+
+        val bedIds = mutableSetOf<String>()
+        if (bedId != null) {
+            bedIds.add(bedId)
+        } else {
+            bedAssignmentJpa.findByResidentId(residentId).forEach { bedIds.add(it.bedId) }
+        }
+
+        var deletedScenes = sceneJpa.deleteByResidentId(residentId)
+        var deletedSignals = signalJpa.deleteByResidentId(residentId)
+        for (bid in bedIds) {
+            deletedScenes += sceneJpa.deleteByBedId(bid)
+            deletedSignals += signalJpa.deleteByBedId(bid)
+        }
+
         var deletedProfiles = 0
         if (cleanProfiles) {
             val profiles = profileJpa.findByResidentId(residentId)
@@ -43,7 +56,8 @@ class CleanController(
         }
         return ResponseEntity.ok(mapOf(
             "episodes" to episodes.size,
-            "scenes" to scenes.size,
+            "scenes" to deletedScenes,
+            "signals" to deletedSignals,
             "profiles" to deletedProfiles,
             "residentId" to residentId,
         ))
@@ -82,7 +96,7 @@ class CleanController(
 
     private fun fetchSceneEvents(residentId: String, bedId: String?) = when {
         bedId != null -> sceneJpa.findByBedId(bedId)
-        else -> sceneJpa.findByResidentId(residentId).ifEmpty { sceneJpa.findByBedId("bed-4") }
+        else -> sceneJpa.findByResidentId(residentId)
     }
 
     private fun fetchSignals(residentId: String, bedId: String?) = when {

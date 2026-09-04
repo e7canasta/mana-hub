@@ -18,6 +18,7 @@ import org.hibernate.annotations.Immutable
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import java.time.Instant
@@ -178,6 +179,14 @@ interface SceneEventEntityRepository : JpaRepository<SceneEventEntity, String> {
         from: Instant,
         to: Instant,
     ): List<SceneEventEntity>
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM SceneEventEntity e WHERE e.residentId = :residentId")
+    fun deleteByResidentId(residentId: String): Int
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM SceneEventEntity e WHERE e.bedId = :bedId")
+    fun deleteByBedId(bedId: String): Int
 }
 
 @Entity
@@ -393,6 +402,14 @@ interface SentinelSignalEntityRepository : JpaRepository<SentinelSignalEntity, S
     fun findByResidentId(residentId: String): List<SentinelSignalEntity>
     fun findByBedId(bedId: String): List<SentinelSignalEntity>
     fun findByEpisodeId(episodeId: String): List<SentinelSignalEntity>
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM SentinelSignalEntity e WHERE e.residentId = :residentId")
+    fun deleteByResidentId(residentId: String): Int
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM SentinelSignalEntity e WHERE e.bedId = :bedId")
+    fun deleteByBedId(bedId: String): Int
 }
 
 @Repository
