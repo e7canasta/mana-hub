@@ -18,6 +18,8 @@ sealed interface EpisodeEvent : DomainEvent {
         val bedId: BedId?,
         val severity: EpisodeSeverity,
         val title: String?,
+        val ruleId: String? = null,
+        val trigger: String? = null,
     ) : EpisodeEvent {
         override val eventType: String = "EpisodeCreated"
     }

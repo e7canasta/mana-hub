@@ -39,6 +39,13 @@ class EpisodeController(
     ): EpisodeResponse =
         episodeApplicationService.acknowledgeEpisode(episodeId, request.actorId)
 
+    @PostMapping("/{episodeId}/resolved")
+    fun resolveEpisode(
+        @PathVariable episodeId: String,
+        @Valid @RequestBody request: ResolveEpisodeRequest
+    ): EpisodeResponse =
+        episodeApplicationService.resolveEpisode(episodeId, request.staffMemberId)
+
     @PatchMapping("/{episodeId}")
     fun updateEpisode(
         @PathVariable episodeId: String,

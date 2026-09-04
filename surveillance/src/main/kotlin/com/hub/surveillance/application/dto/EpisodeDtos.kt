@@ -10,6 +10,8 @@ data class CreateEpisodeRequest(
     val residentId: String,
     val bedId: String? = null,
     val severity: EpisodeSeverity,
+    val ruleId: String? = null,
+    val trigger: String? = null,
     val title: String? = null,
     val detail: String? = null,
     val occurredAt: Instant,
@@ -22,6 +24,8 @@ data class EpisodeResponse(
     val residentId: String,
     val bedId: String?,
     val severity: EpisodeSeverity,
+    val ruleId: String?,
+    val trigger: String?,
     val status: EpisodeStatus,
     val title: String?,
     val detail: String?,
@@ -32,6 +36,10 @@ data class EpisodeResponse(
 
 data class AcknowledgeEpisodeRequest(
     val actorId: String
+)
+
+data class ResolveEpisodeRequest(
+    val staffMemberId: String
 )
 
 data class UpdateEpisodeRequest(

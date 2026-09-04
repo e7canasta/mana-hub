@@ -199,6 +199,8 @@ class IntegrationService(
             residentId = residentId,
             bedId = payload.bedId,
             severity = payload.severity ?: "WARNING",
+            ruleId = envelope.rule?.takeIf { it.isNotBlank() && it != "unknown" && it != "none" },
+            trigger = payload.trigger ?: envelope.state ?: envelope.baseline,
             title = "$ruleValue: ${payload.bedId}",
             detail = "Trigger: $triggerValue",
             occurredAt = payload.timestamp,

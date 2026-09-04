@@ -20,6 +20,8 @@ class EpisodeAdapter(
             residentId = request.residentId,
             bedId = request.bedId,
             severity = EpisodeSeverity.from(request.severity),
+            ruleId = request.ruleId,
+            trigger = request.trigger,
             title = request.title,
             detail = request.detail,
             occurredAt = request.occurredAt,

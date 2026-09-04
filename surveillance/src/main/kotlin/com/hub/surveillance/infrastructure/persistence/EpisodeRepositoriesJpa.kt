@@ -25,6 +25,7 @@ class EpisodeEntity(
     @Column(name = "evidence_kind") var evidenceKind: String? = null,
     @Column(name = "evidence_ref") var evidenceRef: String? = null,
     @Column(name = "rule_id") var ruleId: String? = null,
+    @Column(name = "trigger_type") var trigger: String? = null,
     @Column(name = "severity") var severity: String = "",
     @Enumerated(EnumType.STRING)
     @Column(name = "status") var status: EpisodeStatus = EpisodeStatus.PENDING,
@@ -90,12 +91,27 @@ class EpisodeRepositoryAdapter(private val jpa: EpisodeEntityRepository, private
     private fun EpisodeEntity.toDomain() = Episode.reconstitute(
         EpisodeId(id), ResidentId(residentId), bedId?.let { BedId(it) }, evidenceKind,
         evidenceRef, ruleId, EpisodeSeverity.from(severity), status, statusActorId, statusAt,
-        title, detail, occurredAt, escalationLevel, escalatedAt, escalatedTo, version
+        title, detail, occurredAt, escalationLevel, escalatedAt, escalatedTo, version, trigger
     )
 
     private fun Episode.toEntity() = EpisodeEntity(
-        id.value, residentId.value, bedId?.value, evidenceKind, evidenceRef, ruleId,
-        severity.name, status, statusActorId, statusAt, title, detail,
-        occurredAt, escalationLevel, escalatedAt, escalatedTo, version = version
+        id = id.value,
+        residentId = residentId.value,
+        bedId = bedId?.value,
+        evidenceKind = evidenceKind,
+        evidenceRef = evidenceRef,
+        ruleId = ruleId,
+        trigger = trigger,
+        severity = severity.name,
+        status = status,
+        statusActorId = statusActorId,
+        statusAt = statusAt,
+        title = title,
+        detail = detail,
+        occurredAt = occurredAt,
+        escalationLevel = escalationLevel,
+        escalatedAt = escalatedAt,
+        escalatedTo = escalatedTo,
+        version = version,
     )
 }

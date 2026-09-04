@@ -32,6 +32,8 @@ class EpisodeApplicationService(
                 residentId = ResidentId(request.residentId),
                 bedId = request.bedId?.let { BedId(it) },
                 severity = request.severity,
+                ruleId = request.ruleId,
+                trigger = request.trigger,
                 title = request.title,
                 detail = request.detail,
                 occurredAt = request.occurredAt,
@@ -83,6 +85,18 @@ class EpisodeApplicationService(
     }
 
     @Transactional
+    fun resolveEpisode(episodeId: String, actorId: String): EpisodeResponse {
+        val current = episodeRepository.findById(EpisodeId(episodeId))
+            ?: throw IllegalArgumentException("Episode not found: $episodeId")
+        if (current.status == EpisodeStatus.RESOLVED) return current.toResponse()
+
+        return updateEpisode(
+            episodeId,
+            UpdateEpisodeRequest(status = "RESOLVED", actorId = actorId),
+        )
+    }
+
+    @Transactional
     fun updateEpisode(episodeId: String, request: UpdateEpisodeRequest): EpisodeResponse {
         val episode = episodeRepository.findById(EpisodeId(episodeId))
             ?: throw IllegalArgumentException("Episode not found: $episodeId")
@@ -105,6 +119,7 @@ class EpisodeApplicationService(
 
     private fun Episode.toResponse() = EpisodeResponse(
         id = id.value, residentId = residentId.value, bedId = bedId?.value, severity = severity,
+        ruleId = ruleId, trigger = trigger,
         status = status, title = title, detail = detail, occurredAt = occurredAt,
         escalationLevel = escalationLevel, isPending = status == EpisodeStatus.PENDING
     )

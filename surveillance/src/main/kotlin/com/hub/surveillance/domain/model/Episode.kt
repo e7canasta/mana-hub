@@ -15,6 +15,7 @@ data class Episode private constructor(
     val evidenceKind: String?,
     val evidenceRef: String?,
     val ruleId: String?,
+    val trigger: String?,
     val severity: EpisodeSeverity,
     val status: EpisodeStatus,
     val statusActorId: String?,
@@ -93,11 +94,11 @@ data class Episode private constructor(
         fun create(
             residentId: ResidentId, bedId: BedId?, severity: EpisodeSeverity, title: String?,
             detail: String?, occurredAt: Instant, evidenceKind: String? = null, evidenceRef: String? = null,
-            id: EpisodeId? = null,
+            id: EpisodeId? = null, ruleId: String? = null, trigger: String? = null,
         ): Episode {
             val episode = Episode(
                 id = id ?: EpisodeId.random(), residentId = residentId, bedId = bedId, evidenceKind = evidenceKind,
-                evidenceRef = evidenceRef, ruleId = null, severity = severity, status = EpisodeStatus.PENDING,
+                evidenceRef = evidenceRef, ruleId = ruleId, trigger = trigger, severity = severity, status = EpisodeStatus.PENDING,
                 statusActorId = null, statusAt = null, title = title, detail = detail,
                 occurredAt = occurredAt, escalationLevel = 0, escalatedAt = null, escalatedTo = null, version = 0
             )
@@ -105,7 +106,7 @@ data class Episode private constructor(
                 EpisodeEvent.Created(
                     occurredAt = occurredAt,
                     episodeId = episode.id, residentId = residentId,
-                    bedId = bedId, severity = severity, title = title,
+                    bedId = bedId, severity = severity, title = title, ruleId = ruleId, trigger = trigger,
                 )
             )
             return episode
@@ -146,9 +147,9 @@ data class Episode private constructor(
             evidenceRef: String?, ruleId: String?, severity: EpisodeSeverity, status: EpisodeStatus,
             statusActorId: String?, statusAt: Instant?, title: String?, detail: String?,
             occurredAt: Instant, escalationLevel: Int, escalatedAt: Instant?,
-            escalatedTo: String?, version: Long
+            escalatedTo: String?, version: Long, trigger: String? = null
         ): Episode = Episode(
-            id, residentId, bedId, evidenceKind, evidenceRef, ruleId, severity, status,
+            id, residentId, bedId, evidenceKind, evidenceRef, ruleId, trigger, severity, status,
             statusActorId, statusAt, title, detail, occurredAt, escalationLevel,
             escalatedAt, escalatedTo, version
         )
