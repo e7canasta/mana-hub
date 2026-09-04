@@ -30,7 +30,8 @@ class EpisodeAdapter(
     override fun updateEpisode(episodeId: String, request: UpdateEpisodePortRequest) {
         episodeService.updateEpisode(episodeId, UpdateEpisodeRequest(
             status = request.status,
-            severity = request.severity
+            severity = request.severity,
+            occurredAt = request.occurredAt,
         ))
     }
 
@@ -42,5 +43,16 @@ class EpisodeAdapter(
 
     override fun save(episode: EpisodePortModel) {
         // Episode domain model is reconstructed via findById + domain methods, not directly saved
+    }
+
+    override fun acknowledgeEpisode(episodeId: String, actorId: String) {
+        episodeService.acknowledgeEpisode(episodeId, actorId)
+    }
+
+    override fun resolveEpisode(episodeId: String, actorId: String) {
+        episodeService.updateEpisode(episodeId, UpdateEpisodeRequest(
+            status = "RESOLVED",
+            actorId = actorId
+        ))
     }
 }

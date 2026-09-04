@@ -28,6 +28,10 @@ class EventRouter(
                 log.info("ROUTING SentinelSignal type={} subject={}", type, subject)
                 forward("/internal/v1/integration/signal-events", payload, type, subject)
             }
+            subject.startsWith("nurse.") -> {
+                log.info("ROUTING NurseEvent type={} subject={}", type, subject)
+                forward("/internal/v1/integration/nurse-events", payload, type, subject)
+            }
             subject.startsWith("perception.") -> {
                 log.debug("Skipping perception: {} on {}", type, subject)
             }

@@ -8,6 +8,8 @@ interface EpisodePort {
     fun updateEpisode(episodeId: String, request: UpdateEpisodePortRequest)
     fun findById(episodeId: String): EpisodePortModel?
     fun save(episode: EpisodePortModel)
+    fun acknowledgeEpisode(episodeId: String, actorId: String)
+    fun resolveEpisode(episodeId: String, actorId: String)
 }
 
 data class CreateEpisodePortRequest(
@@ -23,6 +25,7 @@ data class CreateEpisodePortRequest(
 data class UpdateEpisodePortRequest(
     val status: String? = null,
     val severity: String? = null,
+    val occurredAt: Instant? = null,
 )
 
 data class EpisodePortResponse(val id: String)

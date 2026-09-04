@@ -4,6 +4,7 @@ import com.hub.surveillance.application.dto.*
 import com.hub.surveillance.application.service.EpisodeApplicationService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -27,8 +28,9 @@ class EpisodeController(
         episodeApplicationService.listEpisodes(residentId, status, from, to)
 
     @GetMapping("/{episodeId}")
-    fun getEpisode(@PathVariable episodeId: String): EpisodeResponse? =
-        episodeApplicationService.getEpisode(episodeId)
+    fun getEpisode(@PathVariable episodeId: String): ResponseEntity<EpisodeResponse> =
+        episodeApplicationService.getEpisode(episodeId)?.let { ResponseEntity.ok(it) }
+            ?: ResponseEntity.notFound().build()
 
     @PostMapping("/{episodeId}/acknowledge")
     fun acknowledgeEpisode(

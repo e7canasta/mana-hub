@@ -45,6 +45,7 @@ class NatsIngestService(
         const val ALARM = "alarm.event.v1.>"
         const val RECORDER = "recorder.command.v1.>"
         const val EVIDENCE = "evidence.record.v1.>"
+        const val NURSE = "nurse.>"
     }
 
     @PostConstruct
@@ -58,6 +59,7 @@ class NatsIngestService(
             subscribeTo(ALARM, "alarm")
             subscribeTo(RECORDER, "recorder")
             subscribeTo(EVIDENCE, "evidence")
+            subscribeTo(NURSE, "nurse")
 
             log.info("Bridge suscrito a {} subjects NATS", dispatchers.size)
         } catch (e: Exception) {

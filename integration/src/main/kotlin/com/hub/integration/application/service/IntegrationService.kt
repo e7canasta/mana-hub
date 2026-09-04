@@ -10,8 +10,10 @@ import com.hub.shared.domain.signal.SignalType
 import com.hub.shared.domain.BedId
 import com.hub.shared.domain.Identifier
 import com.hub.shared.domain.ResidentId
+import com.hub.shared.domain.event.SceneConfirmed
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -33,6 +35,7 @@ class IntegrationService(
     private val bedAssignmentPort: BedAssignmentPort,
     private val integrationProperties: IntegrationProperties,
     private val objectMapper: ObjectMapper,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
 
     // ── Scene Events ────────────────────────────────────────────────
@@ -68,6 +71,20 @@ class IntegrationService(
                 monitorId = twin.monitorId,
             )
             sceneEventPort.save(eventModel)
+            applicationEventPublisher.publishEvent(
+                SceneConfirmed(
+                    eventId = eventModel.eventId,
+                    occurredAt = eventModel.timestamp,
+                    bedId = eventModel.bedId,
+                    residentId = eventModel.residentId,
+                    sceneType = eventModel.eventType ?: "UnknownSceneEvent",
+                    fromState = eventModel.fromState,
+                    toState = eventModel.toState,
+                    triggerType = eventModel.triggerType,
+                    timestamp = eventModel.timestamp,
+                    twinSnapshotJson = eventModel.twinSnapshotJson,
+                ),
+            )
             log.info("SceneEvent persisted: {} {} resident={} twinSnapshot={}", payload.type, payload.eventId, residentId?.value ?: "null", twin.json != "{}")
         } catch (e: Exception) {
             log.warn("Failed to persist SceneEvent {}: {}", payload.type, e.message)
@@ -198,7 +215,10 @@ class IntegrationService(
         var lastError: Exception? = null
         for (attempt in 1..3) {
             try {
-                episodePort.updateEpisode(payload.episodeId, UpdateEpisodePortRequest(status = "RESOLVED"))
+                episodePort.updateEpisode(
+                    payload.episodeId,
+                    UpdateEpisodePortRequest(status = "RESOLVED", occurredAt = payload.timestamp),
+                )
                 log.info("Episode closed: {} from EPISODE_CLOSED (attempt {})", payload.episodeId, attempt)
                 return
             } catch (e: Exception) {
@@ -220,7 +240,10 @@ class IntegrationService(
             var lastError: Exception? = null
             for (attempt in 1..3) {
                 try {
-                    episodePort.updateEpisode(payload.episodeId, UpdateEpisodePortRequest(status = "RESOLVED"))
+                    episodePort.updateEpisode(
+                        payload.episodeId,
+                        UpdateEpisodePortRequest(status = "RESOLVED", occurredAt = payload.timestamp),
+                    )
                     log.info("Episode closed (auto-recovery): {} (attempt {})", payload.episodeId, attempt)
                     return
                 } catch (e: Exception) {

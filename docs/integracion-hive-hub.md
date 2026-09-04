@@ -73,6 +73,9 @@ REST se mantiene para lecturas panel y como **fallback** si NATS caído (hive pu
 | `hub.policy.change.v1` | `PolicyChangeDetected {residentId, snapshot: AlarmProfile}` | hub → hive | `PolicyNatsIngest` → `PolicyResolver` recalibration |
 | `hub.policy.effective-rules.v1.<resident>` | `EffectiveRules {rules, fingerprint}` | hub → hive (Sentinel) | `SentinelNatsIngest` |
 | `hub.census.snapshot.v1` | `Census` (bed assignments) | hub → hive | `NightWatchRuntime` asignación residente↔cama |
+| `nurse.ack.v1.<episode>` | Nurse acknowledged episode | murmur → event-bridge → hub | `POST /internal/v1/integration/nurse-events` → `episodes.acknowledge` |
+| `nurse.resolved.v1.<episode>` | Nurse says episode resolved | murmur → event-bridge → hub | `POST /internal/v1/integration/nurse-events` → `episodes.resolve` |
+| `nurse.episode_note.v1.<episode>` | Nurse added observation | murmur → event-bridge → hub | `POST /internal/v1/integration/nurse-events` → `episode_notes` |
 
 **Envelope:** todo via `EventEnvelope {eventId, type, version, occurredAt, source, payloadJson}` (`platform/messaging/NatsObjectMapper.kt:27` ISO-8601). Hub lo desenvuelve y persiste `sourceEventId / eventId` para idempotencia.
 

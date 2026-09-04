@@ -34,17 +34,28 @@ data class Episode private constructor(
             status = EpisodeStatus.ACKNOWLEDGED, statusActorId = actorId, statusAt = Instant.now(),
         )
         next._domainEvents.add(
-            EpisodeEvent.Acknowledged(episodeId = id, actorId = actorId)
+            EpisodeEvent.Acknowledged(
+                episodeId = id,
+                actorId = actorId,
+                residentId = residentId,
+                bedId = bedId,
+            )
         )
         return next
     }
 
-    fun resolve(actorId: String): Episode {
+    fun resolve(actorId: String, occurredAt: Instant = Instant.now()): Episode {
         val next = copy(
             status = EpisodeStatus.RESOLVED, statusActorId = actorId, statusAt = Instant.now(),
         )
         next._domainEvents.add(
-            EpisodeEvent.Resolved(episodeId = id, actorId = actorId)
+            EpisodeEvent.Resolved(
+                occurredAt = occurredAt,
+                episodeId = id,
+                actorId = actorId,
+                residentId = residentId,
+                bedId = bedId,
+            )
         )
         return next
     }
@@ -55,7 +66,13 @@ data class Episode private constructor(
             escalatedTo = targetId
         )
         next._domainEvents.add(
-            EpisodeEvent.Escalated(episodeId = id, targetId = targetId, newLevel = next.escalationLevel)
+            EpisodeEvent.Escalated(
+                episodeId = id,
+                targetId = targetId,
+                newLevel = next.escalationLevel,
+                residentId = residentId,
+                bedId = bedId,
+            )
         )
         return next
     }
@@ -86,6 +103,7 @@ data class Episode private constructor(
             )
             episode._domainEvents.add(
                 EpisodeEvent.Created(
+                    occurredAt = occurredAt,
                     episodeId = episode.id, residentId = residentId,
                     bedId = bedId, severity = severity, title = title,
                 )

@@ -11,6 +11,7 @@
 | [Data Model](../data-model.md) | 44 tables, PostgreSQL DDL, ER | `bootstrap/src/main/resources/db/migration/V1..V10` |
 | [Domain Model](big-picture/domain-model.md) | Entities, aggregates, enums | `*/domain/model/*.kt` |
 | [Vocabulary](../docs/vocabulario-unificado.md) | Percepción → Escena → Episodio → Hallazgo | `docs/vocabulario-unificado.md` |
+| [Event Bus and Event Sourcing](event-bus-and-event-sourcing.md) | Ownership, envelope, subjects, Hub confirmed facts | `DomainEvent` + NATS adapters |
 
 ## Context Groups (BDD Specs)
 
@@ -43,6 +44,7 @@ Each context group is a superset of DDD contexts sharing a domain language.
 | [Data Model Mermaid](archive/data-model-mermaid.md) | ER Mermaid deprecated | 📦 Archived — use `data-model.md` |
 | [Architecture Overview](big-picture/architecture-overview.md) | Modules, layers, integration | ✅ Updated 2026-08-29 |
 | [Context Map](big-picture/context-map.md) | 12 bounded contexts | ✅ Updated 2026-08-29 |
+| [Event Bus and Event Sourcing](event-bus-and-event-sourcing.md) | NATS directions and confirmed Hub facts | ✅ Sprint 2026 |
 
 ## Clients & Blueprints — DSL Contract
 

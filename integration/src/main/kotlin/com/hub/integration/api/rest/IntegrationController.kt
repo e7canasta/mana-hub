@@ -2,6 +2,7 @@ package com.hub.integration.api.rest
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.hub.integration.application.service.IntegrationService
+import com.hub.integration.application.service.NurseEventService
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/internal/v1/integration")
 class IntegrationController(
     private val integrationService: IntegrationService,
+    private val nurseEventService: NurseEventService,
 ) {
     private val objectMapper = ObjectMapper()
 
@@ -35,6 +37,15 @@ class IntegrationController(
         val type = tree.get("type") ?: "unknown"
         log.info("SentinelSignal received: {} body.length={}", type, body.length)
         integrationService.ingestSignalEvent(tree)
+        return ResponseEntity.status(HttpStatus.CREATED).build()
+    }
+
+    @PostMapping("/nurse-events")
+    fun ingestNurseEvent(@RequestBody body: String): ResponseEntity<String> {
+        val tree = objectMapper.readTree(body)
+        val type = tree.get("type") ?: "unknown"
+        log.info("NurseEvent received: {} body.length={}", type, body.length)
+        nurseEventService.processNurseEvent(body)
         return ResponseEntity.status(HttpStatus.CREATED).build()
     }
 

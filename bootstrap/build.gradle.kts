@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.jackson.module.kotlin)
     implementation(libs.jackson.datatype.jsr310)
     implementation(libs.springdoc.openapi.starter.webmvc.ui)
+    implementation(libs.jnats)
 
     runtimeOnly(libs.postgresql)
 

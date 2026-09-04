@@ -27,6 +27,8 @@ sealed interface EpisodeEvent : DomainEvent {
         override val occurredAt: Instant = Instant.now(),
         val episodeId: EpisodeId,
         val actorId: String,
+        val residentId: ResidentId? = null,
+        val bedId: BedId? = null,
     ) : EpisodeEvent {
         override val eventType: String = "EpisodeAcknowledged"
     }
@@ -36,6 +38,8 @@ sealed interface EpisodeEvent : DomainEvent {
         override val occurredAt: Instant = Instant.now(),
         val episodeId: EpisodeId,
         val actorId: String,
+        val residentId: ResidentId? = null,
+        val bedId: BedId? = null,
     ) : EpisodeEvent {
         override val eventType: String = "EpisodeResolved"
     }
@@ -46,6 +50,8 @@ sealed interface EpisodeEvent : DomainEvent {
         val episodeId: EpisodeId,
         val targetId: String,
         val newLevel: Int,
+        val residentId: ResidentId? = null,
+        val bedId: BedId? = null,
     ) : EpisodeEvent {
         override val eventType: String = "EpisodeEscalated"
     }

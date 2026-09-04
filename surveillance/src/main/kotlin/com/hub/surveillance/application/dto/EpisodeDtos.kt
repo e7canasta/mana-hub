@@ -39,7 +39,8 @@ data class UpdateEpisodeRequest(
     val severity: String? = null,
     val title: String? = null,
     val detail: String? = null,
-    val actorId: String? = null
+    val actorId: String? = null,
+    val occurredAt: Instant? = null,
 )
 
 data class CreateDeliveryRequest(

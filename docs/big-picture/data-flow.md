@@ -61,7 +61,9 @@ EpisodeEngine → POST /api/v1/episodes (PENDING) → NotificationService alerta
                                           ↓
                                EvidenceCollector → POST /api/v1/evidence|timelines|clip-windows
                                           ↓
-                               Nurse → POST /api/v1/episodes/{id}/acknowledge → POST /api/v1/episodes/{id}/notes (ACKNOWLEDGEMENT) → PATCH /api/v1/episodes/{id} (RESOLVED)
+                                Nurse → POST /api/v1/episodes/{id}/acknowledge → POST /api/v1/episodes/{id}/notes (ACKNOWLEDGEMENT) → PATCH /api/v1/episodes/{id} (RESOLVED)
+                                           ↓
+                                mana-hub confirms the SOR change → NATS outbound (`hub.*`)
 ```
 
 - Matriz severidad: `INFO`(virtual), `WARNING`(virtual+video), `CRITICAL`/`EMERGENCY`(en sitio + grabación) — ver `vocabulario-unificado.md:143`.

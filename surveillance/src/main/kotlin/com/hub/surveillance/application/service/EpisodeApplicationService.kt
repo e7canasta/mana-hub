@@ -95,7 +95,7 @@ class EpisodeApplicationService(
         }
         // Handle status change
         if (request.status != null) {
-            updated = updated.resolve(request.actorId ?: "system")
+            updated = updated.resolve(request.actorId ?: "system", request.occurredAt ?: Instant.now())
         }
         
         val saved = episodeRepository.save(updated)
