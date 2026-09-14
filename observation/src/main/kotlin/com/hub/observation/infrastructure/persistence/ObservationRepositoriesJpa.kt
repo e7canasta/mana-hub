@@ -246,8 +246,17 @@ class CurrentBedStateRepositoryAdapter(private val jpa: CurrentBedStateEntityRep
         sleeping, stateSince, updatedAt!!, source, sourceEventId, staffPresent
     )
     private fun CurrentBedState.toEntity() = CurrentBedStateEntity(
-        bedId.value, residentId?.value, roomState, state, substate, sleeping,
-        stateSince, source, sourceEventId, staffPresent
+        bedId = bedId.value,
+        residentId = residentId?.value,
+        roomState = roomState,
+        state = state,
+        substate = substate,
+        sleeping = sleeping,
+        stateSince = stateSince,
+        source = source,
+        sourceEventId = sourceEventId,
+        staffPresent = staffPresent,
+        updatedAt = clock.now(),
     )
 }
 

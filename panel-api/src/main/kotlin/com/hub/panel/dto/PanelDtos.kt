@@ -55,7 +55,7 @@ enum class Shift(val value: String) {
 
 enum class EpisodeStatus(val value: String) {
     PENDING("pending"), RESOLVED("resolved");
-    companion object { fun from(v: String) = entries.firstOrNull { it.value == v } ?: PENDING }
+    companion object { fun from(v: String) = entries.firstOrNull { it.value.equals(v, ignoreCase = true) } ?: PENDING }
 }
 
 // ══════════════════════════════════════════════════════════════

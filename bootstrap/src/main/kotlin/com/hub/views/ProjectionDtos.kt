@@ -127,6 +127,7 @@ data class FallsTabProjection(
     val streakDays: Int?,
     val previousStreakDays: Int?,
     val fallsLast12Months: Int,
+    val exitsLast12Months: Int,
     val lastFallAt: Instant?,
     val lastFallInjury: String?,
     val months: List<FallMonthProjection>,
@@ -135,6 +136,7 @@ data class FallsTabProjection(
 data class FallMonthProjection(
     val label: String,
     val falls: Int,
+    val exits: Int,
 )
 
 // ─────────────────────────────────────────────────────────── episodes
@@ -147,6 +149,7 @@ data class EpisodesTabProjection(
 data class EpisodeListItemProjection(
     val id: String,
     val kind: String,
+    val title: String? = null,
     val severity: String,
     val occurredAt: Instant,
     val injuryStatus: String?,

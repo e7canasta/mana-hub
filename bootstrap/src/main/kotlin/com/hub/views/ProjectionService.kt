@@ -6,6 +6,8 @@ import com.hub.observation.domain.repository.CurrentBedStateRepository
 import com.hub.observation.domain.repository.SummaryRepository
 import com.hub.history.domain.repository.HistoryEpisodeDetectionRepository
 import com.hub.history.domain.repository.HistoryEpisodeReviewRepository
+import com.hub.history.domain.model.HistoryEpisodeId
+import com.hub.surveillance.domain.repository.EpisodeRepository
 import com.hub.care.domain.repository.CareSummaryRepository
 import com.hub.policy.domain.repository.AlarmProfileRepository
 import com.hub.policy.domain.repository.AlarmProfileOverrideRepository
@@ -30,6 +32,7 @@ class ProjectionService(
     private val summaryRepository: SummaryRepository,
     private val historyEpisodeRepository: HistoryEpisodeDetectionRepository,
     private val historyReviewRepository: HistoryEpisodeReviewRepository,
+    private val episodeRepository: EpisodeRepository,
     private val careSummaryRepository: CareSummaryRepository,
     private val alarmProfileRepository: AlarmProfileRepository,
     private val alarmOverrideRepository: AlarmProfileOverrideRepository,
@@ -227,14 +230,35 @@ class ProjectionService(
         val episodes = historyEpisodeRepository.findByResidentId(ResidentId(residentId))
         val falls = episodes.filter { it.kind.name == "FALL" }
             .sortedByDescending { it.occurredAt }
+        val engineEpisodes = episodeRepository.findByResidentId(ResidentId(residentId))
+        val reviewedEngineFalls = engineEpisodes
+            .filter { engine ->
+                val latestReview = historyReviewRepository
+                    .findByEpisodeId(HistoryEpisodeId(engine.id.value))
+                    .maxByOrNull { it.resolvedAt ?: Instant.MIN }
+                latestReview?.detectionVerdict.equals("confirmed", ignoreCase = true)
+            }
+            .map { it.occurredAt to null as String? }
+        val fallFacts = (falls.map { it.occurredAt to it.injuryStatus } + reviewedEngineFalls)
+            .distinctBy { it.first }
+            .sortedByDescending { it.first }
 
         val assignment = bedAssignmentRepository.findOpenByResidentId(ResidentId(residentId))
         val zone = assignment?.let { locationResolver.zone(it.bedId) } ?: DEFAULT_ZONE
         val now = LocalDate.now(zone)
         val monthRange = (0 until months).map { YearMonth.now(zone).minusMonths(it.toLong()) }
+        val firstMonth = monthRange.last()
+        val from = firstMonth.atDay(1)
+        val sleepSummaries = summaryRepository.findSleepByResidentAndRange(
+            ResidentId(residentId), from, now,
+        )
 
-        val lastFall = falls.firstOrNull()
-        val lastFallAt = lastFall?.occurredAt
+        val fallsInRange = fallFacts.filter {
+            it.first.atZone(zone).toLocalDate() >= from &&
+                it.first.atZone(zone).toLocalDate() <= now
+        }
+        val lastFall = fallFacts.firstOrNull()
+        val lastFallAt = lastFall?.first
 
         /*
          * "34 dias sin caidas" es una afirmacion, y el panel la muestra grande.
@@ -249,18 +273,21 @@ class ProjectionService(
          * Antes devolvia now.toEpochDay() -los dias desde 1970-, o sea 20694
          * dias sin caidas para alguien que ingreso el mes pasado.
          */
-        val firstObservedAt = episodes.minByOrNull { it.occurredAt }?.occurredAt
+        val firstEpisodeObservedAt = episodes.minByOrNull { it.occurredAt }?.occurredAt
+        val firstSummaryObservedAt = sleepSummaries.minOfOrNull { it.observedOn }
+            ?.atStartOfDay(zone)?.toInstant()
+        val firstObservedAt = listOfNotNull(firstEpisodeObservedAt, firstSummaryObservedAt).minOrNull()
         val streakFrom = lastFallAt ?: firstObservedAt
         val streakDays = streakFrom?.let {
             ChronoUnit.DAYS.between(it.atZone(zone).toLocalDate(), now).toInt().coerceAtLeast(0)
         }
 
-        val previousFall = falls.drop(1).firstOrNull()
+        val previousFall = fallFacts.drop(1).firstOrNull()
         /* Null y no 0: "no hubo una caida anterior" y "la anterior fue el mismo
          * dia" son cosas distintas, y con 0 se leen igual. */
         val previousStreakDays = if (previousFall != null && lastFallAt != null) {
             ChronoUnit.DAYS.between(
-                previousFall.occurredAt.atZone(zone).toLocalDate(),
+                previousFall.first.atZone(zone).toLocalDate(),
                 lastFallAt.atZone(zone).toLocalDate(),
             ).toInt().coerceAtLeast(0)
         } else null
@@ -269,15 +296,19 @@ class ProjectionService(
             residentId = residentId,
             streakDays = streakDays,
             previousStreakDays = previousStreakDays,
-            fallsLast12Months = falls.size,
+            fallsLast12Months = fallsInRange.size,
+            exitsLast12Months = sleepSummaries.sumOf { it.bedExitCount },
             lastFallAt = lastFallAt,
-            lastFallInjury = lastFall?.injuryStatus,
+            lastFallInjury = lastFall?.second,
             months = monthRange.map { ym ->
                 FallMonthProjection(
                     label = ym.toString(),
-                    falls = falls.count {
-                        it.occurredAt.atZone(zone).toLocalDate().yearMonth == ym
+                    falls = fallsInRange.count {
+                        it.first.atZone(zone).toLocalDate().yearMonth == ym
                     },
+                    exits = sleepSummaries
+                        .filter { it.observedOn.yearMonth == ym }
+                        .sumOf { it.bedExitCount },
                 )
             },
         )
@@ -289,26 +320,54 @@ class ProjectionService(
 
     @Transactional(readOnly = true)
     fun getEpisodesTab(residentId: String): EpisodesTabProjection {
-        val episodes = historyEpisodeRepository.findByResidentId(ResidentId(residentId))
-        val reviews = episodes.map { ep ->
+        val historyEpisodes = historyEpisodeRepository.findByResidentId(ResidentId(residentId))
+        val engineEpisodes = episodeRepository.findByResidentId(ResidentId(residentId))
+        val historyIds = historyEpisodes.map { it.id.value }.toSet()
+        val reviews = historyEpisodes.map { ep ->
             historyReviewRepository.findByEpisodeId(ep.id)
         }
-        return EpisodesTabProjection(
-            residentId = residentId,
-            episodes = episodes.zip(reviews).map { (ep, revs) ->
-                val lastReview = revs.maxByOrNull { it.resolvedAt ?: java.time.Instant.MIN }
+        val historyProjections = historyEpisodes.zip(reviews).map { (ep, revs) ->
+            val lastReview = revs.maxByOrNull { it.resolvedAt ?: java.time.Instant.MIN }
+            EpisodeListItemProjection(
+                id = ep.id.value,
+                kind = ep.kind.name,
+                title = null,
+                severity = ep.severity.name,
+                occurredAt = ep.occurredAt,
+                injuryStatus = ep.injuryStatus,
+                selfRecovery = ep.selfRecovery,
+                verdict = lastReview?.detectionVerdict,
+                reviewNote = lastReview?.reviewNote,
+                reviewedAt = lastReview?.resolvedAt,
+            )
+        }
+        /* The engine and clinical history are separate stores. The chart must
+         * not hide a live engine episode simply because history ingestion has
+         * not produced its clinical projection yet. Once both stores contain
+         * the same id, the history row wins because it has review data. */
+        val engineProjections = engineEpisodes
+            .filterNot { it.id.value in historyIds }
+            .map { ep ->
+                val lastReview = historyReviewRepository
+                    .findByEpisodeId(HistoryEpisodeId(ep.id.value))
+                    .maxByOrNull { it.resolvedAt ?: java.time.Instant.MIN }
                 EpisodeListItemProjection(
                     id = ep.id.value,
-                    kind = ep.kind.name,
+                    kind = ep.trigger ?: ep.ruleId ?: "OTHER",
+                    title = ep.title,
                     severity = ep.severity.name,
                     occurredAt = ep.occurredAt,
-                    injuryStatus = ep.injuryStatus,
-                    selfRecovery = ep.selfRecovery,
+                    injuryStatus = null,
+                    selfRecovery = null,
                     verdict = lastReview?.detectionVerdict,
                     reviewNote = lastReview?.reviewNote,
                     reviewedAt = lastReview?.resolvedAt,
                 )
-            },
+            }
+        return EpisodesTabProjection(
+            residentId = residentId,
+            episodes = (historyProjections + engineProjections)
+                .sortedByDescending { it.occurredAt },
         )
     }
 

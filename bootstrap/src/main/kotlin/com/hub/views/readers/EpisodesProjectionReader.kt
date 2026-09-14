@@ -27,6 +27,7 @@ class EpisodesProjectionReader(
                 EpisodeListItemProjection(
                     id = ep.id.value,
                     kind = ep.kind.name,
+                    title = null,
                     severity = ep.severity.name,
                     occurredAt = ep.occurredAt,
                     injuryStatus = ep.injuryStatus,
