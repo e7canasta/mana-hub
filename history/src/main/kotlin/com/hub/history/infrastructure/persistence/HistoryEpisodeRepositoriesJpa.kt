@@ -56,7 +56,7 @@ class HistoryEpisodeReviewEntity(
 @Repository
 interface HistoryEpisodeEntityRepository : JpaRepository<HistoryEpisodeEntity, String> {
     fun findBySourceRecordId(sourceRecordId: String): HistoryEpisodeEntity?
-    fun findByResidentId(residentId: String): List<HistoryEpisodeEntity>
+    fun findByResidentIdOrderByOccurredAtAsc(residentId: String): List<HistoryEpisodeEntity>
     fun findByResidentIdAndKind(residentId: String, kind: String): List<HistoryEpisodeEntity>
 }
 
@@ -69,7 +69,8 @@ interface HistoryEpisodeReviewEntityRepository : JpaRepository<HistoryEpisodeRev
 class HistoryEpisodeRepositoryAdapter(private val jpa: HistoryEpisodeEntityRepository, private val clock: HubClock) : HistoryEpisodeDetectionRepository {
     override fun findById(id: HistoryEpisodeId): HistoryEpisode? = jpa.findById(id.value).orElse(null)?.toDomain()
     override fun findBySourceRecordId(sourceRecordId: String): HistoryEpisode? = jpa.findBySourceRecordId(sourceRecordId)?.toDomain()
-    override fun findByResidentId(residentId: ResidentId): List<HistoryEpisode> = jpa.findByResidentId(residentId.value).map { it.toDomain() }
+    override fun findByResidentId(residentId: ResidentId): List<HistoryEpisode> =
+        jpa.findByResidentIdOrderByOccurredAtAsc(residentId.value).map { it.toDomain() }
     override fun findByResidentIdAndKind(residentId: ResidentId, kind: EpisodeKind): List<HistoryEpisode> =
         jpa.findByResidentIdAndKind(residentId.value, kind.name).map { it.toDomain() }
     override fun save(detection: HistoryEpisode): HistoryEpisode = jpa.save(detection.toEntity()).toDomain()
