@@ -146,6 +146,7 @@ class EpisodeTimelineBuilder(
         "EpisodeClosed", "EpisodeResolved" -> EventType.CLOSED
         "AutoRecovery" -> EventType.RECOVERY
         "SeverityRamp", "EpisodeEscalated" -> EventType.ESCALATED
+        "StaffArrived" -> EventType.STAFF_ARRIVED
         else -> null
     }
 
