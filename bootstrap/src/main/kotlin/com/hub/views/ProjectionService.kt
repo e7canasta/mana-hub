@@ -257,6 +257,11 @@ class ProjectionService(
             it.first.atZone(zone).toLocalDate() >= from &&
                 it.first.atZone(zone).toLocalDate() <= now
         }
+        val exitsInRange = episodes.filter { episode ->
+            episode.kind.name == "BED_EXIT" &&
+                episode.occurredAt.atZone(zone).toLocalDate() >= from &&
+                episode.occurredAt.atZone(zone).toLocalDate() <= now
+        }
         val lastFall = fallFacts.firstOrNull()
         val lastFallAt = lastFall?.first
 
@@ -297,7 +302,7 @@ class ProjectionService(
             streakDays = streakDays,
             previousStreakDays = previousStreakDays,
             fallsLast12Months = fallsInRange.size,
-            exitsLast12Months = sleepSummaries.sumOf { it.bedExitCount },
+            exitsLast12Months = exitsInRange.size,
             lastFallAt = lastFallAt,
             lastFallInjury = lastFall?.second,
             months = monthRange.map { ym ->
@@ -306,9 +311,9 @@ class ProjectionService(
                     falls = fallsInRange.count {
                         it.first.atZone(zone).toLocalDate().yearMonth == ym
                     },
-                    exits = sleepSummaries
-                        .filter { it.observedOn.yearMonth == ym }
-                        .sumOf { it.bedExitCount },
+                    exits = exitsInRange.count {
+                        it.occurredAt.atZone(zone).toLocalDate().yearMonth == ym
+                    },
                 )
             },
         )
